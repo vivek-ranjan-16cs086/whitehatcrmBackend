@@ -60,23 +60,24 @@ The Laravel framework is open-sourced software licensed under the [MIT license](
 
 ## Production deployment
 
-The GitHub Actions workflow runs the Laravel test suite for pull requests and pushes to `main`. A successful push to `main` also deploys to Hostinger over SSH.
+The GitHub Actions workflow runs unit tests on pull requests to `main` and deploys pushes to `main` to Hostinger over FTP. Pull requests do not deploy. The deploy workflow can also be started manually from the Actions tab; select `force_composer: true` to reinstall PHP dependencies even when the Composer files have not changed. Only pushes and manual runs initiated by the GitHub user `vivek-ranjan-16cs086` are allowed to deploy.
 
 Before enabling deployment:
 
-1. Add this backend as the root of the `whitehatcrmBackend` GitHub repository. The workflow must be at `.github/workflows/deploy.yml` in that repository.
-2. In Hostinger cPanel, enable SSH access, authorize a dedicated SSH key for the cPanel account, and clone the GitHub repository with cPanel Git Version Control into the Laravel application directory. That directory must contain `artisan` and `composer.json`, and its `origin` remote must point to the GitHub repository's `main` branch. For a private repository, configure a separate read-only GitHub deploy key on the server so `git pull` can authenticate.
-3. Configure the domain's document root to serve the Laravel application's `public` directory. Create and configure the production `.env` on the server; do not add it to GitHub.
-4. Ensure the SSH shell provides PHP 8.2 or later, Composer, and Git. Configure the required production PHP extensions and database connection in cPanel.
-5. Add these repository secrets under **Settings → Secrets and variables → Actions**:
+1. In Hostinger cPanel, create FTP credentials whose root directory is the Laravel project directory. Set up the website document root to serve the project's `public` directory.
+2. Create and configure the production `.env` on the server; do not add it to GitHub. The FTP exclusions intentionally preserve `.env`, `vendor`, runtime storage, and uploaded files already on the server.
+3. Ensure the server's SSH shell provides PHP 8.2 or later and Composer. SSH is required whenever `composer.json` or `composer.lock` changes, and for server-side Laravel cache clearing. If `whitehatrealty.in` is not the domain's cPanel path, update the path checks in `.github/workflows/deploy.yml`.
+4. Add these values under **Settings → Secrets and variables → Actions** (or as secrets on the `production` environment):
 
-   | Secret | Value |
+   | Secret or variable | Value |
    | --- | --- |
-   | `HOSTINGER_DEPLOY_PATH` | Absolute path to the cloned Laravel application directory |
-   | `HOSTINGER_SSH_HOST` | Hostinger SSH hostname |
-   | `HOSTINGER_SSH_KNOWN_HOSTS` | Verified SSH host-key entry for the Hostinger server |
-   | `HOSTINGER_SSH_PORT` | Hostinger SSH port |
-   | `HOSTINGER_SSH_PRIVATE_KEY` | Private key matching the key authorized in cPanel |
-   | `HOSTINGER_SSH_USERNAME` | cPanel SSH account username |
+   | `FTP_SERVER` | Hostinger FTP hostname |
+   | `FTP_USERNAME` | FTP username |
+   | `FTP_PASSWORD` | FTP password |
+   | `SSH_HOST` | Hostinger SSH hostname (required for server-side Composer and cache commands) |
+   | `SSH_USERNAME` | cPanel SSH account username |
+   | `SSHKEY` or `SSH_PRIVATE_KEY` | Private key authorized in cPanel |
+   | `SSH_PASSWORD` | Alternatively, the cPanel SSH password |
+   | `SSH_PORT` | SSH port; defaults to `65002` |
 
-The workflow pulls the latest `main` commit, installs production Composer dependencies, runs database migrations, and refreshes Laravel's optimized caches. It does not run deployments for pull requests. Keep the production `.env`, SSH private key, and database credentials out of the repository.
+`FTP_HOST`, `HOST`, `SSH_KEY`, `USER`, and `SSH_PORT` repository variables are also accepted as compatibility aliases. Composer dependencies are installed on the server only when the Composer manifest or lock file changes, or when forced by a manual run. The workflow does not run database migrations. Keep production `.env` files, credentials, and SSH keys out of the repository.
