@@ -367,11 +367,10 @@
         role = ''
     ) {
 
-        isEditMode = userId !== null;
-        editUserId = userId;
-
         resetForm();
 
+        isEditMode = userId !== null;
+        editUserId = userId;
 
         // =====================================================
         // EDIT MODE
