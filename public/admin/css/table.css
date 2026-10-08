@@ -150,32 +150,72 @@ table.dataTable tbody tr:hover {
 }
 
 @media (max-width: 768px) {
-    #users-table,
-    #leads-table {
-        display: block;
-        width: 100%;
+    .dataTables_wrapper .dataTables_scroll {
+        max-width: 100%;
+        overflow: hidden;
     }
 
-    #users-table thead,
-    #leads-table thead {
-        display: block;
-        position: sticky;
-        top: 0;
-        z-index: 2;
+    .dataTables_wrapper .dataTables_scrollBody {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
     }
 
-    #users-table tbody,
-    #leads-table tbody {
-        display: block;
-        max-height: 450px;
-        overflow-y: auto;
+    .dataTables_wrapper .dataTables_scrollBody > table {
+        min-width: 760px;
     }
 
-    #users-table tbody tr,
-    #leads-table tbody tr {
-        display: table;
-        width: 100%;
-        table-layout: fixed;
+    #leads-table_wrapper .dataTables_scrollBody > table {
+        min-width: 1100px;
+    }
+}
+
+/* Compact progress card shown while a server-side table page is loading. */
+.dataTables_wrapper .dataTables_processing {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    z-index: 10;
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    width: 190px !important;
+    min-height: 112px;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 1rem;
+    transform: translate(-50%, -50%);
+    color: #475467 !important;
+    background: rgb(255 255 255 / 0.96);
+    border: 1px solid #e7e9f1;
+    border-radius: 3px;
+    box-shadow: 0 12px 32px rgb(15 23 42 / 0.14);
+    font-size: 0.82rem !important;
+    font-weight: 600;
+}
+
+.dataTables_wrapper .dataTables_processing > * {
+    display: none !important;
+}
+
+.dataTables_wrapper .dataTables_processing::before {
+    content: '';
+    width: 25px;
+    height: 25px;
+    border: 3px solid #e7e9f1;
+    border-top-color: #5548d9;
+    border-radius: 50%;
+    animation: admin-table-spin 0.75s linear infinite;
+}
+
+.dataTables_wrapper .dataTables_processing::after {
+    content: 'Updating results...';
+}
+
+@keyframes admin-table-spin {
+    to {
+        transform: rotate(360deg);
     }
 }
 
@@ -269,6 +309,7 @@ table.dataTable tbody tr:hover {
 
 /* Keep DataTables actions and search aligned as one responsive toolbar. */
 .dataTables_wrapper {
+    position: relative;
     display: flex;
     flex-wrap: wrap;
     align-items: center;

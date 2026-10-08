@@ -260,6 +260,13 @@
         // Initialize select2
         $('.select2').select2();
 
+        if ($.fn.dataTable) {
+            $.extend(true, $.fn.dataTable.defaults, {
+                scrollX: true,
+                autoWidth: false
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             
 
@@ -280,6 +287,21 @@
 
         let adminPreloaderTimer;
         let adminPreloaderHideTimer;
+        const activeAdminRequests = new Set();
+
+        function isDataTableRequest(settings) {
+            const requestData = settings.data;
+            let parameters;
+
+            if (requestData && typeof requestData === 'object') {
+                parameters = new URLSearchParams($.param(requestData));
+            } else {
+                const url = new URL(settings.url, window.location.href);
+                parameters = new URLSearchParams(typeof requestData === 'string' ? requestData : url.search);
+            }
+
+            return parameters.has('draw') && parameters.has('start') && parameters.has('length');
+        }
 
         function showAdminPreloader(message = 'Loading, please wait...') {
             const preloader = document.getElementById('adminPreloader');
@@ -304,8 +326,20 @@
         }
 
         $(document)
-            .on('ajaxStart.adminPreloader', () => showAdminPreloader())
-            .on('ajaxStop.adminPreloader', hideAdminPreloader);
+            .on('ajaxSend.adminPreloader', function (event, xhr, settings) {
+                if (isDataTableRequest(settings)) {
+                    return;
+                }
+
+                activeAdminRequests.add(xhr);
+                showAdminPreloader('Working, please wait...');
+            })
+            .on('ajaxComplete.adminPreloader', function (event, xhr) {
+                activeAdminRequests.delete(xhr);
+                if (!activeAdminRequests.size) {
+                    hideAdminPreloader();
+                }
+            });
 
         document.addEventListener('click', function (event) {
             const link = event.target.closest('a[href]');
