@@ -64,7 +64,7 @@ The GitHub Actions workflow runs unit tests on pull requests to `main` and deplo
 
 Before enabling deployment:
 
-1. In Hostinger cPanel, create FTP credentials whose root directory is the Laravel project directory. Set up the website document root to serve the project's `public` directory.
+1. The workflow uploads to `/` relative to the FTP account. In Hostinger cPanel, create FTP credentials whose root directory is the Laravel project directory (for this subdomain, the `public_html/zitrack` project folder). Set up the website document root to serve the project's `public` directory.
 2. Create and configure the production `.env` on the server; do not add it to GitHub. The FTP exclusions intentionally preserve `.env`, `vendor`, runtime storage, and uploaded files already on the server.
 3. Ensure the server's SSH shell provides PHP 8.2 or later and Composer. SSH is required whenever `composer.json` or `composer.lock` changes, and for server-side Laravel cache clearing. If `whitehatrealty.in` is not the domain's cPanel path, update the path checks in `.github/workflows/deploy.yml`.
 4. Add these values under **Settings → Secrets and variables → Actions** (or as secrets on the `production` environment):
