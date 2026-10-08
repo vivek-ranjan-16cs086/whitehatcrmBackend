@@ -1,0 +1,206 @@
+:root {
+    --table-bg: #ffffff;
+    --table-border: #e6e9ef;
+    --table-head-bg: #f8f9fb;
+    --table-head-color: #343a40;
+    --table-row-alt: #fdfdff;
+    --table-row-hover: #eef2ff;
+    --btn-action-bg: #0d6efd;
+    --btn-action-color: #ffffff;
+    --btn-action-hover-bg: #0b5ed7;
+    --btn-danger-bg: #dc3545;
+    --btn-danger-hover-bg: #bd2130;
+}
+
+/* Shared admin table enhancements */
+.admin-panel-table,
+#users-table,
+#leads-table,
+table.dataTable {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.92rem;
+    color: #2a2f3a;
+    background: var(--table-bg);
+    border: 1px solid var(--table-border);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 3px 10px rgba(22, 44, 77, 0.08);
+}
+
+#users-table thead th,
+#leads-table thead th,
+table.dataTable thead th {
+    background-color: var(--table-head-bg) !important;
+    color: var(--table-head-color) !important;
+    font-weight: 700;
+    border-bottom: 2px solid var(--table-border) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.8rem 0.9rem !important;
+}
+
+#users-table tbody td,
+#leads-table tbody td,
+table.dataTable tbody td {
+    padding: 0.72rem 0.9rem !important;
+    border-top: 1px solid #f0f2f6;
+    vertical-align: middle;
+}
+
+#users-table tbody tr:nth-child(even),
+#leads-table tbody tr:nth-child(even),
+table.dataTable tbody tr:nth-child(even) {
+    background-color: var(--table-row-alt);
+}
+
+#users-table tbody tr:hover,
+#leads-table tbody tr:hover,
+table.dataTable tbody tr:hover {
+    background-color: var(--table-row-hover) !important;
+}
+
+#users-table tbody .avatar-circle,
+#leads-table tbody .avatar-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #dbe4ff;
+    color: #1a2f83;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+/* Actions button style improvements */
+#users-table .btn,
+#leads-table .btn,
+#users-table .action-btn,
+#leads-table .action-btn {
+    font-size: 0.82rem;
+    padding: 0.34rem 0.55rem;
+    border-radius: 0.45rem;
+    border-width: 1px;
+}
+
+#users-table .btn-primary,
+#leads-table .btn-primary,
+#users-table .btn-action,
+#leads-table .btn-action {
+    background: var(--btn-action-bg);
+    border-color: var(--btn-action-bg);
+    color: var(--btn-action-color);
+}
+
+#users-table .btn-primary:hover,
+#leads-table .btn-primary:hover,
+#users-table .btn-action:hover,
+#leads-table .btn-action:hover {
+    background: var(--btn-action-hover-bg);
+    border-color: var(--btn-action-hover-bg);
+    color: var(--btn-action-color);
+}
+
+#users-table .btn-danger,
+#leads-table .btn-danger {
+    background: var(--btn-danger-bg);
+    border-color: var(--btn-danger-bg);
+    color: #fff;
+}
+
+#users-table .btn-danger:hover,
+#leads-table .btn-danger:hoverponsive improvements */
+.table-responsive {
+    border-radius: 0.8rem;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 992px) {
+    #users-table,
+    #leads-table,
+    table.dataTable {
+        font-size: 0.84rem;
+    }
+
+    #users-table thead th,
+    #leads-table thead th,
+    table.dataTable thead th {
+        font-size: 0.72rem;
+        padding: 0.7rem 0.6rem !important;
+    }
+
+    #users-table tbody td,
+    #leads-table tbody td,
+    table.dataTable tbody td {
+        padding: 0.5rem 0.6rem !important;
+    }
+
+    .dataTables_wrapper .dataTables_filter input {
+        width: 100% !important;
+    }
+}
+
+@media (max-width: 768px) {
+    #users-table,
+    #leads-table {
+        display: block;
+        width: 100%;
+    }
+
+    #users-table thead,
+    #leads-table thead {
+        display: block;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+
+    #users-table tbody,
+    #leads-table tbody {
+        display: block;
+        max-height: 450px;
+        overflow-y: auto;
+    }
+
+    #users-table tbody tr,
+    #leads-table tbody tr {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+    }
+}
+
+/* clean up dataTables button group - nicer with card boundaries */
+.dataTables_wrapper .dt-buttons .btn {
+    border-radius: 0.35rem;
+    margin-right: 0.25rem;
+    border: 1px solid #d1d8e4;
+    color: #2a2f3a;
+    background: #fff;
+}
+
+.dataTables_wrapper .dt-buttons .btn:hover,
+.dataTables_wrapper .dt-buttons .btn:focus,
+.dataTables_wrapper .dt-buttons .btn:active {
+    color: #fff;
+    background: #0d6efd;
+    border-color: #0d6efd;
+    box-shadow: none;
+}
+
+.dataTables_paginate .paginate_button {
+    border-radius: 0.4rem;
+    border: 1px solid #c8d0e3;
+    background-color: #fff;
+    color: #35435a;
+}
+
+.dataTables_paginate .paginate_button.current,
+.dataTables_paginate .paginate_button:hover {
+    background-color: #0d6efd;
+    color: #fff !important;
+    border-color: #0d6efd;
+}

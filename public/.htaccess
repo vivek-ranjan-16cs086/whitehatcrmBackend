@@ -1,0 +1,14 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Redirect /public/index.php/... to clean path
+    RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/public/index\.php(/[^\s]*)?\sHTTP
+    RewriteRule ^index\.php(/.*)?$ /%1 [R=301,L]
+  
+    # Default Laravel rules
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+	
+	
+</IfModule>

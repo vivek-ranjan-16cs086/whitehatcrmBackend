@@ -1,0 +1,109 @@
+name: Laravel CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: ctype, curl, dom, fileinfo, mbstring, pdo_sqlite, xml
+          coverage: none
+
+      - name: Validate Composer files
+        run: composer validate --no-check-publish
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run tests
+        run: php artisan test
+        env:
+          APP_ENV: testing
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ":memory:"
+          CACHE_STORE: array
+          SESSION_DRIVER: array
+          QUEUE_CONNECTION: sync
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: hostinger-production
+      cancel-in-progress: false
+
+    steps:
+      - name: Deploy to Hostinger cPanel
+        env:
+          DEPLOY_PATH: ${{ secrets.HOSTINGER_DEPLOY_PATH }}
+          SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+          SSH_KNOWN_HOSTS: ${{ secrets.HOSTINGER_SSH_KNOWN_HOSTS }}
+          SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT }}
+          SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_PRIVATE_KEY }}
+          SSH_USERNAME: ${{ secrets.HOSTINGER_SSH_USERNAME }}
+        run: |
+          set -euo pipefail
+
+          for name in DEPLOY_PATH SSH_HOST SSH_KNOWN_HOSTS SSH_PORT SSH_PRIVATE_KEY SSH_USERNAME; do
+            if [[ -z "${!name}" ]]; then
+              echo "Required GitHub Actions secret is missing: $name" >&2
+              exit 1
+            fi
+          done
+
+          if [[ ! "$DEPLOY_PATH" =~ ^/[A-Za-z0-9._/-]+$ ]]; then
+            echo "HOSTINGER_DEPLOY_PATH must be an absolute path containing only letters, numbers, dots, underscores, slashes, or hyphens." >&2
+            exit 1
+          fi
+
+          if [[ ! "$SSH_PORT" =~ ^[0-9]+$ ]]; then
+            echo "HOSTINGER_SSH_PORT must be numeric." >&2
+            exit 1
+          fi
+
+          if (( SSH_PORT < 1 || SSH_PORT > 65535 )); then
+            echo "HOSTINGER_SSH_PORT must be between 1 and 65535." >&2
+            exit 1
+          fi
+
+          if [[ ! "$SSH_HOST" =~ ^[A-Za-z0-9.-]+$ || ! "$SSH_USERNAME" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "HOSTINGER_SSH_HOST or HOSTINGER_SSH_USERNAME contains unsupported characters." >&2
+            exit 1
+          fi
+
+          install -d -m 700 "$HOME/.ssh"
+          key_path="$HOME/.ssh/hostinger_deploy_key"
+          trap 'rm -f "$key_path"' EXIT
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$key_path"
+          chmod 600 "$key_path"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+          ssh \
+            -p "$SSH_PORT" \
+            -i "$key_path" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$SSH_USERNAME@$SSH_HOST" \
+            "cd '$DEPLOY_PATH' && git pull --ff-only origin main && composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader && php artisan migrate --force && php artisan optimize"
