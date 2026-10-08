@@ -147,9 +147,9 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: .ftp-deploy-sync-state.json
-          key: ftp-sync-${{ github.ref_name }}-${{ github.run_id }}
+          key: ftp-sync-zitrackapi-${{ github.ref_name }}-${{ github.run_id }}
           restore-keys: |
-            ftp-sync-${{ github.ref_name }}-
+            ftp-sync-zitrackapi-${{ github.ref_name }}-
 
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -160,7 +160,7 @@ jobs:
           protocol: ftp
           port: 21
           local-dir: ./
-          server-dir: /
+          server-dir: /zitrackapi/
           timeout: 60000
           log-level: standard
           exclude: |
@@ -206,7 +206,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: .ftp-deploy-sync-state.json
-          key: ftp-sync-${{ github.ref_name }}-${{ github.run_id }}
+          key: ftp-sync-zitrackapi-${{ github.ref_name }}-${{ github.run_id }}
 
       - name: Install PHP packages and clear Laravel caches
         if: steps.ssh.outputs.configured == 'true'
@@ -224,12 +224,10 @@ jobs:
           envs: RUN_COMPOSER
           script: |
             set -e
-            if [ -d "$HOME/domains/whitehatrealty.in/public_html" ]; then
-              cd "$HOME/domains/whitehatrealty.in/public_html"
-            elif [ -d "$HOME/public_html" ]; then
-              cd "$HOME/public_html"
+            if [ -d "$HOME/public_html/zitrackapi" ]; then
+              cd "$HOME/public_html/zitrackapi"
             else
-              echo "Could not find the Laravel public_html directory."
+              echo "Could not find the Laravel public_html/zitrackapi directory."
               exit 1
             fi
 
