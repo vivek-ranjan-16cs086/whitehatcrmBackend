@@ -327,16 +327,15 @@ $('#targetForm').submit(function(e){
 // DELETE
 $(document).on('click','.btn-delete-target',function(){
     let id=$(this).data('id');
-    if(confirm('Delete?')){
-        $.post('/targets/'+id,{
-            _method:'DELETE',
-            _token:$('meta[name="csrf-token"]').attr('content')
-        },function(res){
-            if(res.status){
-                $('#targetsTable').DataTable().ajax.reload(null,false);
-            }
-        });
-    }
+    confirmAdminAction({
+        url: `{{ url('/admin/targets') }}/${encodeURIComponent(id)}`,
+        method: 'DELETE',
+        title: 'Delete this target?',
+        text: 'This action cannot be undone.',
+        confirmButtonText: 'Yes, delete target',
+        successTitle: 'Target deleted',
+        destructive: true
+    });
 });
 
 });

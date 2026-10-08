@@ -15,7 +15,7 @@
         <form action="{{ route('admin.permissions.sync') }}" method="POST">
             @csrf
             <button type="submit" class="btn btn-success btn-sm"
-                    onclick="return confirm('Sync permissions from all models?')">
+                    onclick="return confirmAdminForm(this.form, 'Sync permissions?', 'This will sync permissions from all models.')">
                 <i class="bi bi-arrow-repeat me-1"></i> Sync
             </button>
         </form>

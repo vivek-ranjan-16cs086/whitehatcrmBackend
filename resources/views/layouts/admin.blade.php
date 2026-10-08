@@ -20,12 +20,19 @@
     <link href="{{url('admin/libraries/css/buttons.bootstrap5.min.css')}}" rel="stylesheet">
     <link href="{{url('admin/libraries/css/select2.min.css')}}" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="{{url('admin/css/admin.css')}}" rel="stylesheet">
-	 <link href="{{url('admin/css/table.css')}}" rel="stylesheet">
+    <link href="{{ url('admin/css/admin.css') }}?v={{ filemtime(public_path('admin/css/admin.css')) }}" rel="stylesheet">
+	 <link href="{{ url('admin/css/table.css') }}?v={{ filemtime(public_path('admin/css/table.css')) }}" rel="stylesheet">
 	
 </head>
 
 <body>
+    <div class="admin-preloader" id="adminPreloader" role="status" aria-live="polite" aria-atomic="true" hidden>
+        <div class="admin-preloader-card">
+            <span class="admin-preloader-spinner" aria-hidden="true"></span>
+            <span id="adminPreloaderMessage">Loading, please wait...</span>
+        </div>
+    </div>
+
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
             <span class="brand-icon">
@@ -221,7 +228,7 @@
     <script src="{{url('admin/libraries/js/buttons.print.min.js')}}"></script>
     <script src="{{url('admin/libraries/js/buttons.colVis.min.js')}}"></script>
     <script src="{{url('admin/libraries/js/select2.min.js')}}"></script>
-    <script src="{{url('admin/libraries/js/sweetalert2@11.js')}}"></script>
+    <script src="{{ url('admin/libraries/js/sweetalert2@11.js') }}?v={{ filemtime(public_path('admin/libraries/js/sweetalert2@11.js')) }}"></script>
 	
 
     <script>
@@ -271,176 +278,188 @@
             }
         });
 
-        // SweetAlert confirmation function
-        function myConfirm(action) {
-            var siteLink = "{{url('/')}}";
-            var actions = action.split('/');
-            if (actions.length == 3) {
-                var module = actions[0];
-                var operation = actions[1];
-                var id = actions[2];
-            } else {
-                var module = actions[0] + '/' + actions[1];
-                var operation = actions[2];
-                var id = actions[3];
+        let adminPreloaderTimer;
+        let adminPreloaderHideTimer;
+
+        function showAdminPreloader(message = 'Loading, please wait...') {
+            const preloader = document.getElementById('adminPreloader');
+            document.getElementById('adminPreloaderMessage').textContent = message;
+            window.clearTimeout(adminPreloaderTimer);
+            window.clearTimeout(adminPreloaderHideTimer);
+            adminPreloaderTimer = window.setTimeout(() => {
+                preloader.hidden = false;
+                requestAnimationFrame(() => preloader.classList.add('is-visible'));
+            }, 120);
+        }
+
+        function hideAdminPreloader() {
+            const preloader = document.getElementById('adminPreloader');
+            window.clearTimeout(adminPreloaderTimer);
+            preloader.classList.remove('is-visible');
+            adminPreloaderHideTimer = window.setTimeout(() => {
+                if (!preloader.classList.contains('is-visible')) {
+                    preloader.hidden = true;
+                }
+            }, 180);
+        }
+
+        $(document)
+            .on('ajaxStart.adminPreloader', () => showAdminPreloader())
+            .on('ajaxStop.adminPreloader', hideAdminPreloader);
+
+        document.addEventListener('click', function (event) {
+            const link = event.target.closest('a[href]');
+            if (!link || event.defaultPrevented || event.button !== 0
+                || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
+                || link.target || link.hasAttribute('download')
+                || link.getAttribute('href').startsWith('#')
+                || link.getAttribute('href').startsWith('javascript:')) {
+                return;
             }
 
-            switch (operation) {
-                case 'delete':
-                    var actionTitle = 'Remove?';
-                    var actionText = 'Are you sure to delete this item?';
-                    var actionConfirmButtonColor = '#3085d6';
-                    var actionConfirmButtonText = 'Yes, delete it!';
-                    var actionUrl = siteLink + "/" + action;
-                    var postTitle = 'Deleted!';
-                    break;
-                case 'status':
-                    var actionTitle = 'Change Status?';
-                    var actionText = 'Are you sure to change status?';
-                    var actionConfirmButtonColor = '#3085d6';
-                    var actionConfirmButtonText = 'Yes, change it!';
-                    var actionUrl = siteLink + "/" + action;
-                    var postTitle = 'Changed!';
-                    break;
-                case 'trending':
-                    var actionTitle = 'Make trending?';
-                    var actionText = 'Are you sure to make trending this item?';
-                    var actionConfirmButtonColor = '#3085d6';
-                    var actionConfirmButtonText = 'Yes, make it!';
-                    var actionUrl = siteLink + "/" + action;
-                    var postTitle = 'Made!'
-                    break;
-                default:
-                    alert('Bad method')
+            const destination = new URL(link.href, window.location.href);
+            if (destination.origin === window.location.origin
+                && (destination.pathname !== window.location.pathname
+                    || destination.search !== window.location.search)) {
+                showAdminPreloader('Loading page...');
             }
-            Swal.fire({
-                icon: 'question',
-                title: actionTitle,
-                text: actionText,
+        });
+
+        document.addEventListener('submit', function (event) {
+            if (event.target.matches('form') && !event.defaultPrevented) {
+                showAdminPreloader('Saving changes...');
+            }
+        }, true);
+
+        function confirmAdminAction(options) {
+            return Swal.fire({
+                icon: options.icon || (options.destructive ? 'warning' : 'question'),
+                title: options.title,
+                text: options.text,
                 showCancelButton: true,
-                confirmButtonColor: actionConfirmButtonColor,
-                cancelButtonColor: '#d33',
-                confirmButtonText: actionConfirmButtonText
+                reverseButtons: true,
+                focusCancel: true,
+                confirmButtonText: options.confirmButtonText || 'Confirm',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: options.destructive ? '#dc3545' : '#5548d9',
+                cancelButtonColor: '#667085',
+                customClass: {
+                    popup: 'admin-swal-popup',
+                    confirmButton: 'admin-swal-confirm',
+                    cancelButton: 'admin-swal-cancel'
+                }
             }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        headers: {
-                            'X-CSRF-TOKEN': jQuery('meta[name="csrf-token"]').attr('content')
-                        },
-                        url: actionUrl,
-                        type: "GET",
-                        success: function (data) {
-                            if (data.status) {
-                                Swal.fire({
-                                    title: postTitle,
-                                    text: data.message,
-                                    icon: 'success'
-                                }).then(() => {
-                                    loadAjaxList();
-                                });
-                            } else {
-                                Swal.fire(
-                                    postTitle,
-                                    data.msg,
-                                    'error'
-                                )
+                if (!result.isConfirmed) {
+                    return;
+                }
+
+                if (options.onConfirm) {
+                    options.onConfirm();
+                    return;
+                }
+
+                $.ajax({
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    url: options.url,
+                    type: options.method || 'GET',
+                    data: options.data
+                }).done((data) => {
+                    if (!data || !data.status) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Action failed',
+                            text: data?.message || data?.msg || 'The server could not complete this action.'
+                        });
+                        return;
+                    }
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: options.successTitle || 'Done',
+                        text: data.message || options.successMessage || 'The action completed successfully.',
+                        confirmButtonColor: '#5548d9',
+                        customClass: { popup: 'admin-swal-popup' }
+                    }).then(() => {
+                        if (options.reloadOnSuccess === false) {
+                            return;
+                        }
+
+                        const $ajaxTables = $('.dataTable').filter(function () {
+                            if (!$.fn.DataTable.isDataTable(this)) {
+                                return false;
                             }
+                            return Boolean($(this).DataTable().ajax.url());
+                        });
+
+                        if ($ajaxTables.length) {
+                            $ajaxTables.each(function () {
+                                $(this).DataTable().ajax.reload(null, false);
+                            });
+                        } else {
+                            window.location.reload();
                         }
                     });
-                } else {
-                    Swal.fire(
-                        'Cancelled!',
-                        'Your data is safe.',
-                        'error'
-                    )
-                }
+                }).fail((xhr) => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Request failed',
+                        text: xhr.responseJSON?.message || 'The server could not complete this action. Please try again.'
+                    });
+                });
             });
         }
+
+        function confirmAdminForm(form, title, text) {
+            confirmAdminAction({
+                title: title,
+                text: text,
+                confirmButtonText: 'Yes, continue',
+                onConfirm: () => form.requestSubmit()
+            });
+            return false;
+        }
+
         function myConfirm(action) {
-            var siteLink = "{{url('/')}}";
-            var actions = action.split('/');
-            if (actions.length == 3) {
-                var module = actions[0];
-                var operation = actions[1];
-                var id = actions[2];
-            } else {
-                var module = actions[0] + '/' + actions[1];
-
-
-                var operation = actions[2];
-                var id = actions[3];
-
-            }
-
-            switch (operation) {
-                case 'delete':
-                    var actionTitle = 'Remove?';
-                    var actionText = 'Are you sure to delete this item?';
-                    var actionConfirmButtonColor = '#3085d6';
-                    var actionConfirmButtonText = 'Yes, delete it!';
-                    var actionUrl = siteLink + "/" + action;
-                    var postTitle = 'Deleted!';
-                    break;
-                case 'status':
-                    var actionTitle = 'Change Status?';
-                    var actionText = 'Are you sure to change status?';
-                    var actionConfirmButtonColor = '#3085d6';
-                    var actionConfirmButtonText = 'Yes, change it!';
-                    var actionUrl = siteLink + "/" + action;
-                    var postTitle = 'Changed!';
-                    break;
-                case 'trending':
-                    var actionTitle = 'Make trending?';
-                    var actionText = 'Are you sure to make trending this item?';
-                    var actionConfirmButtonColor = '#3085d6';
-                    var actionConfirmButtonText = 'Yes, make it!';
-                    var actionUrl = siteLink + "/" + action;
-                    var postTitle = 'Made!'
-                    break;
-                default:
-                    alert('Bad method')
-            }
-            Swal.fire({
-                icon: 'question',
-                title: actionTitle,
-                text: actionText,
-                showCancelButton: true,
-                confirmButtonColor: actionConfirmButtonColor,
-                cancelButtonColor: '#d33',
-                confirmButtonText: actionConfirmButtonText
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        headers: {
-                            'X-CSRF-TOKEN': jQuery('meta[name="csrf-token"]').attr('content')
-                        },
-                        url: actionUrl,
-                        type: "GET",
-                        success: function (data) {
-                            if (data.status) {
-                                Swal.fire({
-                                    title: postTitle,
-                                    text: data.message,
-                                    icon: 'success'
-                                }).then(() => {
-                                    loadAjaxList();
-                                });
-                            } else {
-                                Swal.fire(
-                                    postTitle,
-                                    data.msg,
-                                    'error'
-                                )
-                            }
-                        }
-                    });
-                } else {
-                    Swal.fire(
-                        'Cancelled!',
-                        'Your data is safe.',
-                        'error'
-                    )
+            const cleanAction = String(action).replace(/^\/+/, '');
+            const segments = cleanAction.split('/').filter(Boolean);
+            const operation = segments[segments.length - 2];
+            const actions = {
+                delete: {
+                    title: 'Delete this item?',
+                    text: 'This action cannot be undone.',
+                    confirmButtonText: 'Yes, delete it',
+                    successTitle: 'Deleted',
+                    destructive: true
+                },
+                status: {
+                    title: 'Change this status?',
+                    text: 'The status will be updated.',
+                    confirmButtonText: 'Yes, change status',
+                    successTitle: 'Status updated'
+                },
+                trending: {
+                    title: 'Mark this item as trending?',
+                    text: 'This item will be marked as trending.',
+                    confirmButtonText: 'Yes, continue',
+                    successTitle: 'Updated'
                 }
+            };
+            const config = actions[operation];
+
+            if (!config) {
+                return Swal.fire({
+                    icon: 'error',
+                    title: 'Action unavailable',
+                    text: 'This action is not supported.'
+                });
+            }
+
+            return confirmAdminAction({
+                ...config,
+                url: new URL(cleanAction, '{{ url("/") }}/').toString(),
+                method: 'GET'
             });
         }
 
@@ -454,6 +473,7 @@
             $.ajax({
                 url: "{{ route('admin.notifications.list') }}",
                 type: "GET",
+                global: false,
                 success: function(response) {
                     if (response.status) {
                         updateNotificationUI(response);

@@ -355,37 +355,53 @@
 	});
 	
 	$('#updateLead').click(function () {
-		
-		if (!confirm('Are you sure you want to update this lead?')) {
-			return;
-		}
+		confirmAdminAction({
+			title: 'Save lead changes?',
+			text: 'The lead details will be updated.',
+			confirmButtonText: 'Save changes',
+			onConfirm: function () {
+				$.ajax({
+					url: '{{route("lead-managment.update")}}',
+					type: 'POST',
+					data: {
+						id: $('#lead_id').val(),
+						name: $('#name').val(),
+						phone: $('#phone').val(),
+						email: $('#email').val(),
+						message: $('#message').val(),
+						source_website: $('#source').val(),
+						status: $('#status').val(),
+						type: $('#type').val(),
+						assigned_to: $('#assigned').val() ? $('#assigned').val() : null,
+						follow_up_date: $('#followup').val(),
+						_token: '{{ csrf_token() }}'
+					}
+				}).done(function (res) {
+					if (!res.status) {
+						Swal.fire({
+							icon: 'error',
+							title: 'Could not update lead',
+							text: res.message || 'The server could not update this lead.'
+						});
+						return;
+					}
 
-		$.ajax({
-			url: '{{route("lead-managment.update")}}',
-			type: 'POST',
-			data: {
-				id: $('#lead_id').val(),
-				name: $('#name').val(),
-				phone: $('#phone').val(),
-				email: $('#email').val(),
-				message: $('#message').val(),
-				source_website: $('#source').val(),
-				status: $('#status').val(),
-				type: $('#type').val(),
-				assigned_to: $('#assigned').val() ? $('#assigned').val() : null,
-				follow_up_date: $('#followup').val(),
-				_token: '{{ csrf_token() }}'
-			},
-			success: function (res) {
-
-				$('#editLeadModal').modal('hide');
-
-				$('#leads-table').DataTable().ajax.reload();
-
-				alert('Lead updated successfully');
-			},
-			error: function () {
-				alert('Something went wrong');
+					$('#editLeadModal').modal('hide');
+					$('#leads-table').DataTable().ajax.reload(null, false);
+					Swal.fire({
+						icon: 'success',
+						title: 'Lead updated',
+						text: res.message || 'The lead was updated successfully.',
+						confirmButtonColor: '#5548d9',
+						customClass: { popup: 'admin-swal-popup' }
+					});
+				}).fail(function (xhr) {
+					Swal.fire({
+						icon: 'error',
+						title: 'Could not update lead',
+						text: xhr.responseJSON?.message || 'The server could not update this lead. Please try again.'
+					});
+				});
 			}
 		});
 	});
@@ -488,7 +504,13 @@
 		let phone = $('#add_phone').val().trim();
 		
 		if (!name || !phone) {
-			alert('Name and Phone are required.');
+			Swal.fire({
+				icon: 'warning',
+				title: 'Required details missing',
+				text: 'Enter both a name and phone number to continue.',
+				confirmButtonColor: '#5548d9',
+				customClass: { popup: 'admin-swal-popup' }
+			});
 			return;
 		}
 
@@ -511,20 +533,39 @@
 				if (res.status) {
 					$('#addLeadModal').modal('hide');
 					$('#addLeadForm')[0].reset();
-					$('#leads-table').DataTable().ajax.reload();
-					alert('Lead created successfully');
+					$('#leads-table').DataTable().ajax.reload(null, false);
+					Swal.fire({
+						icon: 'success',
+						title: 'Lead created',
+						text: res.message || 'The lead was created successfully.',
+						confirmButtonColor: '#5548d9',
+						customClass: { popup: 'admin-swal-popup' }
+					});
+				} else {
+					Swal.fire({
+						icon: 'error',
+						title: 'Could not create lead',
+						text: res.message || 'The server could not create this lead.'
+					});
 				}
 			},
 			error: function (xhr) {
-				let errors = xhr.responseJSON.errors;
+				let errors = xhr.responseJSON?.errors;
 				if (errors) {
-					let errorMsg = '';
-					for (let key in errors) {
-						errorMsg += errors[key][0] + '\n';
-					}
-					alert('Validation Error:\n' + errorMsg);
+					const errorMsg = Object.values(errors).flat().join(' ');
+					Swal.fire({
+						icon: 'warning',
+						title: 'Check the lead details',
+						text: errorMsg,
+						confirmButtonColor: '#5548d9',
+						customClass: { popup: 'admin-swal-popup' }
+					});
 				} else {
-					alert('Something went wrong');
+					Swal.fire({
+						icon: 'error',
+						title: 'Could not create lead',
+						text: xhr.responseJSON?.message || 'The server could not create this lead. Please try again.'
+					});
 				}
 			}
 		});

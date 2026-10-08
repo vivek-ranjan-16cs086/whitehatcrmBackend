@@ -87,20 +87,15 @@
     }
 
     function clearAllNotifications() {
-        if(confirm('Are you sure you want to clear all notifications?')) {
-            $.ajax({
-                url: `{{ route('admin.notifications.clearAll') }}`,
-                type: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                success: function(response) {
-                    if(response.status) {
-                        location.reload();
-                    }
-                }
-            });
-        }
+        confirmAdminAction({
+            url: `{{ route('admin.notifications.clearAll') }}`,
+            method: 'DELETE',
+            title: 'Clear all notifications?',
+            text: 'This will permanently remove all notifications.',
+            confirmButtonText: 'Yes, clear all',
+            successTitle: 'Notifications cleared',
+            destructive: true
+        });
     }
 </script>
 @endpush
