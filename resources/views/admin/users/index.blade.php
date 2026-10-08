@@ -340,6 +340,20 @@
 
     });
 
+    $(document).on('click', '.js-edit-user', function () {
+
+        const user = JSON.parse(this.dataset.user);
+
+        openUserModal(
+            user.id,
+            user.name,
+            user.username,
+            user.email,
+            user.role
+        );
+
+    });
+
 
     // =========================================================
     // OPEN USER MODAL

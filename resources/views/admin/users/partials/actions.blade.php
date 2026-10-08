@@ -1,7 +1,13 @@
 <button type="button"
-    class="btn btn-sm btn-outline-secondary me-1"
+    class="btn btn-sm btn-outline-secondary me-1 js-edit-user"
     title="Edit"
-    onclick="openUserModal('{{ $user->id }}', '{{ addslashes($user->name) }}', '{{ $user->email }}', '{{ $user->roles->first()?->name }}')">
+    data-user="{{ json_encode([
+        'id' => $user->id,
+        'name' => $user->name,
+        'username' => $user->username,
+        'email' => $user->email,
+        'role' => $user->roles->first()?->name,
+    ]) }}">
     <i class="bi bi-pencil-square"></i>
 </button>
 
@@ -13,4 +19,3 @@
         <i class="bi bi-trash3"></i>
     </button>
 @endif
-
