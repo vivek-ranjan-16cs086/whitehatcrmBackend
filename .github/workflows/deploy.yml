@@ -190,6 +190,7 @@ jobs:
             **/storage/framework/views/**
             **/storage/app/public/**
             **/storage/api-docs/**
+            **/storage/public
             **/public/storage
             **/public/storage/**
             **/public/assets/libraries/**
