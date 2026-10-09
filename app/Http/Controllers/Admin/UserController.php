@@ -84,7 +84,9 @@ class UserController extends Controller
 			]);
 		}
 
-		return view('admin.users.index');
+		$roles = Role::orderBy('name')->get();
+
+		return view('admin.users.index', compact('roles'));
 	}
 
 	public function create()

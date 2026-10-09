@@ -46,17 +46,8 @@
                             <th>Permission</th>
 
                             @foreach($roles as $role)
-                                @php
-                                    $roleColors = [
-                                        'admin'       => 'bg-primary',
-                                        'manager'     => 'bg-success',
-                                        'salesperson' => 'bg-warning text-dark',
-                                    ];
-                                    $badgeClass = $roleColors[$role->name] ?? 'bg-secondary';
-                                @endphp
-
                                 <th class="text-center">
-                                    <span class="badge {{ $badgeClass }}">
+                                    <span class="badge bg-secondary">
                                         {{ $role->name }}
                                     </span>
                                 </th>

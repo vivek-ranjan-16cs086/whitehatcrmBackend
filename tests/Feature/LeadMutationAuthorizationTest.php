@@ -22,7 +22,7 @@ class LeadMutationAuthorizationTest extends TestCase
         $this->actingAs($user, 'api')
             ->postJson('/api/v1/leads/update-lead-status/' . $lead->id, [
                 'status' => 'deactive',
-                'note' => null,
+                'note' => 'Updated by permitted role',
             ])
             ->assertForbidden();
 
@@ -40,9 +40,10 @@ class LeadMutationAuthorizationTest extends TestCase
         $this->actingAs($user, 'api')
             ->postJson('/api/v1/leads/update-lead-status/' . $lead->id, [
                 'status' => 'invalid-status',
-                'note' => null,
+                'note' => 'Invalid status test',
             ])
-            ->assertUnprocessable();
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('status');
 
         $this->assertDatabaseHas('leads', [
             'id' => $lead->id,
@@ -50,25 +51,19 @@ class LeadMutationAuthorizationTest extends TestCase
         ]);
     }
 
-    public function test_salesperson_with_edit_permission_cannot_change_an_unassigned_lead(): void
+    public function test_custom_role_with_edit_permission_can_view_an_unassigned_lead(): void
     {
-        $user = $this->userWithPermissions('salesperson', ['edit.lead']);
+        $user = $this->userWithPermissions('regional-manager', ['view.lead', 'edit.lead']);
         $lead = Lead::create([
-            'name' => 'Another salesperson lead',
+            'name' => 'Another user lead',
             'status' => 'active',
             'assigned_to' => User::factory()->create()->id,
         ]);
 
         $this->actingAs($user, 'api')
-            ->postJson('/api/v1/leads/update-lead-status/' . $lead->id, [
-                'status' => 'deactive',
-            ])
-            ->assertNotFound();
-
-        $this->assertDatabaseHas('leads', [
-            'id' => $lead->id,
-            'status' => 'active',
-        ]);
+            ->getJson('/api/v1/leads/' . $lead->id)
+            ->assertOk()
+            ->assertJsonPath('status', true);
     }
 
     public function test_user_without_edit_permission_cannot_shuffle_leads(): void

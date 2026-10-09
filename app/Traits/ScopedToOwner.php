@@ -9,7 +9,11 @@ trait ScopedToOwner
     protected static function bootScopedToOwner(): void
     {
         static::addGlobalScope('owner', function (Builder $builder) {
-            if (auth()->check() && auth()->user()->hasRole('salesperson')) {
+            $user = auth()->user();
+            $model = $builder->getModel();
+            $permission = 'edit.' . strtolower(class_basename($model));
+
+            if ($user && !$user->hasCrmPermission($permission)) {
                 $builder->where('assigned_to', auth()->id());
             }
         });

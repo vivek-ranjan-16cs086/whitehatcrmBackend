@@ -16,8 +16,8 @@ class RolesAndPermissionsSeeder extends Seeder
         // Clear permission cache
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Create roles
-        $roles = ['super-admin', 'admin', 'manager', 'salesperson'];
+        // The super-admin role is reserved; other roles are configured in the admin panel.
+        $roles = ['super-admin'];
         foreach ($roles as $roleName) {
             Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
         }

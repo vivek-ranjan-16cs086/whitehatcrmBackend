@@ -86,5 +86,17 @@ class User extends Authenticatable implements JWTSubject
 	{
 		return $this->roles->first()?->name;
 	}
+
+	public function hasCrmPermission(string $permission): bool
+	{
+		if ($this->hasRole('super-admin', 'web')) {
+			return true;
+		}
+
+		return $this->getAllPermissions()->contains(
+			fn ($grantedPermission) => $grantedPermission->name === $permission
+				&& $grantedPermission->guard_name === 'web'
+		);
+	}
 	
 }

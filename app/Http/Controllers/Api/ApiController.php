@@ -32,45 +32,24 @@ class ApiController extends BaseController
         try {
             $user = auth('api')->user();
 
-            $role = $user->getRoleNames()->first();
+            $menus = [$user->hasCrmPermission('edit.lead') ? 'Home' : 'Dashboard'];
 
-            // Role based menus mapping
-            $roleMenus = [
+            if ($user->hasRole('super-admin')) {
+                $menus[] = 'User Management';
+            }
 
-                'super-admin' => [
-                    'Home',
-                    'User Management',
-                    'Follow-ups',
-                    'Leads Management',
-                    'Project Management',
-                    'Target',
-                    'Privacy Policy',
-                    'Logout'
-                ],
-                
-                'admin' => [
-                    'Home',
-                    'User Management',
-                    'Follow-ups',
-                    'Leads Management',
-                    'Project Management',
-                    'Target',
-                    'Privacy Policy',
-                    'Logout'
-                ],
+            if ($user->hasCrmPermission('view.lead')) {
+                $menus[] = 'Follow-ups';
+                $menus[] = 'Leads Management';
+                $menus[] = 'Target';
+            }
 
-                'salesperson' => [
-                    'Dashboard',
-                    'Follow-ups',
-                    'Leads Management',
-                    'Target',
-                    'Privacy Policy',
-                    'Logout'
-                ],
-            ];
+            if ($user->hasCrmPermission('edit.lead')) {
+                $menus[] = 'Project Management';
+            }
 
-            // fallback if role not matched
-            $menus = $roleMenus[$role] ?? [];
+            $menus[] = 'Privacy Policy';
+            $menus[] = 'Logout';
 
             return $this->sendResponse(
                 
@@ -268,7 +247,7 @@ class ApiController extends BaseController
             }
 
             // Prevent Super Admin from deleting themselves
-            if ($user->hasRole('Super Admin') && $user->id === auth('api')->id()) {
+            if ($user->hasRole('super-admin') && $user->id === auth('api')->id()) {
                 return $this->sendError('Cannot delete your own Super Admin account', null, 403);
             }
 

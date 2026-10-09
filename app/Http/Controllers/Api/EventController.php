@@ -48,18 +48,8 @@ class EventController extends Controller
 	public function getComments($leadId)
 	{
 		$user = auth()->user();
-
-		$query = LeadTimelineEvent::where('lead_id', $leadId);
-
-		// Role based access
-		if ($user->hasRole('salesperson')) {
-			$query->where(function ($q) use ($user) {
-				$q->where('user_id', $user->id)
-				  ->orWhereIn('user_role', ['admin', 'super-admin']);
-			});
-		}
-
-		$events = $query->latest()->get();
+		$this->ensureLeadAccessible($leadId, $user);
+		$events = LeadTimelineEvent::where('lead_id', $leadId)->latest()->get();
 
 		return response()->json([
 			'status' => true,
@@ -70,18 +60,8 @@ class EventController extends Controller
 	public function getTimeline($leadId)
 	{
 		$user = auth()->user();
-
-		$query = LeadTimelineEvent::where('lead_id', $leadId);
-
-		if ($user->hasRole('salesperson')) {
-			$query->where(function ($q) use ($user) {
-				
-				$q->where('user_id', $user->id)
-				  ->orWhereIn('user_role', ['admin', 'super-admin']);
-			});
-		}
-
-		$events = $query->latest()->get();
+		$this->ensureLeadAccessible($leadId, $user);
+		$events = LeadTimelineEvent::where('lead_id', $leadId)->latest()->get();
 
 		return response()->json([
 			'data' => $events->map(fn($event) => $this->timelineTransform($event))
@@ -149,6 +129,7 @@ class EventController extends Controller
     // get follow up
     public function getFollowUps1($leadId)
 	{
+		$this->ensureLeadAccessible($leadId, auth()->user());
 		$event = LeadTimelineEvent::where('lead_id', $leadId)
 			->where('event_type', 'FOLLOW_UP')
 			->latest()
@@ -172,6 +153,7 @@ class EventController extends Controller
 	
 	public function getFollowUps($leadId)
 	{
+		$this->ensureLeadAccessible($leadId, auth()->user());
 		$event = LeadTimelineEvent::where('lead_id', $leadId)
 			->where('event_type', 'FOLLOW_UP')
 			->latest()
@@ -207,9 +189,10 @@ class EventController extends Controller
 	public function getCalls($leadId)
 	{
 		$user = auth()->user();
+		$this->ensureLeadAccessible($leadId, $user);
 		$events = LeadTimelineEvent::where('lead_id', $leadId)
 			->where('event_type', 'CALL')
-			->when($user->hasRole('salesperson'), function ($query) use ($user) {
+			->when(!$user->hasCrmPermission('edit.lead'), function ($query) use ($user) {
 				$query->where('user_id', $user->id); 
 			})
 			->latest()
@@ -245,6 +228,17 @@ class EventController extends Controller
 			'success' => true,
 			'data'    => $data
 		]);
+	}
+
+	private function ensureLeadAccessible($leadId, User $user): void
+	{
+		$query = Lead::whereKey($leadId);
+
+		if (!$user->hasCrmPermission('edit.lead')) {
+			$query->where('assigned_to', $user->id);
+		}
+
+		abort_unless($query->exists(), 404);
 	}
 		
 	public function addCall(Request $request, $leadId)

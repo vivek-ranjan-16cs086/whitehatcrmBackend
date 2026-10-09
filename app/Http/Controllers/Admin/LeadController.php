@@ -256,7 +256,7 @@ class LeadController extends Controller
 
             $user = $request->user();
             if (
-                $user->hasRole('salesperson', 'web') &&
+                !$user->hasCrmPermission('edit.lead') &&
                 (string) $lead->assigned_to !== (string) $user->id
             ) {
                 return response()->json([
@@ -301,7 +301,7 @@ class LeadController extends Controller
             }
 
            //admin notification
-            if ($user->hasRole('salesperson', 'web') && $oldStatus !== $lead->status) {
+            if (!$user->hasCrmPermission('edit.lead') && $oldStatus !== $lead->status) {
 				try {
 					$notificationService->sendLeadStatusUpdateNotification($lead, $oldStatus);
 				} catch (\Exception $e) {

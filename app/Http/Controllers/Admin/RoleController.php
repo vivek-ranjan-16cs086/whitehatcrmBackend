@@ -62,6 +62,12 @@ class RoleController extends Controller
             'permissions' => 'nullable|array',
         ]);
 
+        if ($role->name === 'super-admin' && $request->name !== 'super-admin') {
+            return back()
+                ->withErrors(['name' => 'The reserved system role cannot be renamed.'])
+                ->withInput();
+        }
+
         $role->update(['name' => $request->name]);
         $role->syncPermissions($request->permissions ?? []);
 
@@ -71,7 +77,7 @@ class RoleController extends Controller
 
     public function destroy(Role $role)
 	{
-		if (in_array($role->name, ['super-admin', 'admin'])) {
+		if ($role->name === 'super-admin') {
 			return response()->json([
 				'status' => false,
 				'message' => "Cannot delete the '{$role->name}' role."

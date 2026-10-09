@@ -56,9 +56,9 @@ class ApiLeadAuthorizationTest extends TestCase
             ->assertJsonPath('status', true);
     }
 
-    public function test_salesperson_cannot_fetch_another_users_lead_by_id(): void
+    public function test_renamed_view_only_role_cannot_fetch_another_users_lead_by_id(): void
     {
-        $user = $this->userWithLeadViewPermission('salesperson');
+        $user = $this->userWithLeadViewPermission('business-associate');
         $lead = Lead::create([
             'name' => 'Private lead',
             'assigned_to' => User::factory()->create()->id,

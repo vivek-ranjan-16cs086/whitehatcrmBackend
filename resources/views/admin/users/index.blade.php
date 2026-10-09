@@ -253,21 +253,11 @@
                                 — Select a role —
                             </option>
 
-                            <option value="super-admin">
-                                Super Admin
-                            </option>
-
-                            <option value="admin">
-                                Admin
-                            </option>
-
-                            <option value="manager">
-                                Manager
-                            </option>
-
-                            <option value="salesperson">
-                                Salesperson
-                            </option>
+                            @foreach($roles as $role)
+                                <option value="{{ $role->name }}">
+                                    {{ $role->name }}
+                                </option>
+                            @endforeach
 
                         </select>
 

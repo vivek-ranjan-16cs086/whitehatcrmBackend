@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Target;
 use App\Models\User;
-use Spatie\Permission\Models\Role;
 use App\Models\Project;
 use Illuminate\Http\Request;
 
@@ -16,7 +15,10 @@ class TargetController extends Controller
      */
     public function index() 
     {
-        $users = Role::where('name', 'salesperson')->first()->users;
+        $users = User::whereHas('roles.permissions', function ($query) {
+            $query->where('name', 'view.lead')
+                ->where('guard_name', 'web');
+        })->orderBy('name')->get();
         $projects = Project::all();
 
         return view('admin.targets.index', compact('users', 'projects'));

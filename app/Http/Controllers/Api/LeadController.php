@@ -12,7 +12,6 @@ use App\Models\Target;
 use App\Models\LeadTimelineEvent;
 use App\Models\User;
 use App\Models\SubResponse;
-use Spatie\Permission\Models\Role;
 use Carbon\Carbon;
 use App\Services\LeadService;
 use App\Http\Resources\LeadResource;
@@ -59,7 +58,7 @@ class LeadController extends BaseController
               $query->where('status', $status);
             }
 			
-			if ($user && $user->hasRole('salesperson', 'web')) {
+			if ($user && !$user->hasCrmPermission('edit.lead')) {
 				$query->where('assigned_to', $user->id)
 					  ->where('status', '!=', 'deactive');
 			}
@@ -192,7 +191,7 @@ class LeadController extends BaseController
 		}
 	}
 	
-	//assign leads to the salesperson
+	//assign leads to a user
 	public function assignLead(Request $request, NotificationService $notificationService)
 	{
 		try {
@@ -275,7 +274,7 @@ class LeadController extends BaseController
 				}
 
 				if (
-					$user->hasRole('salesperson', 'web') &&
+					!$user->hasCrmPermission('edit.lead') &&
 					(string) $lead->assigned_to !== (string) $user->id
 				) {
 					return response()->json([
@@ -618,8 +617,8 @@ class LeadController extends BaseController
 				$q->latest()->take(2);
 			}])->whereKey($id);
 
-			// for salesperson
-			if ($user->hasRole('salesperson', 'web')) {
+			// Restrict users without team-wide edit access to their assigned leads.
+			if (!$user->hasCrmPermission('edit.lead')) {
 				$leadQuery->where('assigned_to', $user->id);
 			}
 
@@ -720,7 +719,7 @@ class LeadController extends BaseController
 			$leads = Lead::whereIn('id', $leadIds)->get();
 
 			if (
-				$user->hasRole('salesperson', 'web') &&
+				!$user->hasCrmPermission('edit.lead') &&
 				$leads->contains(fn (Lead $lead) => (string) $lead->assigned_to !== (string) $user->id)
 			) {
 				return response()->json([
@@ -792,7 +791,7 @@ class LeadController extends BaseController
 	}
 	
 	
-	//admin and salesperson
+	//team and personal target views
 	public function weeklyVisitTarget(Request $request)
 	{
 		try {
@@ -805,8 +804,9 @@ class LeadController extends BaseController
 				->whereDate('start_day', '<=', $today)
 				->whereDate('end_day', '>=', $today);
 
-			//salesperson → only own
-			if ($user->hasRole('salesperson')) {
+			// Users without team-wide lead access see only their own targets.
+			$canViewTeam = $user->hasCrmPermission('edit.lead');
+			if (!$canViewTeam) {
 				$targetQuery->where('user_id', $user->id);
 			}
 
@@ -856,8 +856,8 @@ class LeadController extends BaseController
 				$totalDone += $completed;
 			}
 
-			//Super Admin response
-			if ($user->hasRole('super-admin')) {
+			// Team response
+			if ($canViewTeam) {
 
 				$overall = $totalTarget > 0
 					? round(($totalDone / $totalTarget) * 100, 2)
@@ -865,6 +865,7 @@ class LeadController extends BaseController
 
 				return response()->json([
 					'status' => true,
+					'scope' => 'team',
 					'role' => 'super-admin',
 					'summary' => [
 						'total_target' => $totalTarget,
@@ -875,9 +876,10 @@ class LeadController extends BaseController
 				]);
 			}
 
-			// Salesperson response
+			// Keep the legacy response discriminator while clients migrate to scope.
 			return response()->json([
 				'status' => true,
+				'scope' => 'self',
 				'role' => 'salesperson',
 				'data' => $data[0] ?? null
 			]);
@@ -892,7 +894,7 @@ class LeadController extends BaseController
 	}
 	
 	
-	//admin and sales person
+	//team and personal target views
 	public function weeklyBookingTarget(Request $request)
 	{
 		try {
@@ -904,7 +906,8 @@ class LeadController extends BaseController
 				->whereDate('start_day', '<=', $today)
 				->whereDate('end_day', '>=', $today);
 
-			if ($user->hasRole('salesperson')) {
+			$canViewTeam = $user->hasCrmPermission('edit.lead');
+			if (!$canViewTeam) {
 				$targetQuery->where('user_id', $user->id);
 			}
 
@@ -953,8 +956,8 @@ class LeadController extends BaseController
 				$totalDone += $done;
 			}
 
-			//Super Admin
-			if ($user->hasRole('super-admin')) {
+			// Team response
+			if ($canViewTeam) {
 
 				$overall = $totalTarget > 0
 					? round(($totalDone / $totalTarget) * 100, 2)
@@ -962,6 +965,7 @@ class LeadController extends BaseController
 
 				return response()->json([
 					'status' => true,
+					'scope' => 'team',
 					'role' => 'super-admin',
 					'summary' => [
 						'total_target' => $totalTarget,
@@ -972,9 +976,10 @@ class LeadController extends BaseController
 				]);
 			}
 
-			// Salesperson
+			// Keep the legacy response discriminator while clients migrate to scope.
 			return response()->json([
 				'status' => true,
+				'scope' => 'self',
 				'role' => 'salesperson',
 				'data' => $data[0] ?? null
 			]);
@@ -996,17 +1001,15 @@ class LeadController extends BaseController
 			$user_id = $request->user_id;
 			$authUser = auth()->user();
 
-			$role = Role::where('name', 'salesperson')->first();
+			$canViewTeam = $authUser->hasCrmPermission('edit.lead');
+			$users = $canViewTeam
+				? User::whereIn('id', Lead::whereNotNull('assigned_to')
+					->distinct()
+					->pluck('assigned_to'))
+					->get()
+				: collect([$authUser]);
 
-			if (!$role) {
-				return response()->json([
-					'status' => false,
-					'message' => 'Salesperson role not found'
-				]);
-			}
-
-			$users = $role->users;
-			 if ($user_id) {
+			if ($canViewTeam && $user_id) {
 				$users = $users->where('id', $user_id);
 			}
 
@@ -1064,7 +1067,7 @@ class LeadController extends BaseController
 			});
 
 			//SUPER ADMIN
-			if ($authUser->hasRole('super-admin')) {
+			if ($canViewTeam) {
 
 				$totalLeadsAll = collect($data)->sum('total_leads');
 				$totalConvertedAll = collect($data)->sum('converted');
@@ -1075,6 +1078,7 @@ class LeadController extends BaseController
 
 				return response()->json([
 					'status' => true,
+					'scope' => 'team',
 					'role' => 'super-admin',
 
 					
@@ -1089,22 +1093,12 @@ class LeadController extends BaseController
 				]);
 			}
 
-			//SALESPERSON
-			if ($authUser->hasRole('salesperson')) {
-
-				$myData = $data->firstWhere('user_id', $authUser->id);
-
-				return response()->json([
-					'status' => true,
-					'role' => 'salesperson',
-					'data' => $myData
-				]);
-			}
-
 			return response()->json([
-				'status' => false,
-				'message' => 'Unauthorized'
-			], 403);
+				'status' => true,
+				'scope' => 'self',
+				'role' => 'salesperson',
+				'data' => $data->firstWhere('user_id', $authUser->id)
+			]);
 
 		} catch (\Exception $e) {
 			return response()->json([
@@ -1124,7 +1118,7 @@ class LeadController extends BaseController
 			// query
 			$baseQuery = Lead::query();
 
-			if ($user->hasRole('salesperson')) {
+			if (!$user->hasCrmPermission('edit.lead')) {
 				$baseQuery->where('assigned_to', $user->id);
 			}
 
@@ -1245,17 +1239,13 @@ class LeadController extends BaseController
 			$user = auth()->user();
 			$today = Carbon::now();
 
-			// sales person
-			$role = Role::where('name', 'salesperson')->first();
-
-			if (!$role) {
-				return response()->json([
-					'status' => false,
-					'message' => 'Salesperson role not found'
-				]);
-			}
-
-			$users = $role->users;
+			$canViewTeam = $user->hasCrmPermission('edit.lead');
+			$users = $canViewTeam
+				? User::whereIn('id', Lead::whereNotNull('assigned_to')
+					->distinct()
+					->pluck('assigned_to'))
+					->get()
+				: collect([$user]);
 
 			$data = [];
 
@@ -1299,7 +1289,7 @@ class LeadController extends BaseController
 
 			$leadQuery = Lead::query();
 
-			if ($user->hasRole('salesperson')) {
+			if (!$canViewTeam) {
 				$leadQuery->where('assigned_to', $user->id);
 			}
 
@@ -1320,7 +1310,7 @@ class LeadController extends BaseController
 			
 			// target
 			$target = Target::where('status', 'active')
-				->when($user->hasRole('salesperson'), function ($q) use ($user) {
+				->when(!$canViewTeam, function ($q) use ($user) {
 					$q->where('user_id', $user->id);
 				})
 				->whereDate('start_day', '<=', $today)
@@ -1385,10 +1375,10 @@ class LeadController extends BaseController
 			->whereNotNull('assigned_to')
 			->where('status', 'follow_up');
 
-			if ($user->hasRole('salesperson', 'web')) {
+			if (!$user->hasCrmPermission('edit.lead')) {
 				$query->where('assigned_to', $user->id);
 			}
-			if ($user->hasRole('super-admin', 'web') && !empty($userId)) {
+			if ($user->hasCrmPermission('edit.lead') && !empty($userId)) {
 				$query->where('assigned_to', $userId);
 			}
 

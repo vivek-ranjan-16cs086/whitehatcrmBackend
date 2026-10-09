@@ -25,15 +25,7 @@
                 }
 
                 $isSuperAdmin = $role->name === 'super-admin';
-                $isAdmin      = $role->name === 'admin';
-
-                $shieldColors = [
-                    'super-admin' => 'text-danger',
-                    'admin'       => 'text-primary',
-                    'manager'     => 'text-success',
-                    'salesperson' => 'text-warning',
-                ];
-                $shieldColor = $shieldColors[$role->name] ?? 'text-secondary';
+                $shieldColor = $isSuperAdmin ? 'text-danger' : 'text-primary';
             @endphp
 
             <div class="col-md-6 col-xl-6">
@@ -57,13 +49,11 @@
                                     <i class="bi bi-pencil"></i>
                                 </a>
 
-                                @if(!$isAdmin)
-                                    <button type="button"
-                                        class="btn btn-sm btn-outline-danger"
-                                        onclick="myConfirm('admin/roles/delete/{{ $role->id }}')">
-                                        <i class="bi bi-trash3"></i>
-                                    </button>
-                                @endif
+                                <button type="button"
+                                    class="btn btn-sm btn-outline-danger"
+                                    onclick="myConfirm('admin/roles/delete/{{ $role->id }}')">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
                             @endif
                         </div>
                     </div>

@@ -5,12 +5,11 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 class SyncPermissions extends Command
 {
     protected $signature   = 'permission:sync {model? : Optional model name to sync (e.g. Lead)}';
-    protected $description = 'Sync model permissions to the database and assign them to roles per config/crm_permissions.php';
+    protected $description = 'Sync model permissions to the database';
 
     public function handle(): int
     {
@@ -21,10 +20,6 @@ class SyncPermissions extends Command
             $this->error('No eligible models found.');
             return self::FAILURE;
         }
-
-        $config          = config('crm_permissions');
-        $roleActions     = $config['default_role_actions'] ?? [];
-        $modelOverrides  = $config['model_overrides'] ?? [];
 
         $rows = [];
 
@@ -38,30 +33,6 @@ class SyncPermissions extends Command
                     ['name' => $permName, 'guard_name' => 'web']
                 );
                 $createdPerms[] = $perm->name;
-            }
-
-            // Assign to roles (skip super-admin)
-            foreach ($roleActions as $roleName => $actions) {
-                if ($roleName === 'super-admin') {
-                    continue;
-                }
-
-                $role = Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
-
-                // Check for per-model override
-                $effectiveActions = $modelOverrides[$shortName][$roleName] ?? $actions;
-
-                $toAssign = array_filter(
-                    $createdPerms,
-                    function ($perm) use ($effectiveActions) {
-                        $action = explode('.', $perm)[0];
-                        return in_array($action, $effectiveActions);
-                    }
-                );
-
-                foreach ($toAssign as $perm) {
-                    $role->givePermissionTo($perm);
-                }
             }
 
             $rows[] = [

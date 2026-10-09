@@ -50,4 +50,37 @@ class AdminAuthenticationTest extends TestCase
             ->assertOk()
             ->assertSee('action="' . route('admin.maintenance.update') . '"', false);
     }
+
+    public function test_super_admin_can_open_target_page_without_salesperson_role(): void
+    {
+        $role = Role::create([
+            'name' => 'super-admin',
+            'guard_name' => 'web',
+        ]);
+        $user = User::factory()->create();
+        $user->assignRole($role);
+
+        $this->actingAs($user)
+            ->get('/targets/')
+            ->assertOk();
+    }
+
+    public function test_user_form_lists_configured_roles_dynamically(): void
+    {
+        $superAdminRole = Role::create([
+            'name' => 'super-admin',
+            'guard_name' => 'web',
+        ]);
+        Role::create([
+            'name' => 'property-consultant',
+            'guard_name' => 'web',
+        ]);
+        $user = User::factory()->create();
+        $user->assignRole($superAdminRole);
+
+        $this->actingAs($user)
+            ->get('/admin/users')
+            ->assertOk()
+            ->assertSee('value="property-consultant"', false);
+    }
 }
