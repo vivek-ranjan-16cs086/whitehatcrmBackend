@@ -6,7 +6,7 @@
 
 @section('content')
 
-<form action="{{ route('maintenance.update') }}" method="POST">
+<form action="{{ route('admin.maintenance.update') }}" method="POST">
 
     @csrf
 

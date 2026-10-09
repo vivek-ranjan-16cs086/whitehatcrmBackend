@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class AdminAuthenticationTest extends TestCase
@@ -32,5 +34,20 @@ class AdminAuthenticationTest extends TestCase
             'maintenance_mode' => true,
             'maintenance_message' => 'Maintenance',
         ])->assertRedirect(route('login'));
+    }
+
+    public function test_super_admin_can_open_settings_page(): void
+    {
+        $role = Role::create([
+            'name' => 'super-admin',
+            'guard_name' => 'web',
+        ]);
+        $user = User::factory()->create();
+        $user->assignRole($role);
+
+        $this->actingAs($user)
+            ->get('/admin/settings')
+            ->assertOk()
+            ->assertSee('action="' . route('admin.maintenance.update') . '"', false);
     }
 }
