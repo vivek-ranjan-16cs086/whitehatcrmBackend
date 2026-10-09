@@ -37,27 +37,38 @@ class LeadController extends Controller
         $columnSortOrder = $request->order[0]['dir'] ?? 'desc';
 
         $sortableColumns = [
-            'name',
-            'phone',
-            'email',
-            'message',
-            'source_website',
-            'status',
-			'type',
-            'follow_up_date',
-            'created_at',
+            'name' => 'name',
+            'phone' => 'phone',
+            'email' => 'email',
+            'message' => 'message',
+            'source_website' => 'source_website',
+            'status' => 'status',
+            'type' => 'type',
+            'assigned_to' => 'assigned_to',
+            'follow_up_date' => 'follow_up_date',
+            'created_at' => 'created_at',
         ];
 
-        if (!in_array($columnName, $sortableColumns)) {
-            $columnName = 'created_at';
-        }
+        $columnName = $sortableColumns[$columnName] ?? 'created_at';
+        $columnSortOrder = in_array($columnSortOrder, ['asc', 'desc'], true)
+            ? $columnSortOrder
+            : 'desc';
 
         $query = $this->leadService->getLeads($request)->with('assignedUser');
 
         $totalRecords = Lead::count();
         $totalRecordswithFilter = (clone $query)->count();
 
-        $records = $query->orderBy('created_at', 'desc')
+        if ($columnName === 'assigned_to') {
+            $query->orderBy(
+                User::select('name')->whereColumn('users.id', 'leads.assigned_to'),
+                $columnSortOrder
+            );
+        } else {
+            $query->orderBy($columnName, $columnSortOrder);
+        }
+
+        $records = $query
             ->skip($start)
             ->take($length)
             ->get();

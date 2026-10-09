@@ -355,13 +355,21 @@
             if (destination.origin === window.location.origin
                 && (destination.pathname !== window.location.pathname
                     || destination.search !== window.location.search)) {
-                showAdminPreloader('Loading page...');
+                window.setTimeout(() => {
+                    if (!event.defaultPrevented) {
+                        showAdminPreloader('Loading page...');
+                    }
+                }, 0);
             }
         });
 
         document.addEventListener('submit', function (event) {
-            if (event.target.matches('form') && !event.defaultPrevented) {
-                showAdminPreloader('Saving changes...');
+            if (event.target.matches('form')) {
+                window.setTimeout(() => {
+                    if (!event.defaultPrevented) {
+                        showAdminPreloader('Saving changes...');
+                    }
+                }, 0);
             }
         }, true);
 

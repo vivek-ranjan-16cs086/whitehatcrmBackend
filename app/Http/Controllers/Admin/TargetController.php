@@ -36,21 +36,22 @@ class TargetController extends Controller
         $columnSortOrder = $request->order[0]['dir'] ?? 'desc';
 
         $sortableColumns = [
-            'user',
-            'project',
-            'booking_set',
-            'booking_done',
-            'site_visited',
-            'site_visited_done',
-            'start_day',
-            'end_day',
-            'status',
-            'created_at',
+            'user' => 'user',
+            'project' => 'project',
+            'booking_set' => 'booking_set',
+            'booking_done' => 'booking_done',
+            'site_visited' => 'site_visited',
+            'site_visited_done' => 'site_visited_done',
+            'start_day' => 'start_day',
+            'end_day' => 'end_day',
+            'status' => 'status',
+            'created_at' => 'created_at',
         ];
 
-        if (!in_array($columnName, $sortableColumns)) {
-            $columnName = 'created_at';
-        }
+        $columnName = $sortableColumns[$columnName] ?? 'created_at';
+        $columnSortOrder = in_array($columnSortOrder, ['asc', 'desc'], true)
+            ? $columnSortOrder
+            : 'desc';
 
         $query = Target::with(['user', 'project']);
 
@@ -110,7 +111,21 @@ class TargetController extends Controller
         $totalRecords = Target::count();
         $totalRecordswithFilter = (clone $query)->count();
 
-        $records = $query->orderBy('created_at', $columnSortOrder)
+        if ($columnName === 'user') {
+            $query->orderBy(
+                User::select('name')->whereColumn('users.id', 'targets.user_id'),
+                $columnSortOrder
+            );
+        } elseif ($columnName === 'project') {
+            $query->orderBy(
+                Project::select('name')->whereColumn('projects.id', 'targets.project_id'),
+                $columnSortOrder
+            );
+        } else {
+            $query->orderBy($columnName, $columnSortOrder);
+        }
+
+        $records = $query
             ->skip($start)
             ->take($length)
             ->get();

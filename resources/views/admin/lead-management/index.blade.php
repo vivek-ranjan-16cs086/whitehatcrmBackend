@@ -229,7 +229,6 @@
 				}
 			},
 
-			// created_at is now column index 9
 			order: [[9, 'desc']],
 
 			columns: [

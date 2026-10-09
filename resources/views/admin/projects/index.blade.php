@@ -165,9 +165,9 @@ function loadAjaxList() {
                 }
             },
 
-            { data: 'email', orderable: false },
+            { data: 'email', orderable: true },
 
-            { data: 'phone', orderable: false },
+            { data: 'phone', orderable: true },
 
             {
                 data: 'address',
@@ -176,7 +176,7 @@ function loadAjaxList() {
                 }
             },
 
-            { data: 'enable', orderable: false, searchable: false },
+            { data: 'enable', orderable: true, searchable: false },
 
             { data: 'created_at', orderable: true },
 

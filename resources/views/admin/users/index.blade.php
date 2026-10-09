@@ -978,7 +978,7 @@
 
                 {
                     data: 'email',
-                    orderable: false
+                    orderable: true
                 },
 
 
@@ -1027,7 +1027,7 @@
 
             lengthMenu: [10, 15, 25, 50],
 
-            order: [[0, 'desc']],
+            order: [[4, 'desc']],
 
 
             dom: 'Bfrtip',

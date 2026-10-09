@@ -30,6 +30,9 @@ class UserController extends Controller
 
 			$columnIndex = $request->order[0]['column'] ?? 0;
 			$columnSortOrder = $request->order[0]['dir'] ?? 'desc';
+			$columnSortOrder = in_array($columnSortOrder, ['asc', 'desc'], true)
+				? $columnSortOrder
+				: 'desc';
 
 			//  SERVICE CALL
 			$query = $this->userService->getUsers($request);
@@ -40,10 +43,10 @@ class UserController extends Controller
 			// COLUMN MAP
 			$columns = ['id', 'name', 'email', 'role', 'created_at'];
 
-			if (isset($columns[$columnIndex]) && in_array($columns[$columnIndex], ['id','name','email','created_at'])) {
-				$query->orderBy($columns[$columnIndex], $columnSortOrder);
+			if (isset($columns[$columnIndex]) && in_array($columns[$columnIndex], ['id', 'name', 'email', 'created_at'], true)) {
+				$query->reorder()->orderBy($columns[$columnIndex], $columnSortOrder);
 			} else {
-				$query->latest();
+				$query->reorder()->latest();
 			}
 
 			// PAGINATION
