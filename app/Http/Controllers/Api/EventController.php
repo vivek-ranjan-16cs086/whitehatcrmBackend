@@ -16,11 +16,12 @@ class EventController extends Controller
 	//add new comment
 	public function addComment(Request $request, $leadId)
 	{
+		$user = auth()->user();
+		$this->ensureLeadAccessible($leadId, $user);
+
 		$request->validate([
 			'message' => 'required|string'
 		]);
-
-		$user = auth()->user();
 
 		$event = LeadTimelineEvent::create([
 			'lead_id' => $leadId,
@@ -192,7 +193,7 @@ class EventController extends Controller
 		$this->ensureLeadAccessible($leadId, $user);
 		$events = LeadTimelineEvent::where('lead_id', $leadId)
 			->where('event_type', 'CALL')
-			->when(!$user->hasCrmPermission('edit.lead'), function ($query) use ($user) {
+			->when(!$user->canViewAllLeads(), function ($query) use ($user) {
 				$query->where('user_id', $user->id); 
 			})
 			->latest()
@@ -234,7 +235,7 @@ class EventController extends Controller
 	{
 		$query = Lead::whereKey($leadId);
 
-		if (!$user->hasCrmPermission('edit.lead')) {
+		if (!$user->canViewAllLeads()) {
 			$query->where('assigned_to', $user->id);
 		}
 
@@ -243,14 +244,15 @@ class EventController extends Controller
 		
 	public function addCall(Request $request, $leadId)
 	{
+		$user = auth()->user();
+		$this->ensureLeadAccessible($leadId, $user);
+
 		$request->validate([
 			'call_outcome' => 'required|string',
 			'note' => 'nullable|string',
 			
 			
 		]);
-
-		$user = auth()->user();
 
 		// file upload
 		$recordingPath = null;

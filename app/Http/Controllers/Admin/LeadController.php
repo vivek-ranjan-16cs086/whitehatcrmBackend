@@ -256,7 +256,7 @@ class LeadController extends Controller
 
             $user = $request->user();
             if (
-                !$user->hasCrmPermission('edit.lead') &&
+                !$user->canViewAllLeads() &&
                 (string) $lead->assigned_to !== (string) $user->id
             ) {
                 return response()->json([

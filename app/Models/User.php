@@ -98,5 +98,10 @@ class User extends Authenticatable implements JWTSubject
 				&& $grantedPermission->guard_name === 'web'
 		);
 	}
+
+	public function canViewAllLeads(): bool
+	{
+		return $this->hasCrmPermission('view_team.lead');
+	}
 	
 }

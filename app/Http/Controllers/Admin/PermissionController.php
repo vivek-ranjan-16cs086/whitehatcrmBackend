@@ -16,6 +16,11 @@ class PermissionController extends Controller
 
     public function index()
     {
+        Permission::firstOrCreate([
+            'name' => 'view_team.lead',
+            'guard_name' => 'web',
+        ]);
+
         $permissions = Permission::orderBy('name')->get();
         $roles       = Role::where('name', '!=', 'super-admin')->orderBy('name')->get();
 

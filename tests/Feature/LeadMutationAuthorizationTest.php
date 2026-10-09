@@ -35,7 +35,11 @@ class LeadMutationAuthorizationTest extends TestCase
     public function test_user_with_edit_permission_passes_authorization_before_validation(): void
     {
         $user = $this->userWithPermissions('lead-editor', ['edit.lead']);
-        $lead = Lead::create(['name' => 'Editable lead', 'status' => 'active']);
+        $lead = Lead::create([
+            'name' => 'Editable lead',
+            'status' => 'active',
+            'assigned_to' => $user->id,
+        ]);
 
         $this->actingAs($user, 'api')
             ->postJson('/api/v1/leads/update-lead-status/' . $lead->id, [
@@ -51,7 +55,7 @@ class LeadMutationAuthorizationTest extends TestCase
         ]);
     }
 
-    public function test_custom_role_with_edit_permission_can_view_an_unassigned_lead(): void
+    public function test_custom_role_with_edit_permission_cannot_view_an_unassigned_lead(): void
     {
         $user = $this->userWithPermissions('regional-manager', ['view.lead', 'edit.lead']);
         $lead = Lead::create([
@@ -62,8 +66,7 @@ class LeadMutationAuthorizationTest extends TestCase
 
         $this->actingAs($user, 'api')
             ->getJson('/api/v1/leads/' . $lead->id)
-            ->assertOk()
-            ->assertJsonPath('status', true);
+            ->assertNotFound();
     }
 
     public function test_user_without_edit_permission_cannot_shuffle_leads(): void

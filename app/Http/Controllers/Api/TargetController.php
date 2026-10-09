@@ -26,11 +26,16 @@ class TargetController extends BaseController
 	//get target 
 	public function getTargets(Request $request)
     {
+		$user = $request->user('api');
 		
         $query = Target::with([
             'user:id,name',
             'project:id,name'
         ]);
+
+		if (!$user->canViewAllLeads()) {
+			$query->where('user_id', $user->id);
+		}
     
         if ($request->filled('start_day')) {
             $query->whereDate('start_day', '>=', $request->start_day);
@@ -40,7 +45,7 @@ class TargetController extends BaseController
             $query->whereDate('end_day', '<=', $request->end_day);
         }
 		
-		if ($request->filled('user_id')) {
+		if ($user->canViewAllLeads() && $request->filled('user_id')) {
 			$query->where('user_id', (int) $request->user_id);
 		}
     
@@ -126,13 +131,20 @@ class TargetController extends BaseController
 	// SHOW SINGLE TARGET
     public function show($id)
     {
-        $target = Target::with(['user:id,name', 'project:id,name'])->find($id);
+		$user = auth('api')->user();
+        $query = Target::with(['user:id,name', 'project:id,name']);
+
+		if (!$user->canViewAllLeads()) {
+			$query->where('user_id', $user->id);
+		}
+
+		$target = $query->find($id);
 
         if (!$target) {
             return response()->json([
                 'status' => false,
                 'message' => 'Target not found'
-            ]);
+            ], 404);
         }
 
         return response()->json([
@@ -144,16 +156,28 @@ class TargetController extends BaseController
 	// UPDATE TARGET
     public function update(Request $request, $id)
     {
-        $target = Target::find($id);
+		$user = auth('api')->user();
+		$query = Target::query();
+
+		if (!$user->canViewAllLeads()) {
+			$query->where('user_id', $user->id);
+		}
+
+        $target = $query->find($id);
 
         if (!$target) {
             return response()->json([
                 'status' => false,
                 'message' => 'Target not found'
-            ]);
+            ], 404);
         }
 
-        $target->update($request->all());
+		$updates = $request->all();
+		if (!$user->canViewAllLeads()) {
+			unset($updates['user_id']);
+		}
+
+        $target->update($updates);
 
         return response()->json([
             'status' => true,

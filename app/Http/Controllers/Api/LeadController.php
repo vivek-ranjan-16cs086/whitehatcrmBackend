@@ -58,7 +58,7 @@ class LeadController extends BaseController
               $query->where('status', $status);
             }
 			
-			if ($user && !$user->hasCrmPermission('edit.lead')) {
+			if ($user && !$user->canViewAllLeads()) {
 				$query->where('assigned_to', $user->id)
 					  ->where('status', '!=', 'deactive');
 			}
@@ -274,7 +274,7 @@ class LeadController extends BaseController
 				}
 
 				if (
-					!$user->hasCrmPermission('edit.lead') &&
+					!$user->canViewAllLeads() &&
 					(string) $lead->assigned_to !== (string) $user->id
 				) {
 					return response()->json([
@@ -618,7 +618,7 @@ class LeadController extends BaseController
 			}])->whereKey($id);
 
 			// Restrict users without team-wide edit access to their assigned leads.
-			if (!$user->hasCrmPermission('edit.lead')) {
+			if (!$user->canViewAllLeads()) {
 				$leadQuery->where('assigned_to', $user->id);
 			}
 
@@ -719,7 +719,7 @@ class LeadController extends BaseController
 			$leads = Lead::whereIn('id', $leadIds)->get();
 
 			if (
-				!$user->hasCrmPermission('edit.lead') &&
+				!$user->canViewAllLeads() &&
 				$leads->contains(fn (Lead $lead) => (string) $lead->assigned_to !== (string) $user->id)
 			) {
 				return response()->json([
@@ -805,7 +805,7 @@ class LeadController extends BaseController
 				->whereDate('end_day', '>=', $today);
 
 			// Users without team-wide lead access see only their own targets.
-			$canViewTeam = $user->hasCrmPermission('edit.lead');
+			$canViewTeam = $user->canViewAllLeads();
 			if (!$canViewTeam) {
 				$targetQuery->where('user_id', $user->id);
 			}
@@ -906,7 +906,7 @@ class LeadController extends BaseController
 				->whereDate('start_day', '<=', $today)
 				->whereDate('end_day', '>=', $today);
 
-			$canViewTeam = $user->hasCrmPermission('edit.lead');
+			$canViewTeam = $user->canViewAllLeads();
 			if (!$canViewTeam) {
 				$targetQuery->where('user_id', $user->id);
 			}
@@ -1001,7 +1001,7 @@ class LeadController extends BaseController
 			$user_id = $request->user_id;
 			$authUser = auth()->user();
 
-			$canViewTeam = $authUser->hasCrmPermission('edit.lead');
+			$canViewTeam = $authUser->canViewAllLeads();
 			$users = $canViewTeam
 				? User::whereIn('id', Lead::whereNotNull('assigned_to')
 					->distinct()
@@ -1118,7 +1118,7 @@ class LeadController extends BaseController
 			// query
 			$baseQuery = Lead::query();
 
-			if (!$user->hasCrmPermission('edit.lead')) {
+			if (!$user->canViewAllLeads()) {
 				$baseQuery->where('assigned_to', $user->id);
 			}
 
@@ -1239,7 +1239,7 @@ class LeadController extends BaseController
 			$user = auth()->user();
 			$today = Carbon::now();
 
-			$canViewTeam = $user->hasCrmPermission('edit.lead');
+			$canViewTeam = $user->canViewAllLeads();
 			$users = $canViewTeam
 				? User::whereIn('id', Lead::whereNotNull('assigned_to')
 					->distinct()
@@ -1375,10 +1375,10 @@ class LeadController extends BaseController
 			->whereNotNull('assigned_to')
 			->where('status', 'follow_up');
 
-			if (!$user->hasCrmPermission('edit.lead')) {
+			if (!$user->canViewAllLeads()) {
 				$query->where('assigned_to', $user->id);
 			}
-			if ($user->hasCrmPermission('edit.lead') && !empty($userId)) {
+			if ($user->canViewAllLeads() && !empty($userId)) {
 				$query->where('assigned_to', $userId);
 			}
 

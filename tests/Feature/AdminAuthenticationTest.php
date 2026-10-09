@@ -83,4 +83,24 @@ class AdminAuthenticationTest extends TestCase
             ->assertOk()
             ->assertSee('value="property-consultant"', false);
     }
+
+    public function test_permissions_page_exposes_explicit_team_lead_access(): void
+    {
+        $role = Role::create([
+            'name' => 'super-admin',
+            'guard_name' => 'web',
+        ]);
+        $user = User::factory()->create();
+        $user->assignRole($role);
+
+        $this->actingAs($user)
+            ->get('/admin/permissions')
+            ->assertOk()
+            ->assertSee('view_team.lead');
+
+        $this->assertDatabaseHas('permissions', [
+            'name' => 'view_team.lead',
+            'guard_name' => 'web',
+        ]);
+    }
 }

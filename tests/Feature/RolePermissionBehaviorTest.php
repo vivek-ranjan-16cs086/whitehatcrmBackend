@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Lead;
+use App\Models\Project;
+use App\Models\Target;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
@@ -14,45 +16,84 @@ class RolePermissionBehaviorTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_renamed_view_only_role_uses_assigned_leads_for_dashboard_and_ranking(): void
+    public function test_new_associate_with_edit_permission_and_no_assignments_sees_no_other_users_data(): void
     {
-        $user = $this->userWithPermissions('business-associate', ['view.lead']);
-        $ownLead = Lead::create([
-            'name' => 'Assigned lead',
-            'status' => 'active',
-            'assigned_to' => $user->id,
-        ]);
-        Lead::create([
+        $user = $this->userWithPermissions(
+            'business-associate',
+            ['view.lead', 'edit.lead', 'create.lead']
+        );
+        $otherUser = User::factory()->create();
+        $otherLead = Lead::create([
             'name' => 'Other lead',
             'status' => 'active',
-            'assigned_to' => User::factory()->create()->id,
+            'assigned_to' => $otherUser->id,
+        ]);
+        $project = Project::create([
+            'name' => 'Target project',
+            'email' => 'target@example.test',
+            'phone' => '123456789',
+        ]);
+        $otherTarget = Target::create([
+            'user_id' => $otherUser->id,
+            'project_id' => $project->id,
+            'start_day' => '2026-10-05',
+            'end_day' => '2026-10-11',
         ]);
 
         $this->actingAs($user, 'api')
             ->getJson('/api/v1/leads')
             ->assertOk()
-            ->assertJsonPath('data.total_leads', 1);
+            ->assertJsonPath('data.total_leads', 0);
+
+        $this->getJson('/api/v1/leads/' . $otherLead->id)->assertNotFound();
+        $this->postJson('/api/v1/leads/update-lead-status/' . $otherLead->id, [
+            'status' => 'deactive',
+            'note' => 'Attempted update',
+        ])->assertNotFound();
 
         $this->getJson('/api/v1/counts')
             ->assertOk()
-            ->assertJsonPath('data.total_leads', 1);
+            ->assertJsonPath('data.total_leads', 0);
 
         $this->getJson('/api/v1/performance-ranking')
             ->assertOk()
             ->assertJsonPath('scope', 'self')
-            ->assertJsonPath('data.user_id', $user->id);
+            ->assertJsonPath('data.user_id', $user->id)
+            ->assertJsonPath('data.total_leads', 0);
 
-        $this->postJson('/api/v1/sidebar')
+        $this->getJson('/api/v1/pipeline-health')
             ->assertOk()
-            ->assertJsonFragment(['Leads Management']);
+            ->assertJsonPath('data.pipeline_health', 0);
+
+        $this->getJson('/api/v1/followup-leads?user_id=' . $otherUser->id)
+            ->assertOk()
+            ->assertJsonPath('data.total', 0);
+
+        $this->getJson('/api/v1/targets?user_id=' . $otherUser->id)
+            ->assertOk()
+            ->assertJsonPath('data', []);
+        $this->getJson('/api/v1/targets/' . $otherTarget->id)->assertNotFound();
+
+        $this->getJson('/api/v1/timeline/' . $otherLead->id)->assertNotFound();
+        $this->getJson('/api/v1/leads/' . $otherLead->id . '/comments')->assertNotFound();
+        $this->getJson('/api/v1/leads/' . $otherLead->id . '/follow-ups')->assertNotFound();
+        $this->getJson('/api/v1/leads/' . $otherLead->id . '/calls')->assertNotFound();
+        $this->postJson('/api/v1/leads/' . $otherLead->id . '/comments', [
+            'message' => 'Attempted comment',
+        ])->assertNotFound();
+        $this->postJson('/api/v1/leads/' . $otherLead->id . '/calls', [
+            'call_outcome' => 'answered',
+        ])->assertNotFound();
 
         $this->assertDatabaseMissing('roles', ['name' => 'salesperson']);
-        $this->assertDatabaseHas('leads', ['id' => $ownLead->id]);
     }
 
-    public function test_custom_role_with_edit_permission_gets_team_performance(): void
+    public function test_custom_role_needs_explicit_team_permission_to_see_other_users_leads(): void
     {
-        $viewer = $this->userWithPermissions('regional-manager', ['view.lead', 'edit.lead']);
+        $viewer = $this->userWithPermissions(
+            'regional-manager',
+            ['view.lead', 'view_team.lead']
+        );
         $assignedUser = User::factory()->create();
         Lead::create([
             'name' => 'Team lead',
@@ -65,6 +106,17 @@ class RolePermissionBehaviorTest extends TestCase
             ->assertOk()
             ->assertJsonPath('scope', 'team')
             ->assertJsonFragment(['user_id' => $assignedUser->id]);
+    }
+
+    public function test_permission_sync_creates_explicit_team_visibility_permission(): void
+    {
+        $this->artisan('permission:sync', ['model' => 'Lead'])
+            ->assertExitCode(0);
+
+        $this->assertDatabaseHas('permissions', [
+            'name' => 'view_team.lead',
+            'guard_name' => 'web',
+        ]);
     }
 
     public function test_permission_sync_does_not_recreate_default_business_roles(): void

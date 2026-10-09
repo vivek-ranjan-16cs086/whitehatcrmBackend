@@ -14,6 +14,11 @@ class Lead extends Model
     use HasFactory;
     use SoftDeletes;
 
+    public static function additionalPermissions(): array
+    {
+        return ['view_team'];
+    }
+
     protected $fillable = [
 
         /*
