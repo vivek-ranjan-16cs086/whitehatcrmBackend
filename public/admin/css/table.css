@@ -175,7 +175,7 @@ table.dataTable tbody tr:hover {
     top: 50% !important;
     left: 50% !important;
     z-index: 10;
-    display: flex !important;
+    display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -201,8 +201,10 @@ table.dataTable tbody tr:hover {
 
 .dataTables_wrapper .dataTables_processing::before {
     content: '';
+    display: block;
     width: 25px;
     height: 25px;
+    margin: 0 auto;
     border: 3px solid #e7e9f1;
     border-top-color: #5548d9;
     border-radius: 50%;
@@ -211,6 +213,7 @@ table.dataTable tbody tr:hover {
 
 .dataTables_wrapper .dataTables_processing::after {
     content: 'Updating results...';
+    display: block;
 }
 
 @keyframes admin-table-spin {
