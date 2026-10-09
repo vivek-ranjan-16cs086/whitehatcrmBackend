@@ -263,11 +263,21 @@ class LeadController extends BaseController
 	{
 			   
 			try {
-				$user = auth()->user();
+				$user = $request->user('api');
 				
 				$lead = Lead::find($id);
 
 				if (!$lead) {
+					return response()->json([
+						'status' => false,
+						'message' => 'Lead not found'
+					], 404);
+				}
+
+				if (
+					$user->hasRole('salesperson', 'web') &&
+					(string) $lead->assigned_to !== (string) $user->id
+				) {
 					return response()->json([
 						'status' => false,
 						'message' => 'Lead not found'
@@ -667,10 +677,10 @@ class LeadController extends BaseController
 
 		// Create lead
 		$data = $validator->validated();
-		$data['created_by'] = auth()->id();
+		$user = $request->user('api');
+		$data['created_by'] = $user->id;
 
 		$lead = Lead::create($data);
-		$user = auth()->user();
 		if ($request->filled('follow_up_date')) {
 
 			LeadTimelineEvent::create([
@@ -700,6 +710,7 @@ class LeadController extends BaseController
 				'assigned_to'  => 'required|exists:users,id',
 			]);
 
+			$user = $request->user('api');
 			$leadIds = $validated['lead_ids'];
 			$assignedUserId = $validated['assigned_to'];
 			$assignedUser = User::find($assignedUserId);
@@ -707,6 +718,16 @@ class LeadController extends BaseController
 
 			// Get leads
 			$leads = Lead::whereIn('id', $leadIds)->get();
+
+			if (
+				$user->hasRole('salesperson', 'web') &&
+				$leads->contains(fn (Lead $lead) => (string) $lead->assigned_to !== (string) $user->id)
+			) {
+				return response()->json([
+					'status' => false,
+					'message' => 'Lead not found'
+				], 404);
+			}
 
 			$updatedLeads = [];
 
@@ -718,14 +739,14 @@ class LeadController extends BaseController
 				// Update lead
 				$lead->assigned_to = $assignedUserId;
 				$lead->status = 'active';
-				$lead->updated_by = auth()->id();
+				$lead->updated_by = $user->id;
 				$lead->save();
                 
 				LeadTimelineEvent::create([
 					'lead_id' => $lead->id,
-					'user_id' => auth()->id(),
-					'user_name' => auth()->user()->name,
-					'user_role' => auth()->user()->getRoleNames()->first(),
+					'user_id' => $user->id,
+					'user_name' => $user->name,
+					'user_role' => $user->getRoleNames()->first(),
 					'event_type' => 'TRANSFER',
 					'message' => 'Lead transferred from ' . $oldAssignedUserName . ' to ' . $assignedUserName,
 					'assigned_to_user_id' => $assignedUserId,

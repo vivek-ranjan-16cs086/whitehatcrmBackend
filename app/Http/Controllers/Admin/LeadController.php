@@ -254,7 +254,17 @@ class LeadController extends Controller
                 ], 404);
             }
 
-            
+            $user = $request->user();
+            if (
+                $user->hasRole('salesperson', 'web') &&
+                (string) $lead->assigned_to !== (string) $user->id
+            ) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Lead not found.'
+                ], 404);
+            }
+
             $oldStatus = $lead->status;
             $oldAssignedUserId = $lead->assigned_to;
 
@@ -291,7 +301,7 @@ class LeadController extends Controller
             }
 
            //admin notification
-            if (auth()->user()->hasRole('salesperson') && $oldStatus !== $lead->status) {
+            if ($user->hasRole('salesperson', 'web') && $oldStatus !== $lead->status) {
 				try {
 					$notificationService->sendLeadStatusUpdateNotification($lead, $oldStatus);
 				} catch (\Exception $e) {

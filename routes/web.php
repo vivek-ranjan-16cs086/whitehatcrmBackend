@@ -38,12 +38,18 @@ Route::middleware(['auth','no-cache'])->group(function () {
 	//Lead Management
 	Route::prefix('lead-managment')->group(function () {
 		//GET method 
-		Route::GET('/', [LeadController::class, 'index'])->name('lead-management.index');
-		Route::GET('ajax-list', [LeadController::class, 'ajaxList'])->name('lead-management.ajax-list');
+		Route::middleware('permission:view.lead,web')->group(function () {
+			Route::GET('/', [LeadController::class, 'index'])->name('lead-management.index');
+			Route::GET('ajax-list', [LeadController::class, 'ajaxList'])->name('lead-management.ajax-list');
+		});
 		
 		//POST METHOD 
-		Route::post('update', [LeadController::class, 'updateDetails'])->name('lead-managment.update');
-		Route::post('store', [LeadController::class, 'store'])->name('lead-managment.store');
+		Route::post('update', [LeadController::class, 'updateDetails'])
+			->middleware('permission:edit.lead,web')
+			->name('lead-managment.update');
+		Route::post('store', [LeadController::class, 'store'])
+			->middleware('permission:create.lead,web')
+			->name('lead-managment.store');
 	});
 	 
 	//project management

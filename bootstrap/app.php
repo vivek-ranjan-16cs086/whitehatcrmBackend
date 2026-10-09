@@ -31,7 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
 		 );
         $middleware->alias([
             'super-admin' => \App\Http\Middleware\SuperAdminMiddleware::class,
-            'api-lead-view' => \App\Http\Middleware\EnsureApiLeadViewPermission::class,
+            'api-lead-permission' => \App\Http\Middleware\EnsureApiLeadPermission::class,
 			'no-cache'    => \App\Http\Middleware\NoCacheHeaders::class,
             'role'        => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission'  => \Spatie\Permission\Middleware\PermissionMiddleware::class,

@@ -8,9 +8,9 @@ use Illuminate\Http\Request;
 use Spatie\Permission\Models\Permission;
 use Symfony\Component\HttpFoundation\Response;
 
-class EnsureApiLeadViewPermission
+class EnsureApiLeadPermission
 {
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, string $permission): Response
     {
         $user = $request->user('api');
 
@@ -26,15 +26,15 @@ class EnsureApiLeadViewPermission
             return $next($request);
         }
 
-        $permission = Permission::query()
-            ->where('name', 'view.lead')
+        $permissionRecord = Permission::query()
+            ->where('name', $permission)
             ->where('guard_name', 'web')
             ->first();
 
-        if (!$permission || !$user->hasPermissionTo($permission)) {
+        if (!$permissionRecord || !$user->hasPermissionTo($permissionRecord)) {
             return response()->json([
                 'status' => false,
-                'message' => 'You do not have permission to view leads.',
+                'message' => "You do not have permission to {$permission}.",
                 'error' => 'FORBIDDEN',
             ], 403);
         }

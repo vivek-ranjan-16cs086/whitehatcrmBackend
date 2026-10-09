@@ -30,9 +30,6 @@ Route::prefix('v1')->group(function () {
         Route::post('/sidebar', [ApiController::class, 'getSidebar']);
 
 		Route::post('/store-device-token', [AuthController::class, 'storeDeviceId']);
-		Route::post('/leads/update-lead-status/{id}', [LeadController::class, 'updateLeadStatus']);
-		Route::post('/create-lead', [LeadController::class, 'createNewLead']);
-		Route::post('/shuffle-leads', [LeadController::class, 'shuffleLeads']);
 		Route::post('heartbeat', [ApiController::class, 'heartbeat']);  
 		
 		
@@ -65,7 +62,7 @@ Route::prefix('v1')->group(function () {
 			Route::delete('/{id}', [TargetController::class, 'destroy']);
 		});
 		
-		Route::middleware('api-lead-view')->group(function () {
+		Route::middleware('api-lead-permission:view.lead')->group(function () {
 			Route::get('/get-leads', [LeadController::class, 'getLeads']);
 			Route::get('/leads', [LeadController::class, 'getLeads']);
 			Route::get('/leads/{id}', [LeadController::class, 'getSingleLead']);
@@ -84,16 +81,22 @@ Route::prefix('v1')->group(function () {
 			Route::get('/leads/{leadId}/calls', [EventController::class, 'getCalls']);
 		});
 
-		Route::prefix('leads/{leadId}')->group(function () {
-			Route::post('/comments', [EventController::class, 'addComment']);
-			Route::post('/calls', [EventController::class, 'addCall']);
-			Route::post('/assign', [EventController::class, 'assignLead']);
+		Route::middleware('api-lead-permission:edit.lead')->group(function () {
+			Route::post('/leads/update-lead-status/{id}', [LeadController::class, 'updateLeadStatus']);
+			Route::post('/shuffle-leads', [LeadController::class, 'shuffleLeads']);
+			Route::post('/leads/{leadId}/comments', [EventController::class, 'addComment']);
+			Route::post('/leads/{leadId}/calls', [EventController::class, 'addCall']);
+			Route::post('/leads/{leadId}/assign', [EventController::class, 'assignLead']);
 		});
-		
+
+		Route::middleware('api-lead-permission:create.lead')->group(function () {
+			Route::post('/create-lead', [LeadController::class, 'createNewLead']);
+			Route::post('/leads/import', [ResponseController::class, 'import']);
+		});
+
 		Route::get('/responses', [ResponseController::class, 'getResponses']); 
 
         Route::get('/sub-responses/{responseId}', [ResponseController::class, 'getSubResponses']);
-		Route::post('/leads/import', [ResponseController::class, 'import']);
     }); 
     
 	Route::prefix('leads')->group( function () {

@@ -7,6 +7,7 @@ use App\Models\Project;
 use App\Models\Target;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -16,7 +17,19 @@ class AdminTableSortingTest extends TestCase
 
     public function test_leads_are_sorted_by_the_requested_column(): void
     {
-        $this->actingAs(User::factory()->create());
+        $permission = Permission::create([
+            'name' => 'view.lead',
+            'guard_name' => 'web',
+        ]);
+        $role = Role::create([
+            'name' => 'lead-viewer',
+            'guard_name' => 'web',
+        ]);
+        $role->givePermissionTo($permission);
+        $user = User::factory()->create();
+        $user->assignRole($role);
+
+        $this->actingAs($user);
         Lead::create(['name' => 'Zulu']);
         Lead::create(['name' => 'Alpha']);
 
