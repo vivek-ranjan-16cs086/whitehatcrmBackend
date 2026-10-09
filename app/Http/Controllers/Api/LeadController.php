@@ -59,8 +59,7 @@ class LeadController extends BaseController
             }
 			
 			if ($user && !$user->canViewAllLeads()) {
-				$query->where('assigned_to', $user->id)
-					  ->where('status', '!=', 'deactive');
+				$query->where('assigned_to', $user->id);
 			}
 			if (!empty($startDate) && !empty($endDate)) {
 				$query->whereBetween('created_at', [
