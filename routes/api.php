@@ -30,12 +30,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/sidebar', [ApiController::class, 'getSidebar']);
 
 		Route::post('/store-device-token', [AuthController::class, 'storeDeviceId']);
-		Route::get('/get-leads', [LeadController::class, 'getLeads']);
 		Route::post('/leads/update-lead-status/{id}', [LeadController::class, 'updateLeadStatus']);
-		Route::get('/leads/{id}', [LeadController::class, 'getSingleLead']);
 		Route::post('/create-lead', [LeadController::class, 'createNewLead']);
 		Route::post('/shuffle-leads', [LeadController::class, 'shuffleLeads']);
-		Route::get('/followup-leads', [LeadController::class, 'getFollowUp']);
 		Route::post('heartbeat', [ApiController::class, 'heartbeat']);  
 		
 		
@@ -68,28 +65,28 @@ Route::prefix('v1')->group(function () {
 			Route::delete('/{id}', [TargetController::class, 'destroy']);
 		});
 		
-		Route::get('/weekly-visit-target', [LeadController::class, 'weeklyVisitTarget']);
-		Route::get('/weekly-booking-target', [LeadController::class, 'weeklyBookingTarget']);
-		Route::get('/performance-ranking', [LeadController::class, 'performanceRanking']);
-		//Route::get('/followup-ranking', [LeadController::class, 'followUpRanking']);
-		Route::get('/pipeline-health', [LeadController::class, 'pipelineHealth']);
-		Route::get('/counts', [LeadController::class, 'dashboardCards']);
-		Route::get('/timeline/{leadId}', [EventController::class, 'getTimeline']);
-		
+		Route::middleware('api-lead-view')->group(function () {
+			Route::get('/get-leads', [LeadController::class, 'getLeads']);
+			Route::get('/leads', [LeadController::class, 'getLeads']);
+			Route::get('/leads/{id}', [LeadController::class, 'getSingleLead']);
+			Route::get('/followup-leads', [LeadController::class, 'getFollowUp']);
+
+			Route::get('/weekly-visit-target', [LeadController::class, 'weeklyVisitTarget']);
+			Route::get('/weekly-booking-target', [LeadController::class, 'weeklyBookingTarget']);
+			Route::get('/performance-ranking', [LeadController::class, 'performanceRanking']);
+			//Route::get('/followup-ranking', [LeadController::class, 'followUpRanking']);
+			Route::get('/pipeline-health', [LeadController::class, 'pipelineHealth']);
+			Route::get('/counts', [LeadController::class, 'dashboardCards']);
+			Route::get('/timeline/{leadId}', [EventController::class, 'getTimeline']);
+
+			Route::get('/leads/{leadId}/comments', [EventController::class, 'getComments']);
+			Route::get('/leads/{leadId}/follow-ups', [EventController::class, 'getFollowUps']);
+			Route::get('/leads/{leadId}/calls', [EventController::class, 'getCalls']);
+		});
+
 		Route::prefix('leads/{leadId}')->group(function () {
-
-			// Comments
-			Route::get('/comments', [EventController::class, 'getComments']);
 			Route::post('/comments', [EventController::class, 'addComment']);
-
-			// Follow-ups
-			Route::get('/follow-ups', [EventController::class, 'getFollowUps']);
-
-			// Calls
-			Route::get('/calls', [EventController::class, 'getCalls']);
 			Route::post('/calls', [EventController::class, 'addCall']);
-
-			// Assignment
 			Route::post('/assign', [EventController::class, 'assignLead']);
 		});
 		
@@ -100,7 +97,6 @@ Route::prefix('v1')->group(function () {
     }); 
     
 	Route::prefix('leads')->group( function () {
-		Route::GET('/', [LeadController::class, 'getLeads']);
 		Route::POST('store', [LeadController::class, 'storeLead']);
 		
 	});

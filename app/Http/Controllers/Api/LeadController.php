@@ -38,7 +38,7 @@ class LeadController extends BaseController
 	{
 		try {
 			$user_id = $request->user_id;
-			$user = auth()->user(); 
+			$user = $request->user('api');
 
 			$perPage = $request->get('per_page', 10); 
 
@@ -59,7 +59,7 @@ class LeadController extends BaseController
               $query->where('status', $status);
             }
 			
-			if ($user && $user->hasRole('salesperson')) {
+			if ($user && $user->hasRole('salesperson', 'web')) {
 				$query->where('assigned_to', $user->id)
 					  ->where('status', '!=', 'deactive');
 			}
@@ -602,26 +602,24 @@ class LeadController extends BaseController
 	public function getSingleLead($id)
 	{
 		try {
-			$user = auth()->user();
+			$user = auth('api')->user();
 
-			$leadQuery = Lead::where('id', $id);
+			$leadQuery = Lead::with(['leadResponses' => function ($q) {
+				$q->latest()->take(2);
+			}])->whereKey($id);
 
 			// for salesperson
-			if ($user->role == 'salesperson') {
+			if ($user->hasRole('salesperson', 'web')) {
 				$leadQuery->where('assigned_to', $user->id);
 			}
 
-			// super admin can see all leads
-
-			$lead = Lead::with(['leadResponses' => function ($q) {
-				$q->latest()->take(2);
-			}])->find($id);
+			$lead = $leadQuery->first();
 
 			if (!$lead) {
 				return response()->json([
 					'status' => false,
 					'message' => 'Lead not found'
-				]);
+				], 404);
 			}
 
 			return response()->json([
@@ -1366,10 +1364,10 @@ class LeadController extends BaseController
 			->whereNotNull('assigned_to')
 			->where('status', 'follow_up');
 
-			if ($user->hasRole('salesperson')) {
+			if ($user->hasRole('salesperson', 'web')) {
 				$query->where('assigned_to', $user->id);
 			}
-			if ($user->hasRole('super-admin') && !empty($userId)) {
+			if ($user->hasRole('super-admin', 'web') && !empty($userId)) {
 				$query->where('assigned_to', $userId);
 			}
 
