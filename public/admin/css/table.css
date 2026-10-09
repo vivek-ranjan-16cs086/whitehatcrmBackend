@@ -47,8 +47,20 @@ table.dataTable tbody td {
     color: #344054;
     font-size: 0.82rem;
     padding: 0.68rem 0.75rem !important;
-    border-top: 1px solid #f0f2f6;
+    border-top: 1px solid #e7ebf2 !important;
+    border-bottom: 1px solid #e7ebf2 !important;
     vertical-align: middle;
+}
+
+/* DataTables keeps a hidden header in the scrolling body for column sizing. */
+.dataTables_wrapper .dataTables_scrollBody thead th,
+.dataTables_wrapper .dataTables_scrollBody thead td {
+    height: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    border-top-width: 0 !important;
+    border-bottom-width: 0 !important;
+    line-height: 0 !important;
 }
 
 table.dataTable tbody td:last-child {
@@ -82,15 +94,33 @@ table.dataTable tbody td:last-child {
     min-width: 350px;
 }
 
+#users-table tbody tr.odd > *,
+#leads-table tbody tr.odd > *,
+table.dataTable tbody tr.odd > * {
+    background-color: #ffffff !important;
+}
+
 #users-table tbody tr:nth-child(even),
 #leads-table tbody tr:nth-child(even),
 table.dataTable tbody tr:nth-child(even) {
-    background-color: var(--table-row-alt);
+    background-color: #f4f6fa !important;
+}
+
+#users-table tbody tr.even > *,
+#leads-table tbody tr.even > *,
+table.dataTable tbody tr.even > * {
+    background-color: #f4f6fa !important;
 }
 
 #users-table tbody tr:hover,
 #leads-table tbody tr:hover,
 table.dataTable tbody tr:hover {
+    background-color: var(--table-row-hover) !important;
+}
+
+#users-table tbody tr:hover > *,
+#leads-table tbody tr:hover > *,
+table.dataTable tbody tr:hover > * {
     background-color: var(--table-row-hover) !important;
 }
 
