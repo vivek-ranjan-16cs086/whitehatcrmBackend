@@ -37,6 +37,7 @@ table.dataTable thead th {
     text-transform: uppercase;
     letter-spacing: 0.04em;
     padding: 0.8rem 0.9rem !important;
+    white-space: nowrap;
 }
 
 #users-table tbody td,
@@ -45,6 +46,11 @@ table.dataTable tbody td {
     padding: 0.72rem 0.9rem !important;
     border-top: 1px solid #f0f2f6;
     vertical-align: middle;
+}
+
+table.dataTable tbody td:last-child {
+    min-width: 6rem;
+    white-space: nowrap;
 }
 
 #users-table tbody tr:nth-child(even),
