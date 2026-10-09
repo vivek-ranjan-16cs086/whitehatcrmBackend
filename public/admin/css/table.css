@@ -18,7 +18,7 @@
 #leads-table,
 table.dataTable {
     font-family: 'Inter', sans-serif;
-    font-size: 0.92rem;
+    font-size: 0.84rem;
     color: #2a2f3a;
     background: var(--table-bg);
     border: 1px solid var(--table-border);
@@ -31,19 +31,22 @@ table.dataTable {
 #leads-table thead th,
 table.dataTable thead th {
     background-color: var(--table-head-bg) !important;
-    color: var(--table-head-color) !important;
+    color: #667085 !important;
+    font-size: 0.68rem;
     font-weight: 700;
-    border-bottom: 2px solid var(--table-border) !important;
+    border-bottom: 1px solid #e6eaf1 !important;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 0.8rem 0.9rem !important;
+    letter-spacing: 0.055em;
+    padding: 0.72rem 0.75rem !important;
     white-space: nowrap;
 }
 
 #users-table tbody td,
 #leads-table tbody td,
 table.dataTable tbody td {
-    padding: 0.72rem 0.9rem !important;
+    color: #344054;
+    font-size: 0.82rem;
+    padding: 0.68rem 0.75rem !important;
     border-top: 1px solid #f0f2f6;
     vertical-align: middle;
 }
@@ -55,7 +58,21 @@ table.dataTable tbody td:last-child {
 
 table.dataTable thead th,
 table.dataTable tbody td {
-    min-width: 200px;
+    min-width: 150px;
+    border-left: 0 !important;
+    border-right: 0 !important;
+}
+
+table.dataTable thead th:first-child,
+table.dataTable tbody td:first-child {
+    width: 72px !important;
+    min-width: 72px !important;
+    max-width: 80px;
+}
+
+table.dataTable thead th:last-child,
+table.dataTable tbody td:last-child {
+    min-width: 108px;
 }
 
 #leads-table_wrapper .dataTables_scrollHead th:nth-child(5),
