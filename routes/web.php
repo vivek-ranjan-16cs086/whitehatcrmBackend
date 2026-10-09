@@ -88,11 +88,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super-admin','no-ca
 	Route::get('roles/delete/{role}', [RoleController::class, 'destroy']);
     Route::get('permissions', [Admin\PermissionController::class, 'index'])->name('permissions.index');
     Route::post('permissions/sync', [Admin\PermissionController::class, 'sync'])->name('permissions.sync');
+
+    Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
+    Route::post('settings', [SettingController::class, 'update'])->name('maintenance.update');
 });
-
-Route::get('/admin/settings', [SettingController::class, 'index'])->name('admin.settings.index');
-
-Route::post('/admin/settings', [SettingController::class, 'update'])->name('maintenance.update');
 
 Route::get('/', function(){
 	return view('welcome');  
