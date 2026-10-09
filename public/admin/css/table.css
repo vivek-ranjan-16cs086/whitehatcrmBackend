@@ -53,6 +53,18 @@ table.dataTable tbody td:last-child {
     white-space: nowrap;
 }
 
+table.dataTable thead th,
+table.dataTable tbody td {
+    min-width: 200px;
+}
+
+#leads-table_wrapper .dataTables_scrollHead th:nth-child(5),
+#leads-table_wrapper .dataTables_scrollBody td:nth-child(5),
+#leads-table th:nth-child(5),
+#leads-table td:nth-child(5) {
+    min-width: 350px;
+}
+
 #users-table tbody tr:nth-child(even),
 #leads-table tbody tr:nth-child(even),
 table.dataTable tbody tr:nth-child(even) {
