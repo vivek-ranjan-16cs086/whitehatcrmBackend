@@ -49,11 +49,25 @@ class LeadCommentAccessTest extends TestCase
         $lead = Lead::create([
             'name' => 'Reassigned lead',
             'status' => 'active',
-            'assigned_to' => $firstUser->id,
+            'assigned_to' => null,
         ]);
+
+        $this->actingAs($admin, 'api')
+            ->postJson('/api/v1/assign-lead', [
+                'lead_id' => $lead->id,
+                'assigned_to' => $firstUser->id,
+            ])
+            ->assertOk();
 
         $firstComment = $this->comment($lead, $firstUser, 'First user history');
         $secondComment = $this->comment($lead, $secondUser, 'Second user history');
+        $firstTimelineEvent = LeadTimelineEvent::create([
+            'lead_id' => $lead->id,
+            'user_id' => $firstUser->id,
+            'user_name' => $firstUser->name,
+            'event_type' => 'STATUS',
+            'message' => 'First user timeline',
+        ]);
 
         $assignmentResponse = $this->actingAs($admin, 'api')
             ->postJson('/api/v1/assign-lead', [
@@ -78,7 +92,7 @@ class LeadCommentAccessTest extends TestCase
             'message' => 'Admin update after assignment',
         ]);
 
-        $this->assertDatabaseCount('lead_timeline_events', 5);
+        $this->assertDatabaseCount('lead_timeline_events', 7);
         $this->actingAs($secondUser, 'api')
             ->getJson('/api/v1/leads/' . $lead->id . '/comments')
             ->assertOk()
@@ -99,10 +113,23 @@ class LeadCommentAccessTest extends TestCase
         $this->actingAs($admin, 'api')
             ->getJson('/api/v1/timeline/' . $lead->id)
             ->assertOk()
+            ->assertJsonFragment(['title' => 'Lead assigned to ' . $firstUser->name])
+            ->assertJsonFragment(['title' => 'Lead assigned to ' . $secondUser->name])
             ->assertJsonFragment(['title' => 'First user history'])
             ->assertJsonFragment(['title' => 'Second user history'])
             ->assertJsonFragment(['title' => 'Updated after assignment'])
             ->assertJsonFragment(['title' => 'Admin update after assignment']);
+
+        $this->actingAs($firstUser, 'api')
+            ->getJson('/api/v1/timeline/' . $lead->id)
+            ->assertOk()
+            ->assertJsonFragment(['title' => 'Lead assigned to ' . $firstUser->name])
+            ->assertJsonFragment(['title' => 'First user history'])
+            ->assertJsonFragment(['title' => 'First user timeline'])
+            ->assertJsonMissing(['title' => 'Lead assigned to ' . $secondUser->name])
+            ->assertJsonMissing(['title' => 'Second user history'])
+            ->assertJsonMissing(['title' => 'Updated after assignment'])
+            ->assertJsonMissing(['title' => 'Admin update after assignment']);
 
         $this->actingAs($admin, 'api')
             ->postJson('/api/v1/assign-lead', [
@@ -120,10 +147,12 @@ class LeadCommentAccessTest extends TestCase
         $this->getJson('/api/v1/timeline/' . $lead->id)
             ->assertOk()
             ->assertJsonFragment(['title' => 'Lead assigned to ' . $firstUser->name])
-            ->assertJsonMissing(['title' => 'First user history'])
+            ->assertJsonFragment(['title' => 'First user history'])
+            ->assertJsonFragment(['title' => 'First user timeline'])
             ->assertJsonMissing(['title' => 'Second user history'])
             ->assertJsonMissing(['title' => 'Updated after assignment'])
             ->assertJsonMissing(['title' => 'Admin update after assignment']);
+        $this->assertDatabaseHas('lead_timeline_events', ['id' => $firstTimelineEvent->id]);
 
         $this->assertDatabaseHas('lead_timeline_events', ['id' => $firstComment->id]);
         $this->assertDatabaseHas('lead_timeline_events', ['id' => $secondComment->id]);

@@ -67,26 +67,45 @@ class EventController extends Controller
 	public function getTimeline($leadId)
 	{
 		$user = auth()->user();
-		$this->ensureLeadAccessible($leadId, $user);
+		$lead = Lead::find($leadId);
+		abort_unless($lead, 404);
+
+		$isSuperAdmin = $user->hasRole('super-admin', 'web');
 		$eventsQuery = LeadTimelineEvent::where('lead_id', $leadId);
 
-		if (
-			!$user->hasRole('super-admin', 'web') &&
-			(string) Lead::whereKey($leadId)->value('assigned_to') === (string) $user->id
-		) {
-			$assignmentEvent = (clone $eventsQuery)
+		if (!$isSuperAdmin) {
+			$transferEvents = (clone $eventsQuery)
 				->where('event_type', 'TRANSFER')
+				->orderBy('id')
+				->get(['id', 'assigned_to_user_id']);
+			$userAssignments = $transferEvents
 				->where('assigned_to_user_id', $user->id)
-				->latest('id')
-				->first();
+				->values();
+			$isCurrentAssignee = (string) $lead->assigned_to === (string) $user->id;
 
-			if ($assignmentEvent) {
-				$eventsQuery
-					->where('id', '>=', $assignmentEvent->id)
-					->where(function ($query) use ($user, $assignmentEvent) {
-						$query->where('user_id', $user->id)
-							->orWhere('id', $assignmentEvent->id);
-					});
+			abort_unless(
+				$isCurrentAssignee || $userAssignments->isNotEmpty() || $user->canViewAllLeads(),
+				404
+			);
+
+			if ($userAssignments->isNotEmpty()) {
+				$eventsQuery->where(function ($query) use ($user, $userAssignments, $transferEvents) {
+					foreach ($userAssignments as $assignment) {
+						$nextTransfer = $transferEvents->first(
+							fn ($event) => $event->id > $assignment->id
+						);
+
+						$query->orWhere(function ($period) use ($user, $assignment, $nextTransfer) {
+							$period->where(function ($periodEvents) use ($assignment, $nextTransfer, $user) {
+								$periodEvents->where('id', '>=', $assignment->id)
+									->when($nextTransfer, function ($periodEvents, $nextTransfer) {
+										$periodEvents->where('id', '<', $nextTransfer->id);
+									})
+									->where('user_id', $user->id);
+							})->orWhere('id', $assignment->id);
+						});
+					}
+				});
 			} else {
 				$eventsQuery->where('user_id', $user->id);
 			}
