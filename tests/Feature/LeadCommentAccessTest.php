@@ -70,8 +70,15 @@ class LeadCommentAccessTest extends TestCase
             'event_type' => 'STATUS',
             'message' => 'Updated after assignment',
         ]);
+        LeadTimelineEvent::create([
+            'lead_id' => $lead->id,
+            'user_id' => $admin->id,
+            'user_name' => $admin->name,
+            'event_type' => 'STATUS',
+            'message' => 'Admin update after assignment',
+        ]);
 
-        $this->assertDatabaseCount('lead_timeline_events', 4);
+        $this->assertDatabaseCount('lead_timeline_events', 5);
         $this->actingAs($secondUser, 'api')
             ->getJson('/api/v1/leads/' . $lead->id . '/comments')
             ->assertOk()
@@ -86,6 +93,7 @@ class LeadCommentAccessTest extends TestCase
             ->assertOk()
             ->assertJsonFragment(['title' => 'Lead assigned to ' . $secondUser->name])
             ->assertJsonFragment(['title' => 'Updated after assignment'])
+            ->assertJsonMissing(['title' => 'Admin update after assignment'])
             ->assertJsonMissing(['title' => 'First user history'])
             ->assertJsonMissing(['title' => 'Second user history']);
         $this->actingAs($admin, 'api')
@@ -93,7 +101,8 @@ class LeadCommentAccessTest extends TestCase
             ->assertOk()
             ->assertJsonFragment(['title' => 'First user history'])
             ->assertJsonFragment(['title' => 'Second user history'])
-            ->assertJsonFragment(['title' => 'Updated after assignment']);
+            ->assertJsonFragment(['title' => 'Updated after assignment'])
+            ->assertJsonFragment(['title' => 'Admin update after assignment']);
 
         $this->actingAs($admin, 'api')
             ->postJson('/api/v1/assign-lead', [
@@ -113,7 +122,8 @@ class LeadCommentAccessTest extends TestCase
             ->assertJsonFragment(['title' => 'Lead assigned to ' . $firstUser->name])
             ->assertJsonMissing(['title' => 'First user history'])
             ->assertJsonMissing(['title' => 'Second user history'])
-            ->assertJsonMissing(['title' => 'Updated after assignment']);
+            ->assertJsonMissing(['title' => 'Updated after assignment'])
+            ->assertJsonMissing(['title' => 'Admin update after assignment']);
 
         $this->assertDatabaseHas('lead_timeline_events', ['id' => $firstComment->id]);
         $this->assertDatabaseHas('lead_timeline_events', ['id' => $secondComment->id]);

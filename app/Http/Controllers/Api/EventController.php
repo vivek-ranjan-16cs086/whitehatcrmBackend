@@ -81,19 +81,18 @@ class EventController extends Controller
 				->first();
 
 			if ($assignmentEvent) {
-				$eventsQuery->where('id', '>=', $assignmentEvent->id);
+				$eventsQuery
+					->where('id', '>=', $assignmentEvent->id)
+					->where(function ($query) use ($user, $assignmentEvent) {
+						$query->where('user_id', $user->id)
+							->orWhere('id', $assignmentEvent->id);
+					});
+			} else {
+				$eventsQuery->where('user_id', $user->id);
 			}
 		}
 
-		$events = $eventsQuery
-			->when(!$user->hasRole('super-admin', 'web'), function ($query) use ($user) {
-				$query->where(function ($query) use ($user) {
-					$query->where('event_type', '!=', 'COMMENT')
-						->orWhere('user_id', $user->id);
-				});
-			})
-			->latest()
-			->get();
+		$events = $eventsQuery->latest()->get();
 
 		return response()->json([
 			'data' => $events->map(fn($event) => $this->timelineTransform($event))
