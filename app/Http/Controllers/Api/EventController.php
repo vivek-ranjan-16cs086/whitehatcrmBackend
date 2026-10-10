@@ -50,7 +50,13 @@ class EventController extends Controller
 	{
 		$user = auth()->user();
 		$this->ensureLeadAccessible($leadId, $user);
-		$events = LeadTimelineEvent::where('lead_id', $leadId)->latest()->get();
+		$events = LeadTimelineEvent::where('lead_id', $leadId)
+			->where('event_type', 'COMMENT')
+			->when(!$user->hasRole('super-admin', 'web'), function ($query) use ($user) {
+				$query->where('user_id', $user->id);
+			})
+			->latest()
+			->get();
 
 		return response()->json([
 			'status' => true,
@@ -62,7 +68,15 @@ class EventController extends Controller
 	{
 		$user = auth()->user();
 		$this->ensureLeadAccessible($leadId, $user);
-		$events = LeadTimelineEvent::where('lead_id', $leadId)->latest()->get();
+		$events = LeadTimelineEvent::where('lead_id', $leadId)
+			->when(!$user->hasRole('super-admin', 'web'), function ($query) use ($user) {
+				$query->where(function ($query) use ($user) {
+					$query->where('event_type', '!=', 'COMMENT')
+						->orWhere('user_id', $user->id);
+				});
+			})
+			->latest()
+			->get();
 
 		return response()->json([
 			'data' => $events->map(fn($event) => $this->timelineTransform($event))
