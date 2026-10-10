@@ -68,7 +68,24 @@ class EventController extends Controller
 	{
 		$user = auth()->user();
 		$this->ensureLeadAccessible($leadId, $user);
-		$events = LeadTimelineEvent::where('lead_id', $leadId)
+		$eventsQuery = LeadTimelineEvent::where('lead_id', $leadId);
+
+		if (
+			!$user->hasRole('super-admin', 'web') &&
+			(string) Lead::whereKey($leadId)->value('assigned_to') === (string) $user->id
+		) {
+			$assignmentEvent = (clone $eventsQuery)
+				->where('event_type', 'TRANSFER')
+				->where('assigned_to_user_id', $user->id)
+				->latest('id')
+				->first();
+
+			if ($assignmentEvent) {
+				$eventsQuery->where('id', '>=', $assignmentEvent->id);
+			}
+		}
+
+		$events = $eventsQuery
 			->when(!$user->hasRole('super-admin', 'web'), function ($query) use ($user) {
 				$query->where(function ($query) use ($user) {
 					$query->where('event_type', '!=', 'COMMENT')
