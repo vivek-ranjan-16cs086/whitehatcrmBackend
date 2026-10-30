@@ -109,14 +109,14 @@ table.dataTable tbody td:last-child {
     min-width: 108px;
 }
 
-#leads-table_wrapper .dataTables_scrollHead th:nth-child(5),
-#leads-table_wrapper .dataTables_scrollBody td:nth-child(5),
-#leads-table th:nth-child(5),
-#leads-table td:nth-child(5) {
+#leads-table_wrapper .dataTables_scrollHead th:nth-child(4),
+#leads-table_wrapper .dataTables_scrollBody td:nth-child(4),
+#leads-table th:nth-child(4),
+#leads-table td:nth-child(4) {
     min-width: 350px;
 }
 
-#leads-table td.lead-page-cell {
+#leads-table td.project-page-cell {
     width: 220px;
     min-width: 220px;
     max-width: 220px;

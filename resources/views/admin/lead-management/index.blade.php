@@ -53,18 +53,17 @@
 				<table id="leads-table" class="table leads-table">
 					<thead>
 						<tr>
-							<th>S.No</th>
 							<th>Name</th>
 							<th>Phone</th>
-							<th>Email</th>
-							<th>Message</th>
 							<th>Source</th>
-							<th>Page</th>
-							<th>Status</th>
+							<th>Message</th>
+							<th>Project / Page</th>
 							<th>Assigned To</th>
+							<th>Status</th>
+							<th>Inventory</th>
 							<th>Type</th>
-							<th>Follow Up</th>
-							<th>Created</th>
+							<th>Visit</th>
+							<th>Visit Date</th>
 							<th>Action</th>
 						</tr>
 					</thead>    
@@ -452,62 +451,50 @@ d.source = $('#leadSourceFilter').val();
 
 			columns: [
 
-				// Serial Number
-				{
-					data: null,
-					orderable: false,
-					searchable: false,
-					render: function (data, type, row, meta) {
-						return meta.row + meta.settings._iDisplayStart + 1;
-					}
-				},
-
 				{ data: 'name' },
 
 				{ data: 'phone' },
 
-				{ data: 'email' },
+				{ data: 'source_website' },
 
 				{ data: 'message' },
 
-				// Source
-				{ data: 'source_website' },
 				{
-					data: 'source_page_name',
-					className: 'lead-page-cell',
+					data: 'project_page_name',
+					className: 'project-page-cell',
+					orderable: false,
 					render: function (data, type, row) {
-						const pageName = data || '';
+						const projectPageName = data || '';
 						if (type !== 'display') {
-							return pageName;
+							return projectPageName;
 						}
 
-						if (!pageName.trim()) {
+						if (!projectPageName.trim()) {
 							return '<span class="lead-page-empty">-</span>';
 						}
 
-						const safePageName = $('<div>').text(pageName).html();
+						const safeName = $('<div>').text(projectPageName).html();
 						const icon = row.source_website === 'facebook.com'
 							? 'bi-facebook'
 							: 'bi-file-earmark-text';
 
-						return '<span class="lead-page-badge" title="' + safePageName + '">'
+						return '<span class="lead-page-badge" title="' + safeName + '">'
 							+ '<i class="bi ' + icon + '" aria-hidden="true"></i>'
-							+ '<span>' + safePageName + '</span>'
+							+ '<span>' + safeName + '</span>'
 							+ '</span>';
 					}
 				},
-				
-				
 
-				// Status (already HTML from backend)
+				{ data: 'assigned_to' },
+
 				{
 					data: 'status',
 					orderable: false,
 					searchable: false
 				},
 
-				// Assigned To
-				{ data: 'assigned_to' },
+				{ data: 'inventory' },
+
 				{
 					data: 'type',
 					orderable: false,
@@ -517,13 +504,10 @@ d.source = $('#leadSourceFilter').val();
 					}
 				},
 
-				// Follow Up
-				{ data: 'follow_up_date' },
+				{ data: 'visit_status', orderable: false },
 
-				// Created At (already formatted from backend)
-				{ data: 'created_at' },
+				{ data: 'visit_date' },
 
-				// Action buttons
 				{
 					data: 'action',
 					orderable: false,

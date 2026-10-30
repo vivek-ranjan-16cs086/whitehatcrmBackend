@@ -6,8 +6,11 @@ use App\Models\Lead;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\NotificationService;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Testing\Fluent\AssertableJson;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -131,6 +134,54 @@ class AdminManualLeadSourceTest extends TestCase
         ]);
     }
 
+    public function test_lead_table_returns_project_page_inventory_and_visit_columns(): void
+    {
+        $user = $this->userWithCreateLeadPermission();
+        if (! Schema::hasColumn('leads', 'inventory')) {
+            Schema::table('leads', function (Blueprint $table): void {
+                $table->string('inventory')->nullable();
+            });
+        }
+        $project = Project::create([
+            'name' => 'Apex Heights',
+            'email' => 'apex@example.com',
+            'phone' => '1112223333',
+        ]);
+        $lead = Lead::create([
+            'name' => 'Table lead',
+            'phone' => '1234567890',
+            'source_website' => 'facebook.com',
+            'source_page_name' => 'Facebook Form',
+            'assigned_to' => $user->id,
+            'status' => 'active',
+            'inventory' => '3 BHK',
+            'type' => 'warm',
+            'visit_status' => 'scheduled',
+            'visit_date' => '2026-11-20',
+        ]);
+        $lead->project_id = $project->id;
+        $lead->save();
+
+        $this->actingAs($user)
+            ->getJson(route('lead-management.ajax-list', [
+                'draw' => 1,
+                'start' => 0,
+                'length' => 10,
+                'view' => 'total',
+            ]))
+            ->assertOk()
+            ->assertJson(fn (AssertableJson $json) => $json
+                ->where('data.0.name', 'Table lead')
+                ->where('data.0.source_website', 'facebook.com')
+                ->where('data.0.project_page_name', 'Apex Heights / Facebook Form')
+                ->where('data.0.assigned_to', $user->name)
+                ->where('data.0.inventory', '3 BHK')
+                ->where('data.0.visit_date', '20 Nov 2026')
+                ->has('data.0.visit_status')
+                ->etc()
+            );
+    }
+
     public function test_add_lead_form_lists_the_supported_sources(): void
     {
         $user = $this->userWithCreateLeadPermission();
@@ -146,6 +197,20 @@ class AdminManualLeadSourceTest extends TestCase
             ->assertSee('id="edit_source_website"', false)
             ->assertSee('name="source_form_name"', false)
             ->assertSee('name="budget_max"', false)
+            ->assertSeeInOrder([
+                '<th>Name</th>',
+                '<th>Phone</th>',
+                '<th>Source</th>',
+                '<th>Message</th>',
+                '<th>Project / Page</th>',
+                '<th>Assigned To</th>',
+                '<th>Status</th>',
+                '<th>Inventory</th>',
+                '<th>Type</th>',
+                '<th>Visit</th>',
+                '<th>Visit Date</th>',
+                '<th>Action</th>',
+            ], false)
             ->assertSee('download', false)
             ->assertSee('name="_token"', false);
     }
