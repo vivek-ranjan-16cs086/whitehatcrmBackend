@@ -204,10 +204,14 @@ class Lead extends Model
 
 	public function getPageNameAttribute(): ?string
 	{
-		$pageKey = trim($this->getRawOriginal('source_page_name') ?? '');
+		$pageKey = trim($this->attributes['source_page_name'] ?? '');
 
 		if ($pageKey === '') {
 			return null;
+		}
+
+		if (self::isFacebookSourceWebsite($this->source_website)) {
+			return $pageKey;
 		}
 
 		// FE_GNW is the short form of Future Estate
@@ -218,9 +222,48 @@ class Lead extends Model
 		// Format remaining page names
 		$pageName = str_replace(['_', '-'], ' ', $pageKey);
 
+		if ($pageName === $pageKey) {
+			return $pageKey;
+		}
+
 		return ucwords(strtolower($pageName));
 	}
 
+	public static function resolveSourcePageName(
+		?string $message,
+		?string $sourceWebsite,
+		?string $fallback = null
+	): ?string {
+		if (!self::isFacebookSourceWebsite($sourceWebsite) || !$message) {
+			return $fallback;
+		}
+
+		if (!preg_match('/(?:^|\|)\s*Form\s*:\s*([^|\r\n]+)/i', $message, $matches)) {
+			return $fallback;
+		}
+
+		$formName = trim($matches[1]);
+
+		return $formName !== '' ? $formName : $fallback;
+	}
+
+	public static function isFacebookSourceWebsite(?string $sourceWebsite): bool
+	{
+		if (!$sourceWebsite) {
+			return false;
+		}
+
+		$sourceWebsite = trim($sourceWebsite);
+		$host = parse_url($sourceWebsite, PHP_URL_HOST);
+
+		if (!$host) {
+			$host = parse_url('https://' . ltrim($sourceWebsite, '/'), PHP_URL_HOST);
+		}
+
+		$host = strtolower(rtrim((string) $host, '.'));
+
+		return $host === 'facebook.com' || str_ends_with($host, '.facebook.com');
+	}
 
 
 

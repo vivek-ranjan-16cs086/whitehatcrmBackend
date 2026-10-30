@@ -181,19 +181,16 @@ class LeadController extends BaseController
 			// Manual safe assignment
 			$lead->external_id = $data['external_id'] ?? $lead->external_id;
 			$lead->source_website = $data['source_website'];
-			$lead->source_page_name = $data['source_page_name'];
-//added\
-
-// $lead->source_page_name = Lead::resolveSourcePageName(
-    // $data['message'] ?? $lead->message,
-    // $data['source_website'],
-    // $data['source_page_name'] ?? $lead->source_page_name
-// );
-//...
+			$message = $data['message'] ?? $lead->message;
+			$lead->source_page_name = Lead::resolveSourcePageName(
+				$message,
+				$data['source_website'],
+				$data['source_page_name'] ?? $lead->source_page_name
+			);
 			$lead->name = $data['name'] ?? $lead->name;
 			$lead->phone = $data['phone'] ?? $lead->phone;
 			$lead->email = $data['email'] ?? $lead->email;
-			$lead->message = $data['message'] ?? $lead->message;
+			$lead->message = $message;
             $lead->created_by = auth()->id();
 			\Log::info('ATTEMPTING DATABASE INSERT', [
 				'database' => $lead->getConnection()->getDatabaseName(),
