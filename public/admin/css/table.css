@@ -162,11 +162,6 @@ table.dataTable tbody td:last-child {
     border-bottom: 1px solid #e6e9ef;
 }
 
-#leads-table_wrapper .lead-filter-bar {
-    order: 1;
-    flex: 0 0 100%;
-}
-
 .lead-date-filter .form-label,
 .lead-source-filter .form-label {
     display: block;
