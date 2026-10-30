@@ -134,14 +134,16 @@ table.dataTable tbody td:last-child {
 .lead-filter-bar {
     display: flex;
     align-items: flex-end;
-    gap: 1.25rem;
-    padding: 0.75rem 1.5rem 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    padding: 0.55rem 1rem;
+    border-bottom: 1px solid #e6e9ef;
 }
 
 .lead-date-filter .form-label,
 .lead-source-filter .form-label {
     display: block;
-    margin-bottom: 0.3rem;
+    margin-bottom: 0.2rem;
     color: #475467;
     font-size: 0.78rem;
     font-weight: 600;
@@ -156,19 +158,54 @@ table.dataTable tbody td:last-child {
 }
 
 .lead-date-inputs .form-control {
-    width: 168px;
+    width: 150px;
     min-width: 0;
-    height: 36px;
+    height: 32px;
     padding: 0.35rem 0.5rem;
     font-size: 0.8rem;
 }
 
 .lead-source-filter .form-select {
-    width: 220px;
-    height: 36px;
+    width: 180px;
+    height: 32px;
     padding-top: 0.35rem;
     padding-bottom: 0.35rem;
     font-size: 0.8rem;
+}
+
+.lead-status-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    margin-left: auto;
+}
+
+.lead-status-filters .lead-filter-btn {
+    padding: 0.32rem 0.55rem;
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+#leads-table_wrapper.dataTables_wrapper {
+    gap: 0.45rem 0.7rem;
+}
+
+#leads-table_wrapper .dataTables_scroll,
+#leads-table_wrapper > table {
+    margin-top: 0;
+}
+
+#leads-table_wrapper .dataTables_scrollHead {
+    margin-top: 0;
+}
+
+.leads-card > .card-header {
+    padding: 0.7rem 1rem;
+}
+
+.leads-card > .card-body {
+    padding: 0.65rem 1rem;
 }
 
 #users-table tbody tr.odd > *,
@@ -539,10 +576,8 @@ table.dataTable tbody tr:hover > * {
 
 @media (max-width: 768px) {
     .lead-filter-bar {
-        align-items: stretch;
-        flex-direction: column;
-        gap: 0.75rem;
-        padding: 0.75rem 1rem;
+        align-items: flex-start;
+        gap: 0.65rem;
     }
 
     .lead-date-inputs {
@@ -550,12 +585,17 @@ table.dataTable tbody tr:hover > * {
     }
 
     .lead-date-inputs .form-control {
-        flex: 1 1 140px;
-        width: auto;
+        flex: 0 1 145px;
+        width: 145px;
     }
 
     .lead-source-filter .form-select {
-        width: 100%;
+        width: 180px;
+    }
+
+    .lead-status-filters {
+        margin-left: 0;
+        flex-basis: 100%;
     }
 
     .dataTables_wrapper {

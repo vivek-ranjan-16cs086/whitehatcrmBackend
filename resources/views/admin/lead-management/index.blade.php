@@ -37,49 +37,14 @@
 					@endforeach
 				</select>
 			</div>
+			<div id="leadFilterTabs" class="lead-status-filters" role="group" aria-label="Lead status filters">
+				<button type="button" class="btn btn-sm btn-primary lead-filter-btn" data-view="total">All</button>
+				<button type="button" class="btn btn-sm btn-outline-secondary lead-filter-btn" data-view="active">Active Leads</button>
+				<button type="button" class="btn btn-sm btn-outline-secondary lead-filter-btn" data-view="follow-ups">Follow Ups</button>
+				<button type="button" class="btn btn-sm btn-outline-secondary lead-filter-btn" data-view="expired-follow-ups">Expired Leads</button>
+				<button type="button" class="btn btn-sm btn-outline-secondary lead-filter-btn" data-view="booked">Booked Leads</button>
+			</div>
 		</div>
-
-		
-<!-- Lead Status Filters -->
-<div class="px-3 pt-2 pb-3 border-bottom">
-    <div id="leadFilterTabs"
-         class="d-flex flex-wrap align-items-center gap-2"
-         role="group"
-         aria-label="Lead status filters">
-
-        <button type="button"
-                class="btn btn-sm btn-primary lead-filter-btn"
-                data-view="total">
-            All
-        </button>
-
-        <button type="button"
-                class="btn btn-sm btn-outline-secondary lead-filter-btn"
-                data-view="active">
-            Active Leads
-        </button>
-
-        <button type="button"
-                class="btn btn-sm btn-outline-secondary lead-filter-btn"
-                data-view="follow-ups">
-            Follow Ups
-        </button>
-
-        <button type="button"
-                class="btn btn-sm btn-outline-secondary lead-filter-btn"
-                data-view="expired-follow-ups">
-            Expired Leads
-        </button>
-
-        <button type="button"
-                class="btn btn-sm btn-outline-secondary lead-filter-btn"
-                data-view="booked">
-            Booked Leads
-        </button>
-
-    </div>
-</div>
-<!-- End Lead Status Filters -->
 
 		<div class="card-body">
 			<div class="table-responsive">
