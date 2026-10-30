@@ -618,55 +618,135 @@ table.dataTable tbody tr:hover > * {
 }
 
 @media (max-width: 768px) {
+    .leads-card > .card-header {
+        align-items: flex-start !important;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        padding: 0.7rem 0.8rem;
+    }
+
+    .leads-card > .card-header > div {
+        width: 100%;
+        gap: 0.5rem !important;
+    }
+
+    .leads-card > .card-header > div .btn {
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 0.4rem 0.5rem;
+        font-size: 0.78rem;
+        white-space: nowrap;
+    }
+
     .lead-filter-bar {
-        align-items: flex-start;
-        gap: 0.65rem;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        align-items: start;
+        gap: 0.55rem;
+        padding: 0.65rem 0.8rem;
+    }
+
+    .lead-date-filter,
+    .lead-source-filter {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .lead-date-filter .form-label,
+    .lead-source-filter .form-label {
+        margin-bottom: 0.15rem;
+        font-size: 0.72rem;
     }
 
     .lead-date-inputs {
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        gap: 0.35rem;
     }
 
     .lead-date-inputs .form-control {
-        flex: 0 1 145px;
-        width: 145px;
+        flex: 1 1 0;
+        width: 0;
+        height: 34px;
+        padding: 0.3rem;
+        font-size: 0.72rem;
     }
 
     .lead-source-filter .form-select {
-        width: 180px;
+        width: 100%;
+        height: 34px;
+        font-size: 0.78rem;
     }
 
     .lead-status-filters {
         margin-left: 0;
-        flex-basis: 100%;
+        width: 100%;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 0.15rem;
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
     }
 
-    .dataTables_wrapper {
-        gap: 0.65rem;
+    .lead-status-filters .lead-filter-btn {
+        flex: 0 0 auto;
+        padding: 0.32rem 0.55rem;
+        font-size: 0.72rem;
     }
 
-    .dataTables_wrapper .dt-buttons {
-        order: 0;
-        flex: 1 1 100%;
+    .leads-card > .card-body {
+        padding: 0.5rem 0.65rem;
     }
 
-    .dataTables_wrapper .dataTables_filter {
+    #leads-table_wrapper.dataTables_wrapper {
+        gap: 0.45rem;
+    }
+
+    #leads-table_wrapper .dt-buttons {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+        gap: 0.4rem;
+    }
+
+    #leads-table_wrapper .dt-buttons .btn {
+        justify-content: center;
+        min-width: 0;
+        min-height: 36px;
+        padding: 0.35rem 0.4rem;
+        font-size: 0.76rem;
+        white-space: nowrap;
+    }
+
+    #leads-table_wrapper .dataTables_filter {
         order: 1;
+        width: 100%;
         flex: 1 1 100%;
         margin-left: 0;
         text-align: left;
     }
 
-    .dataTables_wrapper .dataTables_filter label {
+    #leads-table_wrapper .dataTables_filter label {
         width: 100%;
-        justify-content: space-between;
     }
 
-    .dataTables_wrapper .dataTables_filter input {
-        width: min(70%, 280px);
+    .leads-management-page #leads-table_wrapper .dataTables_filter input {
+        width: 100%;
+        min-width: 0;
+        height: 38px;
+        font-size: 0.82rem;
     }
 
-    .dataTables_wrapper .dataTables_paginate {
+    #leads-table_wrapper .dataTables_scroll {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    #leads-table_wrapper .dataTables_scrollBody {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #leads-table_wrapper .dataTables_paginate {
         margin-left: auto;
     }
 }
