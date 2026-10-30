@@ -145,6 +145,7 @@
 							<i class="bi bi-download"></i> Download CSV template
 						</a>
 						<form id="importLeadsForm" enctype="multipart/form-data">
+							@csrf
 							<div class="mb-3">
 								<label for="import_source" class="form-label">Source <span class="text-danger">*</span></label>
 								<select id="import_source" name="source_website" class="form-select" required>
