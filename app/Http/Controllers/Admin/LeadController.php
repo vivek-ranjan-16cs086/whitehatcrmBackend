@@ -426,7 +426,7 @@ $leadSources = Lead::query()
 				'email' => e($row->email),
 				'message' => e(\Str::limit($row->message, 50)),
 				'source_website' => e($row->source_website ?? '-'),
-				'source_page_name' => e($row->pageName ?? '-'),
+				'source_page_name' => $row->pageName,
 				//added
 				
 //'source_page_name' => e(

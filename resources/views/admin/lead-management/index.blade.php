@@ -421,7 +421,30 @@ d.source = $('#leadSourceFilter').val();
 
 				// Source
 				{ data: 'source_website' },
-				{ data: 'source_page_name' },
+				{
+					data: 'source_page_name',
+					className: 'lead-page-cell',
+					render: function (data, type, row) {
+						const pageName = data || '';
+						if (type !== 'display') {
+							return pageName;
+						}
+
+						if (!pageName.trim()) {
+							return '<span class="lead-page-empty">-</span>';
+						}
+
+						const safePageName = $('<div>').text(pageName).html();
+						const icon = row.source_website === 'facebook.com'
+							? 'bi-facebook'
+							: 'bi-file-earmark-text';
+
+						return '<span class="lead-page-badge" title="' + safePageName + '">'
+							+ '<i class="bi ' + icon + '" aria-hidden="true"></i>'
+							+ '<span>' + safePageName + '</span>'
+							+ '</span>';
+					}
+				},
 				
 				
 

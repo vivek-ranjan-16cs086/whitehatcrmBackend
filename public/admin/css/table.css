@@ -94,6 +94,43 @@ table.dataTable tbody td:last-child {
     min-width: 350px;
 }
 
+#leads-table td.lead-page-cell {
+    width: 220px;
+    min-width: 220px;
+    max-width: 220px;
+}
+
+.lead-page-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    max-width: 100%;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid #e0e7ff;
+    border-radius: 999px;
+    background: #f5f7ff;
+    color: #4338ca;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.2;
+    vertical-align: middle;
+}
+
+.lead-page-badge i {
+    flex: 0 0 auto;
+    font-size: 0.82rem;
+}
+
+.lead-page-badge span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.lead-page-empty {
+    color: #98a2b3;
+}
+
 #users-table tbody tr.odd > *,
 #leads-table tbody tr.odd > *,
 table.dataTable tbody tr.odd > * {

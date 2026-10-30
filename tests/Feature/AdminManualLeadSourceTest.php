@@ -88,6 +88,7 @@ class AdminManualLeadSourceTest extends TestCase
             ->assertSee('Facebook')
             ->assertSee('Whitehat Realty')
             ->assertSee('360PropGuide')
+            ->assertSee('lead-page-badge')
             ->assertSee('download', false)
             ->assertSee('name="_token"', false);
     }
