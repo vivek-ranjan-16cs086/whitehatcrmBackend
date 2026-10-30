@@ -25,7 +25,7 @@
 	
 </head>
 
-<body>
+<body class="@yield('body-class')">
     <div class="admin-preloader" id="adminPreloader" role="status" aria-live="polite" aria-atomic="true" hidden>
         <div class="admin-preloader-card">
             <span class="admin-preloader-spinner" aria-hidden="true"></span>

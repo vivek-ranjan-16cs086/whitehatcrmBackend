@@ -1,5 +1,7 @@
 @extends('layouts.admin')
 
+@section('body-class', 'leads-management-page')
+
 @section('content')
 
 <div class="leads-page">
@@ -471,7 +473,7 @@ d.source = $('#leadSourceFilter').val();
 			],
 
 			language: {
-				search: "<i class='fa fa-search' aria-hidden='true'></i>",
+				search: "",
 				searchPlaceholder: "Search leads..."
 			}
 		});

@@ -53,13 +53,21 @@ table.dataTable tbody td {
 }
 
 /* DataTables keeps a hidden header in the scrolling body for column sizing. */
-.dataTables_wrapper .dataTables_scrollBody thead th,
-.dataTables_wrapper .dataTables_scrollBody thead td {
+#leads-table_wrapper .dataTables_scrollBody thead,
+#leads-table_wrapper .dataTables_scrollBody thead tr {
+    height: 0 !important;
+    visibility: collapse !important;
+}
+
+#leads-table_wrapper .dataTables_scrollBody thead th,
+#leads-table_wrapper .dataTables_scrollBody thead td {
     height: 0 !important;
     padding-top: 0 !important;
     padding-bottom: 0 !important;
     border-top-width: 0 !important;
     border-bottom-width: 0 !important;
+    border-left-width: 0 !important;
+    border-right-width: 0 !important;
     line-height: 0 !important;
 }
 
@@ -72,6 +80,20 @@ table.dataTable thead th,
 table.dataTable tbody td {
     min-width: 150px;
     border-left: 0 !important;
+    border-right: 0 !important;
+}
+
+#leads-table_wrapper .dataTables_scrollHead #leads-table thead th,
+#leads-table_wrapper .dataTables_scrollBody #leads-table tbody td,
+#leads-table thead th,
+#leads-table tbody td {
+    border-right: 1px solid #e8ebf1 !important;
+}
+
+#leads-table_wrapper .dataTables_scrollHead #leads-table thead th:last-child,
+#leads-table_wrapper .dataTables_scrollBody #leads-table tbody td:last-child,
+#leads-table thead th:last-child,
+#leads-table tbody td:last-child {
     border-right: 0 !important;
 }
 
@@ -532,28 +554,35 @@ table.dataTable tbody tr:hover > * {
 }
 
 .dataTables_wrapper .dataTables_filter label .fa-search {
-    position: absolute;
-    left: 0.75rem;
-    z-index: 1;
-    color: #667085;
-    pointer-events: none;
+    display: none;
 }
 
-.dataTables_wrapper .dataTables_filter input {
-    width: min(230px, 24vw);
+.leads-management-page .topbar .search-container {
+    display: none;
+}
+
+.leads-management-page #leads-table_wrapper .dataTables_filter input {
+    width: min(300px, 28vw);
     min-width: 150px;
-    height: 36px;
+    height: 40px;
     margin: 0 !important;
-    border: 1px solid #cfd5e2;
-    border-radius: 6px;
-    padding: 0.4rem 0.65rem 0.4rem 2rem;
+    padding: 0.5rem 1rem 0.5rem 2.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 3px;
+    background-color: #f7f8fc;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 0.75rem center;
+    background-size: 1.1rem;
+    font-size: 0.875rem;
     box-shadow: none;
 }
 
-.dataTables_wrapper .dataTables_filter input:focus {
-    border-color: #8177e8;
+.leads-management-page #leads-table_wrapper .dataTables_filter input:focus {
+    border-color: var(--accent);
     outline: 0;
-    box-shadow: 0 0 0 3px rgb(85 72 217 / 0.1);
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgb(79 70 229 / 0.1);
 }
 
 .dataTables_wrapper > table,
