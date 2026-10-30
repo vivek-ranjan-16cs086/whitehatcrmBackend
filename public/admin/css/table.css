@@ -162,6 +162,11 @@ table.dataTable tbody td:last-child {
     border-bottom: 1px solid #e6e9ef;
 }
 
+#leads-table_wrapper .lead-filter-bar {
+    order: 1;
+    flex: 0 0 100%;
+}
+
 .lead-date-filter .form-label,
 .lead-source-filter .form-label {
     display: block;
@@ -211,6 +216,20 @@ table.dataTable tbody td:last-child {
 
 #leads-table_wrapper.dataTables_wrapper {
     gap: 0.45rem 0.7rem;
+}
+
+#leads-table_wrapper .dt-buttons .buttons-page-length {
+    color: #fff;
+    background: var(--btn-action-bg);
+    border-color: var(--btn-action-bg);
+}
+
+#leads-table_wrapper .dt-buttons .buttons-page-length:hover,
+#leads-table_wrapper .dt-buttons .buttons-page-length:focus,
+#leads-table_wrapper .dt-buttons .buttons-page-length:active {
+    color: #fff;
+    background: var(--btn-action-hover-bg);
+    border-color: var(--btn-action-hover-bg);
 }
 
 #leads-table_wrapper .dataTables_scroll,

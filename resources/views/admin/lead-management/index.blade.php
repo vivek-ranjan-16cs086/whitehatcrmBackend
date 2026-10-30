@@ -475,6 +475,14 @@ d.source = $('#leadSourceFilter').val();
 			language: {
 				search: "",
 				searchPlaceholder: "Search leads..."
+			},
+
+			initComplete: function () {
+				const wrapper = $(this.api().table().container());
+				const filters = $('.lead-filter-bar');
+				const tableScroll = wrapper.children('.dataTables_scroll');
+
+				filters.insertBefore(tableScroll);
 			}
 		});
 	}
