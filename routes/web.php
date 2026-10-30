@@ -68,6 +68,12 @@ Route::get('/admin/sidebar/menu', function (
 		Route::post('store', [LeadController::class, 'store'])
 			->middleware('permission:create.lead,web')
 			->name('lead-managment.store');
+		Route::post('import', [LeadController::class, 'import'])
+			->middleware('permission:create.lead,web')
+			->name('lead-managment.import');
+		Route::get('import-template', [LeadController::class, 'downloadImportTemplate'])
+			->middleware('permission:create.lead,web')
+			->name('lead-managment.import-template');
 
 	});
 	 

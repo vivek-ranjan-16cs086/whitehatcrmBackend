@@ -6,9 +6,12 @@ use Illuminate\Http\Request;
 use App\Services\LeadService;
 use App\Models\Lead;
 use App\Models\User;
+use App\Imports\AdminLeadsImport;
 use Illuminate\Validation\ValidationException; 
 use App\Services\NotificationService;   
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class LeadController extends Controller
 {
@@ -719,6 +722,64 @@ $lead->type = !empty($validated['type']) ? $validated['type'] : 'cold';
 				'error'   => $e->getMessage()
 			], 500);
 		}
+	}
+
+	public function import(Request $request)
+	{
+		$validated = $request->validate([
+			'file' => 'required|file|mimes:csv,txt|max:10240',
+			'source_website' => ['required', 'string', Rule::in(array_values(self::MANUAL_LEAD_SOURCES))],
+		]);
+
+		try {
+			DB::transaction(function () use ($request, $validated): void {
+				Excel::import(
+					new AdminLeadsImport($validated['source_website']),
+					$request->file('file')
+				);
+			});
+
+			return response()->json([
+				'status' => true,
+				'message' => 'Leads imported successfully.',
+			]);
+		} catch (ValidationException $e) {
+			return response()->json([
+				'status' => false,
+				'message' => $e->errors()['file'][0] ?? 'The uploaded CSV contains invalid data.',
+				'errors' => $e->errors(),
+			], 422);
+		} catch (\Throwable $e) {
+			\Log::error('Admin lead CSV import failed', [
+				'error' => $e->getMessage(),
+				'user_id' => $request->user()?->id,
+			]);
+
+			return response()->json([
+				'status' => false,
+				'message' => 'Could not import the CSV file. No leads were imported.',
+			], 500);
+		}
+	}
+
+	public function downloadImportTemplate()
+	{
+		return response()->streamDownload(function (): void {
+			$output = fopen('php://output', 'w');
+			fputcsv($output, [
+				'name',
+				'phone',
+				'email',
+				'message',
+				'status',
+				'type',
+				'follow_up_date',
+				'notes',
+			]);
+			fclose($output);
+		}, 'lead-import-template.csv', [
+			'Content-Type' => 'text/csv; charset=UTF-8',
+		]);
 	}
 	
 	

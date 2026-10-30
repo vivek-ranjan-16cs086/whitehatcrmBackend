@@ -7,10 +7,16 @@
 	<div class="card leads-card">
 		<div class="card-header d-flex justify-content-between align-items-center">
 			<h6 class="mb-0 fw-bold">All Leads</h6>
-		
-			<button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addLeadModal">
-				<i class="bi bi-plus"></i> Add Lead
-			</button>
+			<div class="d-flex gap-2">
+				@can('create.lead')
+					<button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#importLeadsModal">
+						<i class="bi bi-upload"></i> Import CSV
+					</button>
+					<button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addLeadModal">
+						<i class="bi bi-plus"></i> Add Lead
+					</button>
+				@endcan
+			</div>
 		</div>
 		
 {{-- Date Range and Source Filters --}}
@@ -122,6 +128,47 @@
 			</div>
 		</div>
 	</div>
+	@can('create.lead')
+		<div class="modal fade" id="importLeadsModal" tabindex="-1" aria-labelledby="importLeadsModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-lg modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title fw-bold" id="importLeadsModalLabel">Import Leads from CSV</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<p class="text-muted">
+							Choose the source for this upload. All leads in the CSV will be saved under that source.
+							Use the template to ensure the column names are correct.
+						</p>
+						<a class="btn btn-sm btn-outline-secondary mb-3" href="{{ route('lead-managment.import-template') }}">
+							<i class="bi bi-download"></i> Download CSV template
+						</a>
+						<form id="importLeadsForm" enctype="multipart/form-data">
+							<div class="mb-3">
+								<label for="import_source" class="form-label">Source <span class="text-danger">*</span></label>
+								<select id="import_source" name="source_website" class="form-select" required>
+									<option value="">Select a source</option>
+									@foreach($manualLeadSources as $label => $value)
+										<option value="{{ $value }}">{{ $label }}</option>
+									@endforeach
+								</select>
+							</div>
+							<div class="mb-3">
+								<label for="import_file" class="form-label">CSV file <span class="text-danger">*</span></label>
+								<input type="file" id="import_file" name="file" class="form-control" accept=".csv,text/csv" required>
+								<div class="form-text">Maximum file size: 10 MB. Existing phone numbers are rejected as duplicates.</div>
+							</div>
+						</form>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+						<button type="submit" form="importLeadsForm" id="importLeadsButton" class="btn btn-primary">Import Leads</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	@endcan
 <div class="modal fade" id="addLeadModal">
 		<div class="modal-dialog modal-lg modal-dialog-centered">
 			<div class="modal-content">
@@ -752,5 +799,46 @@ $(document).on(
 			}
 		});
 	});	
+
+	$('#importLeadsForm').on('submit', function (event) {
+		event.preventDefault();
+
+		const formData = new FormData(this);
+		const importButton = $('#importLeadsButton');
+		importButton.prop('disabled', true).text('Importing...');
+
+		$.ajax({
+			url: '{{ route("lead-managment.import") }}',
+			type: 'POST',
+			data: formData,
+			processData: false,
+			contentType: false,
+			success: function (res) {
+				$('#importLeadsModal').modal('hide');
+				$('#importLeadsForm')[0].reset();
+				$('#leads-table').DataTable().ajax.reload(null, false);
+				Swal.fire({
+					icon: 'success',
+					title: 'Import complete',
+					text: res.message || 'Leads imported successfully.',
+					confirmButtonColor: '#5548d9',
+					customClass: { popup: 'admin-swal-popup' }
+				});
+			},
+			error: function (xhr) {
+				const message = xhr.responseJSON?.message || 'Could not import the CSV file.';
+				Swal.fire({
+					icon: 'error',
+					title: 'Import failed',
+					text: message,
+					confirmButtonColor: '#5548d9',
+					customClass: { popup: 'admin-swal-popup' }
+				});
+			},
+			complete: function () {
+				importButton.prop('disabled', false).text('Import Leads');
+			}
+		});
+	});
 </script>
 @endpush
