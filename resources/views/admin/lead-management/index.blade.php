@@ -141,7 +141,7 @@
 							Choose the source for this upload. All leads in the CSV will be saved under that source.
 							Use the template to ensure the column names are correct.
 						</p>
-						<a class="btn btn-sm btn-outline-secondary mb-3" href="{{ route('lead-managment.import-template') }}">
+						<a class="btn btn-sm btn-outline-secondary mb-3" href="{{ route('lead-managment.import-template') }}" download>
 							<i class="bi bi-download"></i> Download CSV template
 						</a>
 						<form id="importLeadsForm" enctype="multipart/form-data">

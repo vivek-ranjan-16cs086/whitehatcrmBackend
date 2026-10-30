@@ -87,7 +87,8 @@ class AdminManualLeadSourceTest extends TestCase
             ->assertOk()
             ->assertSee('Facebook')
             ->assertSee('Whitehat')
-            ->assertSee('360PropGuide');
+            ->assertSee('360PropGuide')
+            ->assertSee('download', false);
     }
 
     public function test_admin_can_import_csv_leads_for_the_selected_source(): void
