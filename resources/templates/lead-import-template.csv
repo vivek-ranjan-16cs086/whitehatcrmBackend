@@ -1,1 +1,1 @@
-name,phone,email,message,external_id,status,type,assigned_to,follow_up_date,notes,visit_status,visit_date,sub_response_id,project_id,deactivate_reason,lead_source,inventory,budget_min,budget_max,remarks,source_page_id,source_page_name,source_form_id,source_form_name,campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,purchase_timeline,site_visit_preference,funding_method,source_submitted_at
+name,phone,email,message,status,type,follow_up_date,notes,source_page_name

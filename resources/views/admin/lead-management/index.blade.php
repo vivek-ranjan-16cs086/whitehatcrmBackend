@@ -159,8 +159,7 @@
 								<label for="import_file" class="form-label">CSV file <span class="text-danger">*</span></label>
 								<input type="file" id="import_file" name="file" class="form-control" accept=".csv,text/csv" required>
 								<div class="form-text">
-									Maximum size: 10 MB. Use ISO dates (YYYY-MM-DD), valid status/type values from the template,
-									and numeric database IDs for assigned_to, project_id, and sub_response_id.
+									Maximum size: 10 MB. Add <code>source_page_name</code> to include the Facebook page or form name.
 									Existing phone numbers are rejected as duplicates.
 								</div>
 							</div>

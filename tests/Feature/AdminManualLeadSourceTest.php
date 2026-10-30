@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Project;
 use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -122,46 +121,15 @@ class AdminManualLeadSourceTest extends TestCase
         ]);
     }
 
-    public function test_import_can_fill_all_lead_fields_present_in_the_database(): void
+    public function test_import_can_save_the_source_page_name(): void
     {
         $this->mock(NotificationService::class);
         $user = $this->userWithCreateLeadPermission();
-        $project = Project::create([
-            'name' => 'Import Project',
-            'email' => 'project@example.com',
-            'phone' => '1112223333',
-        ]);
-        $headers = \App\Imports\AdminLeadsImport::HEADINGS;
-        $values = array_fill_keys($headers, '');
-        $values = array_merge($values, [
-            'name' => 'Full details lead',
-            'phone' => '0987654321',
-            'email' => 'full@example.com',
-            'message' => 'Facebook form answers and lead details',
-            'external_id' => '78901',
-            'status' => 'active',
-            'type' => 'warm',
-            'assigned_to' => (string) $user->id,
-            'follow_up_date' => '2026-11-15',
-            'notes' => 'Call next week',
-            'visit_status' => 'scheduled',
-            'visit_date' => '2026-11-20 00:00:00',
-            'project_id' => (string) $project->id,
-            'deactivate_reason' => '',
-            'source_page_name' => 'Facebook Form',
-            'source_form_name' => 'Forest Walk Diwali 2026',
-            'purchase_timeline' => 'Immediate',
-            'site_visit_preference' => 'Weekend',
-            'funding_method' => 'Loan',
-            'source_submitted_at' => '2026-10-29 17:16:55',
-        ]);
-        $stream = fopen('php://temp', 'r+');
-        fputcsv($stream, $headers);
-        fputcsv($stream, array_map(fn ($header) => $values[$header], $headers));
-        rewind($stream);
-        $csvContents = stream_get_contents($stream);
-        fclose($stream);
-        $csv = UploadedFile::fake()->createWithContent('all-fields.csv', $csvContents);
+        $csv = UploadedFile::fake()->createWithContent(
+            'leads.csv',
+            "name,phone,email,message,status,type,follow_up_date,notes,source_page_name\n"
+                ."Facebook form lead,0987654321,full@example.com,Interested,active,warm,2026-11-15,Call next week,Forest Walk Diwali 2026\n"
+        );
 
         $this->actingAs($user)
             ->post(route('lead-managment.import'), [
@@ -172,14 +140,10 @@ class AdminManualLeadSourceTest extends TestCase
             ->assertJsonPath('status', true);
 
         $this->assertDatabaseHas('leads', [
-            'name' => 'Full details lead',
-            'external_id' => 78901,
-            'assigned_to' => $user->id,
-            'project_id' => $project->id,
-            'visit_status' => 'scheduled',
-            'visit_date' => '2026-11-20 00:00:00',
+            'name' => 'Facebook form lead',
+            'source_page_name' => 'Forest Walk Diwali 2026',
             'source_website' => 'facebook.com',
-            'message' => 'Facebook form answers and lead details',
+            'message' => 'Interested',
         ]);
     }
 
