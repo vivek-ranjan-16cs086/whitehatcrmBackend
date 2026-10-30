@@ -19,47 +19,25 @@
 			</div>
 		</div>
 		
-{{-- Date Range and Source Filters --}}
-<div class="row g-3 mb-3 align-items-end mx-0 px-3 pt-2">
-
-    {{-- Left 50%: Date Range --}}
-    <div class="col-md-8">
-        <label class="form-label">Date Range</label>
-
-        <div class="d-flex align-items-center gap-2">
-            <input type="date"
-                   id="leadDateFrom"
-                   class="form-control"
-                   aria-label="From date">
-
-            <span class="text-muted">to</span>
-
-            <input type="date"
-                   id="leadDateTo"
-                   class="form-control"
-                   aria-label="To date">
-        </div>
-    </div>
-
-    {{-- Right 40%: Source --}}
-    <div class="col-md-4">
-        <label class="form-label">Source</label>
-
-        
-<select id="leadSourceFilter" class="form-select">
-    <option value="">All Sources</option>
-
-    @foreach($leadSources as $source)
-        <option value="{{ $source }}">
-            {{ $source }}
-        </option>
-    @endforeach
-
-</select>
-
-    </div>
-
-</div>
+		<div class="lead-filter-bar">
+			<div class="lead-date-filter">
+				<label class="form-label" for="leadDateFrom">Date range</label>
+				<div class="lead-date-inputs">
+					<input type="date" id="leadDateFrom" class="form-control" aria-label="From date">
+					<span aria-hidden="true">to</span>
+					<input type="date" id="leadDateTo" class="form-control" aria-label="To date">
+				</div>
+			</div>
+			<div class="lead-source-filter">
+				<label class="form-label" for="leadSourceFilter">Source</label>
+				<select id="leadSourceFilter" class="form-select">
+					<option value="">All Sources</option>
+					@foreach($leadSources as $source)
+						<option value="{{ $source }}">{{ $source }}</option>
+					@endforeach
+				</select>
+			</div>
+		</div>
 
 		
 <!-- Lead Status Filters -->
@@ -490,36 +468,46 @@ d.source = $('#leadSourceFilter').val();
 			buttons: [
 				'pageLength',
 				{
-					extend: 'copyHtml5',
-					title: "Leads",
-					exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
+					extend: 'collection',
+					text: '<i class="bi bi-download"></i> Export',
+					autoClose: true,
+					buttons: [
+						{
+							extend: 'copyHtml5',
+							title: 'Leads',
+							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
+						},
+						{
+							extend: 'excelHtml5',
+							title: 'Leads',
+							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
+						},
+						{
+							extend: 'csv',
+							title: 'Leads',
+							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
+						},
+						{
+							extend: 'pdfHtml5',
+							title: 'Leads',
+							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
+						},
+						{
+							extend: 'print',
+							title: 'Leads',
+							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
+						}
+					]
 				},
 				{
-					extend: 'excelHtml5',
-					title: "Leads",
-					exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
-				},
-				{
-					extend: 'csv',
-					title: "Leads",
-					exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
-				},
-				{
-					extend: 'pdfHtml5',
-					title: "Leads",
-					exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
-				},
-				{
-					extend: 'print',
-					title: "Leads",
-					exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
-				},
-				'colvis'
+					extend: 'colvis',
+					text: '<i class="bi bi-layout-three-columns"></i> Columns'
+				}
 			],
 
 			language: {
-				search: "<i class='fa fa-search'></i>",
-				searchPlaceholder: " Search leads..."
+				search: "<i class='fa fa-search' aria-hidden='true'></i>",
+				searchPlaceholder: "Search leads..."
 			}
 		});
 	}
