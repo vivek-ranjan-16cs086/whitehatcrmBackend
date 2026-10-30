@@ -2,8 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Models\Lead;
+use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -56,6 +57,66 @@ class ApiLeadAuthorizationTest extends TestCase
             ->assertJsonPath('status', true);
     }
 
+    public function test_facebook_webhook_retry_updates_the_existing_lead_and_form_page_name(): void
+    {
+        config(['services.erp.key' => 'test-api-key']);
+        $notifications = $this->mock(NotificationService::class);
+        $notifications->shouldReceive('sendToRole')->once();
+
+        $payload = [
+            'external_id' => '1893247868694559',
+            'source_website' => 'facebook.com',
+            'name' => 'Rakesh Mathur',
+            'phone' => '+919711389347',
+            'email' => 'rakesh@example.com',
+            'source_page_name' => 'Forest Walk Diwali 2026',
+            'message' => 'Facebook Lead Ads | Form: Forest Walk Diwali 2026 | Purchase timeline: Immediate',
+        ];
+
+        $this->postJson('/api/v1/leads/store', $payload, ['x-api-key' => 'test-api-key'])
+            ->assertOk()
+            ->assertJsonPath('data.source_page_name', 'Forest Walk Diwali 2026');
+
+        $payload['source_page_name'] = 'Old form name';
+        $payload['message'] = 'Facebook Lead Ads | Form: Forest Walk Diwali 2026 Updated | Purchase timeline: Immediate';
+
+        $this->postJson('/api/v1/leads/store', $payload, ['x-api-key' => 'test-api-key'])
+            ->assertOk()
+            ->assertJsonPath('data.source_page_name', 'Forest Walk Diwali 2026 Updated')
+            ->assertJsonPath('data.message', $payload['message']);
+
+        $this->assertDatabaseCount('leads', 1);
+        $this->assertDatabaseHas('leads', [
+            'external_id' => '1893247868694559',
+            'source_website' => 'facebook.com',
+            'source_page_name' => 'Forest Walk Diwali 2026 Updated',
+            'message' => $payload['message'],
+        ]);
+    }
+
+    public function test_duplicate_phone_with_a_different_facebook_lead_id_is_still_rejected(): void
+    {
+        config(['services.erp.key' => 'test-api-key']);
+        $notifications = $this->mock(NotificationService::class);
+        $notifications->shouldReceive('sendToRole')->twice();
+
+        $this->postJson('/api/v1/leads/store', [
+            'external_id' => '1001',
+            'source_website' => 'facebook.com',
+            'name' => 'Existing Facebook lead',
+            'phone' => '1234567890',
+        ], ['x-api-key' => 'test-api-key'])->assertOk();
+
+        $this->postJson('/api/v1/leads/store', [
+            'external_id' => '1002',
+            'source_website' => 'facebook.com',
+            'name' => 'Different Facebook lead',
+            'phone' => '1234567890',
+        ], ['x-api-key' => 'test-api-key'])->assertStatus(409);
+
+        $this->assertDatabaseCount('leads', 1);
+    }
+
     public function test_renamed_view_only_role_cannot_fetch_another_users_lead_by_id(): void
     {
         $user = $this->userWithLeadViewPermission('business-associate');
@@ -65,7 +126,7 @@ class ApiLeadAuthorizationTest extends TestCase
         ]);
 
         $this->actingAs($user, 'api')
-            ->getJson('/api/v1/leads/' . $lead->id)
+            ->getJson('/api/v1/leads/'.$lead->id)
             ->assertNotFound();
     }
 

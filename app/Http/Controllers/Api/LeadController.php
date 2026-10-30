@@ -129,53 +129,57 @@ class LeadController extends BaseController
 				'source_website' => 'required|string',
 				'name' => 'required|string',
 				'phone' => 'nullable|string',
-				'email' => 'nullable|email', 
+				'email' => 'nullable|email',
+				'external_id' => 'nullable|integer',
+				'source_page_name' => 'nullable|string|max:255',
+				'message' => 'nullable|string',
 			]);
 
 			$data = $request->all();
-            
-			$existingLead = Lead::where('source_website', $data['source_website'])
-			->where('phone', $data['phone'])
-			->where('created_at', '>=', now()->subMonth())
-			->first();
 
-			if ($existingLead) {
-
-				$notificationService->sendToRole('super-admin', [
-					'title' => 'Duplicate Lead Detected From '. ucfirst(pathinfo($data['source_website'], PATHINFO_FILENAME)),  
-					'message' => "Lead '{$existingLead->name}' already exists in the system. Please review and reassign if required.",
-					'type' => 'DUPLICATE_LEAD',
-					'data' => [
-						'leadId' => (string) $existingLead->id,
-						'leadName' => (string) $existingLead->name,
-						'phone' => (string) $existingLead->phone, 
-					]
-				]); 
-				
-				\Log::info('DUPLICATE CHECK RESULT', [
-					'external_id' => $data['external_id'] ?? null,
-					'existing_id' => $existingLead?->id,
-				]);
-
-				return response()->json([
-					'status' => false,
-					'message' => 'Lead already exists. Notification sent to Super Admin.',
-					'lead_id' => $existingLead->id
-				], 409); 
-			}  
-			// Find existing lead
-			$query = Lead::where('source_website', $data['source_website']); 
-			
+			$lead = null;
 			if (!empty($data['external_id'])) {
-				$query->where('external_id', $data['external_id']);
+				$lead = Lead::where('source_website', $data['source_website'])
+					->where('external_id', $data['external_id'])
+					->first();
 			}
 
-			$lead = $query->first();
+			if (!$lead && !empty($data['phone'])) {
+				$duplicateLead = Lead::where('source_website', $data['source_website'])
+					->where('phone', $data['phone'])
+					->where('created_at', '>=', now()->subMonth())
+					->first();
 
+				if ($duplicateLead) {
+					$notificationService->sendToRole('super-admin', [
+						'title' => 'Duplicate Lead Detected From ' . ucfirst(pathinfo($data['source_website'], PATHINFO_FILENAME)),
+						'message' => "Lead '{$duplicateLead->name}' already exists in the system. Please review and reassign if required.",
+						'type' => 'DUPLICATE_LEAD',
+						'data' => [
+							'leadId' => (string) $duplicateLead->id,
+							'leadName' => (string) $duplicateLead->name,
+							'phone' => (string) $duplicateLead->phone,
+						],
+					]);
+
+					\Log::info('DUPLICATE CHECK RESULT', [
+						'external_id' => $data['external_id'] ?? null,
+						'existing_id' => $duplicateLead->id,
+					]);
+
+					return response()->json([
+						'status' => false,
+						'message' => 'Lead already exists. Notification sent to Super Admin.',
+						'lead_id' => $duplicateLead->id,
+					], 409);
+				}
+			}
+
+			$isNewLead = !$lead;
 			if (!$lead) {
 				$lead = new Lead();
 				$lead->status = 'active';
-				 $lead->type = 'cold';
+				$lead->type = 'cold';
 			}
 
 			// Manual safe assignment
@@ -191,7 +195,9 @@ class LeadController extends BaseController
 			$lead->phone = $data['phone'] ?? $lead->phone;
 			$lead->email = $data['email'] ?? $lead->email;
 			$lead->message = $message;
-            $lead->created_by = auth()->id();
+			if (auth()->check()) {
+				$lead->created_by = auth()->id();
+			}
 			\Log::info('ATTEMPTING DATABASE INSERT', [
 				'database' => $lead->getConnection()->getDatabaseName(),
 				'external_id' => $lead->external_id,
@@ -203,8 +209,9 @@ class LeadController extends BaseController
 			\Log::info('DATABASE INSERT SUCCESS', [
 				'lead_id' => $lead->id,
 			]);
-			
-			$notificationService->sendToRole('super-admin', [
+
+			if ($isNewLead) {
+				$notificationService->sendToRole('super-admin', [
 					'title' => 'Effecient Lead Detected From ' . ucfirst(pathinfo($lead->source_website, PATHINFO_FILENAME)),
 					'message' => "Lead from '{$lead->name}' with mobile No- '{$lead->phone}' has been detected in the system. Please review and follow the lead.",
 					'type' => 'LEAD_REMINDER',
@@ -214,6 +221,7 @@ class LeadController extends BaseController
 						'phone' => (string) $lead->phone, 
 					]
 				]); 
+			}
             
 			return $this->sendResponse('Lead stored successfully', $lead);
 
