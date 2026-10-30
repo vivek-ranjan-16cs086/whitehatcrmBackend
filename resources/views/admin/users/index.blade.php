@@ -762,7 +762,31 @@
 
             return;
         }
+//added
 
+const password = $('#password').val();
+const confirmation = $('#password_confirmation').val();
+
+if (password !== confirmation) {
+    Swal.fire({
+        icon: 'warning',
+        title: 'Passwords do not match',
+        text: 'Please enter the same password in both fields.'
+    });
+    return;
+}
+
+if (!isEditMode && password.length < 8) {
+    Swal.fire({
+        icon: 'warning',
+        title: 'Invalid password',
+        text: 'Password must contain at least 8 characters.'
+    });
+    return;
+}
+
+
+//...
 
         $('#submitBtn').prop('disabled', true);
 
@@ -833,35 +857,26 @@
             },
 
 
-            error: function(xhr) {
+           //added
+		   
+error: function(xhr) {
 
-                $('#submitBtn').prop('disabled', false);
+    if (xhr.status === 422) {
+        const errors = xhr.responseJSON?.errors || {};
+        displayValidationErrors(errors);
+    } else {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: 'Something went wrong. Please try again.'
+        });
+    }
+},
 
+complete: function() {
+    $('#submitBtn').prop('disabled', false);
+}
 
-                if (xhr.status === 422) {
-
-                    const errors =
-                        xhr.responseJSON.errors;
-
-                    displayValidationErrors(errors);
-
-                }
-
-                else {
-
-                    Swal.fire({
-
-                        icon: 'error',
-
-                        title: 'Error!',
-
-                        text: 'Something went wrong. Please try again.'
-
-                    });
-
-                }
-
-            }
 
         });
 

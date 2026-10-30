@@ -299,8 +299,6 @@ class EventController extends Controller
 		$request->validate([
 			'call_outcome' => 'required|string',
 			'note' => 'nullable|string',
-			
-			
 		]);
 
 		// file upload

@@ -59,7 +59,7 @@ class LeadController extends BaseController
             }
 			
 			if ($user && !$user->canViewAllLeads()) {
-				$query->where('assigned_to', $user->id);
+				$query->where('assigned_to', $user->id)->where('status', '!=', 'deactive');
 			}
 			if (!empty($startDate) && !empty($endDate)) {
 				$query->whereBetween('created_at', [
@@ -70,6 +70,16 @@ class LeadController extends BaseController
 		    if ($user_id) {
 				$query->where('assigned_to', $user_id); 
 			}
+			
+			if ( isset($request->is_unassigned) && $request->is_unassigned == true ) {
+				$query = $query->whereNull('assigned_to');
+			} 
+			
+			if ( isset($request->page_name)) {
+				// dd($request->page_name);
+				$query = $query->where('source_page_name', $request->page_name);
+			} 
+		
 
 			// Count
 			$totalCount = (clone $query)->count();
@@ -125,8 +135,9 @@ class LeadController extends BaseController
 			$data = $request->all();
             
 			$existingLead = Lead::where('source_website', $data['source_website'])
-				->where('phone', $data['phone'])
-				->first();
+			->where('phone', $data['phone'])
+			->where('created_at', '>=', now()->subMonth())
+			->first();
 
 			if ($existingLead) {
 
@@ -140,6 +151,11 @@ class LeadController extends BaseController
 						'phone' => (string) $existingLead->phone, 
 					]
 				]); 
+				
+				\Log::info('DUPLICATE CHECK RESULT', [
+					'external_id' => $data['external_id'] ?? null,
+					'existing_id' => $existingLead?->id,
+				]);
 
 				return response()->json([
 					'status' => false,
@@ -159,18 +175,37 @@ class LeadController extends BaseController
 			if (!$lead) {
 				$lead = new Lead();
 				$lead->status = 'active';
+				 $lead->type = 'cold';
 			}
 
 			// Manual safe assignment
 			$lead->external_id = $data['external_id'] ?? $lead->external_id;
 			$lead->source_website = $data['source_website'];
+			$lead->source_page_name = $data['source_page_name'];
+//added\
 
+// $lead->source_page_name = Lead::resolveSourcePageName(
+    // $data['message'] ?? $lead->message,
+    // $data['source_website'],
+    // $data['source_page_name'] ?? $lead->source_page_name
+// );
+//...
 			$lead->name = $data['name'] ?? $lead->name;
 			$lead->phone = $data['phone'] ?? $lead->phone;
 			$lead->email = $data['email'] ?? $lead->email;
 			$lead->message = $data['message'] ?? $lead->message;
             $lead->created_by = auth()->id();
+			\Log::info('ATTEMPTING DATABASE INSERT', [
+				'database' => $lead->getConnection()->getDatabaseName(),
+				'external_id' => $lead->external_id,
+				'source_website' => $lead->source_website,
+			]);
+
 			$lead->save();
+
+			\Log::info('DATABASE INSERT SUCCESS', [
+				'lead_id' => $lead->id,
+			]);
 			
 			$notificationService->sendToRole('super-admin', [
 					'title' => 'Effecient Lead Detected From ' . ucfirst(pathinfo($lead->source_website, PATHINFO_FILENAME)),
@@ -186,7 +221,18 @@ class LeadController extends BaseController
 			return $this->sendResponse('Lead stored successfully', $lead);
 
 		} catch (\Exception $e) {
-			return $this->sendError('Failed to store lead', $e->getMessage(), 500);
+			\Log::error('LEAD STORE FAILED', [
+				'error' => $e->getMessage(),
+				'file' => $e->getFile(),
+				'line' => $e->getLine(),
+				'trace' => $e->getTraceAsString()
+			]);
+
+			return $this->sendError(
+				'Failed to store lead',
+				$e->getMessage(),
+				500
+			);
 		}
 	}
 	
@@ -318,13 +364,13 @@ class LeadController extends BaseController
 				$oldProjectId = $lead->project_id;
 				$oldVisitStatus = $lead->visit_status;
 				$oldVisitDate = $lead->visit_date;
-
+				// dd($request->all());
 				// Validation
 				$validator = Validator::make($request->all(), [
 					'visitStatus' => 'sometimes|in:not_scheduled,scheduled,completed,visited,cancelled,re-visit-plan,re-visit-done',
 					'visitDate'   => 'nullable|date|required_if:visitStatus,scheduled',
 
-					'status' => 'sometimes|in:not_available,active,booked,deactive,follow_up,follow_up_expired,follow_up_complete',
+					'status' => 'sometimes|in:not_available,active,booked,deactive,follow_up,follow_up_expired,follow_up_complete,visit',
 					'type'   => 'sometimes|in:hot,cold,warm,ready-to-buy',
 
 					'note'   => 'required|nullable|string',
@@ -339,7 +385,7 @@ class LeadController extends BaseController
 					'inventory' => 'sometimes|nullable|string|max:100',
 					'follow_up_date' => 'sometimes|date',
 					'remarks' => 'nullable|string|required_if:status,follow_up_complete',
-					'sub_response_id' => 'required_if:status,follow_up|nullable|exists:sub_responses,id',
+					'sub_response_id' => 'nullable|exists:sub_responses,id',
 					
 				]);
 
@@ -510,14 +556,17 @@ class LeadController extends BaseController
 
 	public function getStatusList()
 	{
+		
+		
 		$statuses = [
-			'Not Available', 
 			'Active',
-			'Booked',
-			'Deactive',
+			'Not Connected',
 			'Follow Up',
-			'Follow Up Expired', 
-			'Follow Up Complete'
+			'Visit',
+			'Deactive',
+			'Follow Up Expired',
+			'Follow Up Complete',
+			'Booked'
 		];
 
 		$formattedStatus = array_map(function ($status) {
@@ -617,8 +666,8 @@ class LeadController extends BaseController
 			}])->whereKey($id);
 
 			// Restrict users without team-wide edit access to their assigned leads.
-			if (!$user->canViewAllLeads()) {
-				$leadQuery->where('assigned_to', $user->id);
+			if (!$user->canViewAllLeads()) { 
+				$leadQuery = $leadQuery->where('assigned_to', $user->id);
 			}
 
 			$lead = $leadQuery->first();
@@ -677,7 +726,8 @@ class LeadController extends BaseController
 		$data = $validator->validated();
 		$user = $request->user('api');
 		$data['created_by'] = $user->id;
-
+// Default Cold if the API doesn't provide a type
+$data['type'] = $data['type'] ?: 'cold';
 		$lead = Lead::create($data);
 		if ($request->filled('follow_up_date')) {
 
@@ -1333,7 +1383,10 @@ class LeadController extends BaseController
 					->where('status', 'booked')
 					->count();
 			}
-
+			
+			$unassignedLeads = Lead::query();
+			$unassignedLeads = $unassignedLeads->whereNull('assigned_to');
+			$unassignedLeads = $unassignedLeads->count();
 			return response()->json([
 				'status' => true,
 				'data' => [
@@ -1343,7 +1396,7 @@ class LeadController extends BaseController
 					'followups' => $followups,
 					'performance_percentage' => $avgConversion,
 					'followup_percentage' => $avgPerAgent,
-
+					'unassigned_leads' => $unassignedLeads,
 					'weekly_visit_target' => $visitAchieved,
 					'weekly_booking_target' => $bookingAchieved,
 					'booked_leads' => $bookedLeads,

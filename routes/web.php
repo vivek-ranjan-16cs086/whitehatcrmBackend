@@ -33,6 +33,24 @@ Route::get('logout', [LoginController::class, 'logout'])->name('logout')->middle
 Route::get('/dashboard', fn() => redirect()->route('dashboard'));
 
 Route::middleware(['auth','no-cache'])->group(function () {
+	
+				//added
+			
+Route::get('/admin/sidebar/menu', function (
+    \App\Services\SidebarService $sidebarService
+) {
+    return response()->json([
+        'status' => true,
+        'message' => 'Sidebar fetched successfully',
+        'data' => [
+            'menus' => $sidebarService->getMenus(
+                request()->user()
+            ),
+        ],
+    ]);
+})->name('admin.sidebar.menu');
+
+//
     Route::get('/dashboard', [Admin\DashboardController::class, 'index'])->name('dashboard');
 	
 	//Lead Management
@@ -50,6 +68,7 @@ Route::middleware(['auth','no-cache'])->group(function () {
 		Route::post('store', [LeadController::class, 'store'])
 			->middleware('permission:create.lead,web')
 			->name('lead-managment.store');
+
 	});
 	 
 	//project management

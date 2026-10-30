@@ -26,9 +26,116 @@
             </div>
         </div>
 
+ {{-- ── added── --}}
+ 
+ 
+@if($canViewLeads)
+
+<div class="row g-4 mb-4">
+
+    <!-- Total Leads -->
+    <div class="col-xl-3 col-md-6">
+        <a href="{{ route('lead-management.index') }}"
+           data-dashboard-lead-view="total"
+           class="text-decoration-none d-block">
+
+            <div class="stat-card stat-blue h-100">
+                <div class="stat-number">
+                    {{ $dashboardTotalLeads }}
+                </div>
+                <div class="stat-label">
+                    <i data-lucide="users" class="me-1"></i>
+                    Total Leads
+                </div>
+                <div class="mt-3">
+                    <small class="text-white-50">
+                        View all leads
+                    </small>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Active Leads -->
+    <div class="col-xl-3 col-md-6">
+        <a href="{{ route('lead-management.index') }}"
+           data-dashboard-lead-view="active"
+           class="text-decoration-none d-block">
+
+            <div class="stat-card stat-green h-100">
+                <div class="stat-number">
+                    {{ $activeLeads }}
+                </div>
+                <div class="stat-label">
+                    <i data-lucide="activity" class="me-1"></i>
+                    Active Leads
+                </div>
+                <div class="mt-3">
+                    <small class="text-white-50">
+                        View active leads
+                    </small>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Follow Ups -->
+    <div class="col-xl-3 col-md-6">
+        <a href="{{ route('lead-management.index') }}"
+           data-dashboard-lead-view="follow-ups"
+           class="text-decoration-none d-block">
+
+            <div class="stat-card stat-orange h-100">
+                <div class="stat-number">
+                    {{ $followUpLeads }}
+                </div>
+                <div class="stat-label">
+                    <i data-lucide="calendar-clock" class="me-1"></i>
+                    Follow-ups
+                </div>
+                <div class="mt-3">
+                    <small class="text-white-50">
+                        View follow-up leads
+                    </small>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Booked Leads -->
+    <div class="col-xl-3 col-md-6">
+        <a href="{{ route('lead-management.index') }}"
+           data-dashboard-lead-view="booked"
+           class="text-decoration-none d-block">
+
+            <div class="stat-card stat-purple h-100">
+                <div class="stat-number">
+                    {{ $bookedLeads }}
+                </div>
+                <div class="stat-label">
+                    <i data-lucide="badge-check" class="me-1"></i>
+                    Bookings
+                </div>
+                <div class="mt-3">
+                    <small class="text-white-50">
+                        View booked leads
+                    </small>
+                </div>
+            </div>
+        </a>
+    </div>
+
+</div>
+
+@endif
+
+
+
         {{-- ── Stat Cards ── --}}
         <div class="row g-4 mb-4">
-            <div class="col-xl-3 col-md-6">
+            <div class="col-xl-4 col-md-6">
+			<a href="{{ route('admin.users.index') }}"
+   class="text-decoration-none d-block h-100">
                 <div class="stat-card stat-blue">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -46,8 +153,11 @@
                         <small class="text-white-50">Active user accounts</small>
                     </div>
                 </div>
+				</a>
             </div>
-            <div class="col-xl-3 col-md-6">
+            <div class="col-xl-4 col-md-6">
+			<a href="{{ route('admin.roles.index') }}"
+   class="text-decoration-none d-block h-100">
                 <div class="stat-card stat-green">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -65,8 +175,11 @@
                         <small class="text-white-50">User role definitions</small>
                     </div>
                 </div>
+				</a>
             </div>
-            <div class="col-xl-3 col-md-6">
+            <div class="col-xl-4 col-md-6">
+			<a href="{{ route('admin.permissions.index') }}"
+   class="text-decoration-none d-block h-100">
                 <div class="stat-card stat-orange">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -84,27 +197,112 @@
                         <small class="text-white-50">Access permissions</small>
                     </div>
                 </div>
-            </div>
-            <div class="col-xl-3 col-md-6">
-                <div class="stat-card stat-purple">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <div class="stat-number">{{ $totalLeads ?? 0 }}</div>
-                            <div class="stat-label">
-                                <i data-lucide="funnel" class="me-1"></i>
-                                Total Leads
-                            </div>
-                        </div>
-                        <div class="stat-icon">
-                            <i data-lucide="funnel"></i>
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <small class="text-white-50">Lead opportunities</small>
-                    </div>
-                </div>
+				</a>
             </div>
         </div>
+
+{{-- Pipeline Health and At Risk --}}
+@if($canViewLeads)
+
+<div class="row g-4 mb-4">
+
+    {{-- Pipeline Health --}}
+    <div class="col-xl-8">
+        <div class="card h-100">
+
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i data-lucide="activity" class="me-2"></i>
+                    Pipeline Health
+                </h6>
+            </div>
+
+            <div class="card-body">
+
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <h2 class="fw-bold mb-0">
+                        {{ $pipelineHealth }}%
+                    </h2>
+
+                    <span class="text-muted">
+                        Composite score
+                    </span>
+                </div>
+
+                <div class="progress" style="height: 14px;">
+                    <div class="progress-bar bg-success"
+                         role="progressbar"
+                         style="width: {{ $pipelineHealth }}%;"
+                         aria-valuenow="{{ $pipelineHealth }}"
+                         aria-valuemin="0"
+                         aria-valuemax="100">
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    {{-- At Risk --}}
+    <div class="col-xl-4">
+        <div class="card h-100">
+
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i data-lucide="alert-triangle" class="me-2"></i>
+                    At Risk
+                </h6>
+            </div>
+
+            <div class="card-body">
+
+                <h2 class="fw-bold mb-2">
+                    {{ number_format($atRiskLeads) }}
+                </h2>
+
+                <p class="text-muted mb-0">
+                    At-risk Leads
+                </p>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+{{-- Risk Breakdown --}}
+<div class="row g-3 mb-4">
+
+    <div class="col-md-4">
+        <span class="text-muted">Overdue:</span>
+        <strong>
+            {{ number_format($overdueFollowups) }}
+        </strong>
+    </div>
+
+    <div class="col-md-4">
+        <span class="text-muted">No follow-up:</span>
+        <strong>
+            {{ number_format($noFollowup) }}
+        </strong>
+    </div>
+
+    <div class="col-md-4 text-md-end">
+        <span class="text-muted">Stale:</span>
+        <strong>
+            {{ number_format($staleLeads) }}
+        </strong>
+    </div>
+
+</div>
+
+@endif
+
+
+{{-- Performance Ranking --}}
+
 
         {{-- ── Charts and Analytics Row ── --}}
         <div class="row g-4 mb-4">
@@ -242,9 +440,24 @@
     </div>
 
     <script>
-        // Initialize Lucide icons for this page
-        document.addEventListener('DOMContentLoaded', function () {
-            lucide.createIcons();
+        //added
+document.addEventListener('DOMContentLoaded', function () {
+
+    lucide.createIcons();
+
+    document.querySelectorAll('[data-dashboard-lead-view]')
+        .forEach(function(link) {
+
+            link.addEventListener('click', function() {
+                sessionStorage.setItem(
+                    'selectedLeadView',
+                    this.dataset.dashboardLeadView
+                );
+            });
+
         });
+
+});
     </script>
+	
 @endsection

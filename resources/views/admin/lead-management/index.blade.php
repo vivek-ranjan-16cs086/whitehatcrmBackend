@@ -7,10 +7,96 @@
 	<div class="card leads-card">
 		<div class="card-header d-flex justify-content-between align-items-center">
 			<h6 class="mb-0 fw-bold">All Leads</h6>
+		
 			<button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addLeadModal">
 				<i class="bi bi-plus"></i> Add Lead
 			</button>
 		</div>
+		
+{{-- Date Range and Source Filters --}}
+<div class="row g-3 mb-3 align-items-end mx-0 px-3 pt-2">
+
+    {{-- Left 50%: Date Range --}}
+    <div class="col-md-8">
+        <label class="form-label">Date Range</label>
+
+        <div class="d-flex align-items-center gap-2">
+            <input type="date"
+                   id="leadDateFrom"
+                   class="form-control"
+                   aria-label="From date">
+
+            <span class="text-muted">to</span>
+
+            <input type="date"
+                   id="leadDateTo"
+                   class="form-control"
+                   aria-label="To date">
+        </div>
+    </div>
+
+    {{-- Right 40%: Source --}}
+    <div class="col-md-4">
+        <label class="form-label">Source</label>
+
+        
+<select id="leadSourceFilter" class="form-select">
+    <option value="">All Sources</option>
+
+    @foreach($leadSources as $source)
+        <option value="{{ $source }}">
+            {{ $source }}
+        </option>
+    @endforeach
+
+</select>
+
+    </div>
+
+</div>
+
+		
+<!-- Lead Status Filters -->
+<div class="px-3 pt-2 pb-3 border-bottom">
+    <div id="leadFilterTabs"
+         class="d-flex flex-wrap align-items-center gap-2"
+         role="group"
+         aria-label="Lead status filters">
+
+        <button type="button"
+                class="btn btn-sm btn-primary lead-filter-btn"
+                data-view="total">
+            All
+        </button>
+
+        <button type="button"
+                class="btn btn-sm btn-outline-secondary lead-filter-btn"
+                data-view="active">
+            Active Leads
+        </button>
+
+        <button type="button"
+                class="btn btn-sm btn-outline-secondary lead-filter-btn"
+                data-view="follow-ups">
+            Follow Ups
+        </button>
+
+        <button type="button"
+                class="btn btn-sm btn-outline-secondary lead-filter-btn"
+                data-view="expired-follow-ups">
+            Expired Leads
+        </button>
+
+        <button type="button"
+                class="btn btn-sm btn-outline-secondary lead-filter-btn"
+                data-view="booked">
+            Booked Leads
+        </button>
+
+    </div>
+</div>
+<!-- End Lead Status Filters -->
+
 		<div class="card-body">
 			<div class="table-responsive">
 				<table id="leads-table" class="table leads-table">
@@ -22,6 +108,7 @@
 							<th>Email</th>
 							<th>Message</th>
 							<th>Source</th>
+							<th>Page</th>
 							<th>Status</th>
 							<th>Assigned To</th>
 							<th>Type</th>
@@ -94,11 +181,9 @@
 							</div>
                             <div class="col-md-6">
 								<label class="form-label">Type</label>
-								<select id="add_type" class="form-select">
-									<option value="hot">Hot</option>
-									<option value="cold">Cold</option>
-									<option value="warm">Warm</option>
-								</select>
+								 <option value="cold" selected>Cold</option>
+    <option value="warm">Warm</option>
+    <option value="hot">Hot</option>
 							</div>
 							<div class="col-md-12">
 								<label class="form-label">Message</label>
@@ -182,8 +267,8 @@
 								<label class="form-label">Type</label>
 								<select id="type" class="form-select">
 									<option value="hot">Hot</option>
-									<option value="cold">Cold</option>
-									<option value="warm">Warm</option>
+    <option value="cold">Cold</option>
+    <option value="warm">Warm</option>
 								</select>
 							</div>
 							<div class="col-md-12">
@@ -211,25 +296,52 @@
 
 @push('scripts')
 <script>
+
+//added
+const leadViewTitles = {
+    'total': 'Total Leads',
+    'active': 'Active Leads',
+    'follow-ups': 'Follow Ups',
+    'expired-follow-ups': 'Expired Follow Ups',
+    'booked': 'Booked Leads'
+};
+
+let currentLeadView =
+    sessionStorage.getItem('selectedLeadView') || 'total';
+
+if (!leadViewTitles[currentLeadView]) {
+    currentLeadView = 'total';
+}
+//...
 	$(document).ready(function () {
-		loadAjaxList();
-	});
+    updateLeadFilterButtons(currentLeadView);
+    loadAjaxList();
+});
 
 	function loadAjaxList() {
 		$("#leads-table").DataTable({
 			processing: true,
 			serverSide: true,
 			destroy: true,
+			
+			//added
+			
+ajax: {
+    url: '{{ route("lead-management.ajax-list") }}',
+    type: "GET",
+   //added
+     data: function (d) {
+    d.page = (d.start / d.length) + 1;
+    d.view = currentLeadView;
+	 // New filters
+	d.date_from = $('#leadDateFrom').val();
+d.date_to = $('#leadDateTo').val();
+d.source = $('#leadSourceFilter').val();
+}
+},
+//...
 
-			ajax: {
-				url: '{{ route("lead-management.ajax-list") }}',
-				type: "GET",
-				data: function (d) {
-					d.page = (d.start / d.length) + 1;
-				}
-			},
-
-			order: [[9, 'desc']],
+			
 
 			columns: [
 
@@ -253,6 +365,9 @@
 
 				// Source
 				{ data: 'source_website' },
+				{ data: 'source_page_name' },
+				
+				
 
 				// Status (already HTML from backend)
 				{
@@ -298,27 +413,27 @@
 				{
 					extend: 'copyHtml5',
 					title: "Leads",
-					exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9] }
+					exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
 				},
 				{
 					extend: 'excelHtml5',
 					title: "Leads",
-					exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9] }
+					exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
 				},
 				{
 					extend: 'csv',
 					title: "Leads",
-					exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9] }
+					exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
 				},
 				{
 					extend: 'pdfHtml5',
 					title: "Leads",
-					exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9] }
+					exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
 				},
 				{
 					extend: 'print',
 					title: "Leads",
-					exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9] }
+					exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
 				},
 				'colvis'
 			],
@@ -329,7 +444,70 @@
 			}
 		});
 	}
-	
+	//added	
+function updateLeadFilterButtons(view) {
+    $('.lead-filter-btn').each(function () {
+        const active = this.dataset.view === view;
+
+        $(this)
+            .toggleClass('btn-primary', active)
+            .toggleClass('btn-outline-secondary', !active)
+            .attr('aria-pressed', String(active));
+    });
+}
+
+window.setLeadView = function (view) {
+
+    if (!Object.prototype.hasOwnProperty.call(
+        leadViewTitles, view
+    )) {
+        console.error('Invalid lead view:', view);
+        return;
+    }
+
+    currentLeadView = view;
+
+    sessionStorage.setItem('selectedLeadView', view);
+
+    updateLeadFilterButtons(view);
+
+    if ($.fn.DataTable.isDataTable('#leads-table')) {
+        $('#leads-table')
+            .DataTable()
+            .ajax.reload(null, true);
+    }
+};
+
+
+$(document).on('click', '.lead-filter-btn', function () {
+    const view = this.dataset.view;
+
+    window.setLeadView(view);
+});
+
+
+// Reload leads when Date Range or Source changes
+$(document).on(
+    'change',
+    '#leadDateFrom, #leadDateTo, #leadSourceFilter',
+    function () {
+
+        const from = $('#leadDateFrom').val();
+        const to = $('#leadDateTo').val();
+
+        // Avoid sending an invalid date range
+        if (from && to && from > to) {
+            return;
+        }
+
+        if ($.fn.DataTable.isDataTable('#leads-table')) {
+            $('#leads-table')
+                .DataTable()
+                .ajax.reload(null, true);
+        }
+    }
+);
+//---
 	$(document).on('click', '.editBtn', function () {
 
 		$('#lead_id').val($(this).data('id'));

@@ -47,79 +47,27 @@
             </button>
         </div>
 
-        <ul class="sidebar-nav">
-            <li class="nav-item">
-                <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                    <i data-lucide="layout-dashboard"></i>
-                    Dashboard
-                </a>
-            </li>
-        </ul>
+        
+        <!-- Dynamic Sidebar Navigation -->
+        <div id="dynamicSidebar">
 
-        <div class="sidebar-section-label">Management</div>
-        <ul class="sidebar-nav">
-            <li class="nav-item">
-                <a data-bs-toggle="collapse" href="#accessControlMenu" role="button"
-                    aria-expanded="{{ request()->routeIs('admin.users.*') || request()->routeIs('admin.roles.*') || request()->routeIs('admin.permissions.*') ? 'true' : 'false' }}">
-                    <i data-lucide="shield"></i>
-                    Access Control
-                    <i class="bi bi-chevron-down ms-auto" style="font-size: 0.75rem;"></i>
-                </a>
-                <div class="collapse {{ request()->routeIs('admin.users.*') || request()->routeIs('admin.roles.*') || request()->routeIs('admin.permissions.*') ? 'show' : '' }}"
-                    id="accessControlMenu">
-                    <ul class="sidebar-nav">
-                        <li class="nav-item">
-                            <a href="{{ route('admin.users.index') }}"
-                                class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
-                                <i data-lucide="users"></i>
-                                Users
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="{{ route('admin.roles.index') }}"
-                                class="{{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">
-                                <i data-lucide="user-check"></i>
-                                Roles
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="{{ route('admin.permissions.index') }}"
-                                class="{{ request()->routeIs('admin.permissions.*') ? 'active' : '' }}">
-                                <i data-lucide="key"></i>
-                                Permissions
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </li>
+            <ul class="sidebar-nav" id="dashboardMenu">
+                <li class="nav-item">
+                    <span class="nav-link text-muted">
+                        Loading menu...
+                    </span>
+                </li>
+            </ul>
 
-            <li class="nav-item">
-                <a href="{{ route('lead-management.index') }}"
-                    class="{{ request()->routeIs('leads.*') ? 'active' : '' }}">
-                    <i data-lucide="funnel"></i>
-                    Lead Management
-                </a>
-            </li>
-			<li class="nav-item">
-                <a href="{{ route('admin.projects.index') }}"
-                    class="{{ request()->routeIs('admin.projects.*') ? 'active' : '' }}">
-                    <i data-lucide="home"></i>
-                    Project Management
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('admin.targets.index') }}" class="{{ request()->routeIs('admin.targets.*') ? 'active' : '' }}">
-                    <i data-lucide="target"></i>
-                   Target Management
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('admin.settings.index') }}" class="{{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">
-                    <i data-lucide="dollar-sign"></i>
-                    Settings
-                </a>
-            </li>
-        </ul>
+            <div class="sidebar-section-label"
+                 id="managementLabel"
+                 style="display:none;">
+                Management
+            </div>
+
+            <ul class="sidebar-nav" id="managementMenu"></ul>
+
+        </div>
 
         <div class="sidebar-footer">
             <div class="user-info">
@@ -235,6 +183,370 @@
         // Initialize Lucide icons
         lucide.createIcons();
 
+
+    // ============================================
+    // Dynamic Sidebar - Fetch menu from Laravel API
+    // ============================================
+
+    async function loadDynamicSidebar() {
+
+        const dashboardMenu = document.getElementById('dashboardMenu');
+        const managementMenu = document.getElementById('managementMenu');
+        const managementLabel = document.getElementById('managementLabel');
+
+        if (!dashboardMenu || !managementMenu || !managementLabel) {
+            console.error('Sidebar HTML elements not found');
+            return;
+        }
+
+        // Normalize URL paths for active menu highlighting
+        function normalizePath(path) {
+            return path.replace(/\/+$/, '') || '/';
+        }
+
+        // Allow only safe, same-origin navigation URLs
+        function safeMenuUrl(url) {
+            if (typeof url !== 'string' || !url.trim()) {
+                return null;
+            }
+
+            try {
+                const parsed = new URL(url, window.location.origin);
+
+                if (
+                    parsed.origin !== window.location.origin ||
+                    !['http:', 'https:'].includes(parsed.protocol)
+                ) {
+                    return null;
+                }
+
+                return parsed.href;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        // Identify the currently active menu
+		
+		//added
+		
+
+function isActive(menu) {
+    const children = Array.isArray(menu.children)
+        ? menu.children
+        : [];
+
+    if (children.some(isActive)) {
+        return true;
+    }
+
+    const url = safeMenuUrl(menu.url);
+
+    if (!url) {
+        return false;
+    }
+
+    const menuUrl = new URL(url);
+    const currentPath = normalizePath(
+        window.location.pathname
+    );
+
+    if (normalizePath(menuUrl.pathname) !== currentPath) {
+        return false;
+    }
+
+    if (menu.view) {
+        const selectedView =
+            sessionStorage.getItem('selectedLeadView')
+            || 'total';
+
+        return menu.view === selectedView;
+    }
+
+    return true;
+}
+
+//...
+
+        // Create a Lucide icon element
+        function createIcon(iconName) {
+            const icon = document.createElement('i');
+
+            icon.setAttribute(
+                'data-lucide',
+                typeof iconName === 'string' && iconName
+                    ? iconName
+                    : 'circle'
+            );
+
+            return icon;
+        }
+
+        // Create each sidebar menu item
+        function createMenuItem(menu, itemId) {
+
+            if (!menu || typeof menu.label !== 'string') {
+                return null;
+            }
+
+            const li = document.createElement('li');
+            li.className = 'nav-item';
+
+            const children = Array.isArray(menu.children)
+                ? menu.children
+                : [];
+
+            const active = isActive(menu);
+
+            // Menu with submenus
+            if (children.length > 0) {
+
+                const collapseId = 'dynamicSidebarMenu' + itemId;
+
+                const toggle = document.createElement('a');
+
+                toggle.href = '#' + collapseId;
+                toggle.setAttribute('data-bs-toggle', 'collapse');
+                toggle.setAttribute('role', 'button');
+                toggle.setAttribute('aria-controls', collapseId);
+                toggle.setAttribute('aria-expanded', String(active));
+
+                if (active) {
+                    toggle.classList.add('active');
+                }
+
+                toggle.appendChild(createIcon(menu.icon));
+                toggle.appendChild(
+                    document.createTextNode(' ' + menu.label)
+                );
+
+                const chevron = document.createElement('i');
+                chevron.className = 'bi bi-chevron-down ms-auto';
+                chevron.style.fontSize = '0.75rem';
+
+                toggle.appendChild(chevron);
+
+                const collapse = document.createElement('div');
+
+                collapse.id = collapseId;
+                collapse.className = active
+                    ? 'collapse show'
+                    : 'collapse';
+
+                const childList = document.createElement('ul');
+                childList.className = 'sidebar-nav';
+
+                children.forEach(function(child, childIndex) {
+                    const childItem = createMenuItem(
+                        child,
+                        itemId + '-' + childIndex
+                    );
+
+                    if (childItem) {
+                        childList.appendChild(childItem);
+                    }
+                });
+
+                if (!childList.children.length) {
+                    return null;
+                }
+
+                collapse.appendChild(childList);
+                li.appendChild(toggle);
+                li.appendChild(collapse);
+
+            } else {
+
+                // Menu without submenus
+                const url = safeMenuUrl(menu.url);
+
+                if (!url) {
+                    return null;
+                }
+
+                const link = document.createElement('a');
+
+                link.href = url;
+				//added
+				if (menu.view) {
+    link.dataset.leadView = menu.view;
+}
+
+                if (active) {
+                    link.classList.add('active');
+                    link.setAttribute('aria-current', 'page');
+                }
+
+                link.appendChild(createIcon(menu.icon));
+                link.appendChild(
+                    document.createTextNode(' ' + menu.label)
+                );
+
+                li.appendChild(link);
+            }
+
+            return li;
+        }
+
+        try {
+
+            // Fetch from the existing authenticated web endpoint
+            const response = await fetch(
+                "{{ route('admin.sidebar.menu') }}",
+                {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    cache: 'no-store',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(
+                    'Sidebar API failed. HTTP status: ' +
+                    response.status
+                );
+            }
+
+            const result = await response.json();
+
+            if (
+                result.status !== true ||
+                !result.data ||
+                !Array.isArray(result.data.menus)
+            ) {
+                throw new Error('Invalid sidebar API response');
+            }
+
+            // Build menu elements before updating the DOM
+            const dashboardItems = document.createDocumentFragment();
+            const managementItems = document.createDocumentFragment();
+
+            result.data.menus.forEach(function(menu, index) {
+
+                const menuItem = createMenuItem(menu, String(index));
+
+                if (!menuItem) {
+                    return;
+                }
+
+                if (menu.label === 'Dashboard') {
+                    dashboardItems.appendChild(menuItem);
+                } else {
+                    managementItems.appendChild(menuItem);
+                }
+            });
+
+            dashboardMenu.replaceChildren(dashboardItems);
+            managementMenu.replaceChildren(managementItems);
+
+            // Show Management heading only if menu items exist
+            managementLabel.style.display =
+                managementMenu.children.length > 0
+                    ? ''
+                    : 'none';
+
+            // Refresh Lucide icons after adding sidebar HTML
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+
+            console.log('Dynamic sidebar loaded successfully');
+
+        } catch (error) {
+
+            console.error('Dynamic sidebar error:', error);
+
+            dashboardMenu.replaceChildren();
+            managementMenu.replaceChildren();
+
+            managementLabel.style.display = 'none';
+
+            const errorItem = document.createElement('li');
+            errorItem.className = 'nav-item';
+
+            const retryButton = document.createElement('button');
+            retryButton.type = 'button';
+            retryButton.className = 'btn btn-link text-light';
+            retryButton.textContent = 'Retry loading sidebar';
+
+            retryButton.addEventListener('click', loadDynamicSidebar);
+
+            errorItem.appendChild(retryButton);
+            dashboardMenu.appendChild(errorItem);
+        }
+    }
+
+    // Load sidebar when the page is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener(
+            'DOMContentLoaded',
+            loadDynamicSidebar
+        );
+    } else {
+        loadDynamicSidebar();
+    }
+//added
+
+document.addEventListener('click', function (event) {
+    const link = event.target.closest('a[data-lead-view]');
+
+    if (!link || event.defaultPrevented ||
+        event.button !== 0 || event.ctrlKey ||
+        event.metaKey || event.shiftKey ||
+        event.altKey) {
+        return;
+    }
+
+    event.preventDefault();
+
+    const view = link.dataset.leadView;
+
+    sessionStorage.setItem('selectedLeadView', view);
+
+    const destination = new URL(link.href);
+
+    const currentPath = window.location.pathname;
+
+    // Navigate to the clean URL if on another page
+    if (currentPath !== destination.pathname) {
+        window.location.assign(destination.href);
+        return;
+    }
+
+    // Remove any old ?view= parameter
+    if (window.location.search) {
+        history.replaceState(
+            history.state,
+            '',
+            destination.pathname
+        );
+    }
+
+    // Update sidebar highlighting
+    document
+        .querySelectorAll('a[data-lead-view]')
+        .forEach(function (item) {
+            const selected = item.dataset.leadView === view;
+
+            item.classList.toggle('active', selected);
+
+            if (selected) {
+                item.setAttribute('aria-current', 'page');
+            } else {
+                item.removeAttribute('aria-current');
+            }
+        });
+
+    // Change lead table without refreshing the page
+    if (typeof window.setLeadView === 'function') {
+        window.setLeadView(view);
+    }
+});
+//...
         // Sidebar toggle for mobile
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -289,19 +601,35 @@
         let adminPreloaderHideTimer;
         const activeAdminRequests = new Set();
 
-        function isDataTableRequest(settings) {
-            const requestData = settings.data;
-            let parameters;
+        //added
+		
+function isDataTableRequest(settings) {
+    const requestData = settings.data;
+    let parameters;
 
-            if (requestData && typeof requestData === 'object') {
-                parameters = new URLSearchParams($.param(requestData));
-            } else {
-                const url = new URL(settings.url, window.location.href);
-                parameters = new URLSearchParams(typeof requestData === 'string' ? requestData : url.search);
-            }
+    // FormData is used for normal form submissions,
+    // such as Create User. It is not a DataTables request.
+    if (requestData instanceof FormData) {
+        return false;
+    }
 
-            return parameters.has('draw') && parameters.has('start') && parameters.has('length');
-        }
+    if (requestData && typeof requestData === 'object') {
+        parameters = new URLSearchParams($.param(requestData));
+    } else {
+        const url = new URL(settings.url, window.location.href);
+
+        parameters = new URLSearchParams(
+            typeof requestData === 'string'
+                ? requestData
+                : url.search
+        );
+    }
+
+    return parameters.has('draw') &&
+           parameters.has('start') &&
+           parameters.has('length');
+}
+//...
 
         function showAdminPreloader(message = 'Loading, please wait...') {
             const preloader = document.getElementById('adminPreloader');

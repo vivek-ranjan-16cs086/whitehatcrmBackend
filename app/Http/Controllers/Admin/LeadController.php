@@ -22,11 +22,40 @@ class LeadController extends Controller
 		$this->notificationService = $notificationService;
 	}
 	
-	public function index(){
-		return view('admin.lead-management.index');
-	}
+
+	//added
 	
-	public function ajaxList(Request $request)
+public function index(Request $request)
+{
+    $titles = [
+        'total' => 'Total Leads',
+        'active' => 'Active Leads',
+        'follow-ups' => 'Follow Ups',
+        'expired-follow-ups' => 'Expired Follow Ups',
+        'booked' => 'Booked Leads',
+    ];
+
+    $view = $request->query('view', 'total');
+
+    abort_unless(array_key_exists($view, $titles), 404);
+
+// Get unique sources from the leads database
+$leadSources = Lead::query()
+    ->whereNotNull('source_website')
+    ->where('source_website', '!=', '')
+    ->distinct()
+    ->orderBy('source_website')
+    ->pluck('source_website');
+
+    return view('admin.lead-management.index', [
+        'selectedView' => $view,
+        'pageTitle' => $titles[$view],
+		'leadSources' => $leadSources,
+    ]);
+}
+//...
+	
+	public function ajaxList1(Request $request)
     {
         $draw   = $request->draw;
         $start  = $request->start;
@@ -42,6 +71,7 @@ class LeadController extends Controller
             'email' => 'email',
             'message' => 'message',
             'source_website' => 'source_website',
+            'source_page_name' => 'source_page_name',
             'status' => 'status',
             'type' => 'type',
             'assigned_to' => 'assigned_to',
@@ -55,18 +85,44 @@ class LeadController extends Controller
             : 'desc';
 
         $query = $this->leadService->getLeads($request)->with('assignedUser');
+		//added
+		
+		$viewFilters = [
+			'total' => null,
+			'active' => 'active',
+			'follow-ups' => 'follow_up',
+			'expired-follow-ups' => 'follow_up_expired',
+			'booked' => 'booked',
+		];
+
+		$view = $request->query('view', 'total');
+
+		if (!array_key_exists($view, $viewFilters)) {
+			return response()->json([
+				'message' => 'Invalid lead view',
+			], 422);
+		}
+
+		if ($viewFilters[$view] !== null) {
+			$query->where('status', $viewFilters[$view]);
+		}
+
+		
 
         $totalRecords = Lead::count();
         $totalRecordswithFilter = (clone $query)->count();
 
-        if ($columnName === 'assigned_to') {
-            $query->orderBy(
-                User::select('name')->whereColumn('users.id', 'leads.assigned_to'),
-                $columnSortOrder
-            );
-        } else {
-            $query->orderBy($columnName, $columnSortOrder);
-        }
+        // if ($columnName === 'assigned_to') {
+            // $query->orderBy(
+                // User::select('name')->whereColumn('users.id', 'leads.assigned_to'),
+                // $columnSortOrder
+            // );
+        // } else {
+            // $query->orderBy($columnName, $columnSortOrder);
+        // }
+		$query->orderBy('id', 'desc');
+
+		
 
         $records = $query
             ->skip($start)
@@ -126,6 +182,7 @@ class LeadController extends Controller
                 "email"          => e($row->email),
                 "message"        => e(\Str::limit($row->message, 50)),
                 "source_website" => e($row->source_website ?? '-'),
+                "source_page_name" => e($row->source_page_name ?? '-'),
                 "status"         => $statusBadge,
 				"type"          =>  $typeBadge,
                 "assigned_to"    => e($assignedUserName ?: 'Unassigned'),
@@ -146,6 +203,257 @@ class LeadController extends Controller
             "aaData"               => $data_arr
         ]);
     }
+	
+	
+	public function ajaxList(Request $request)
+	{
+		$draw = (int) $request->input('draw', 0);
+		$start = max(0, (int) $request->input('start', 0));
+		$length = (int) $request->input('length', 10);
+
+		// DataTables sorting parameters
+		$columnIndex = $request->input('order.0.column');
+
+		$columnName = $columnIndex !== null
+			? $request->input("columns.$columnIndex.data")
+			: null;
+
+		$columnSortOrder = $request->input('order.0.dir', 'desc');
+
+		// Allowed sortable columns
+		$sortableColumns = [
+			'name' => 'name',
+			'phone' => 'phone',
+			'email' => 'email',
+			'message' => 'message',
+			'source_website' => 'source_website',
+			'source_page_name' => 'source_page_name',
+			'status' => 'status',
+			'type' => 'type',
+			'assigned_to' => 'assigned_to',
+			'follow_up_date' => 'follow_up_date',
+			'created_at' => 'created_at',
+		];
+
+		$columnSortOrder = in_array(
+			$columnSortOrder,
+			['asc', 'desc'],
+			true
+		) ? $columnSortOrder : 'desc';
+
+		// Base query
+		$query = $this->leadService
+			->getLeads($request)
+			->with('assignedUser');
+
+		// View filters
+		$viewFilters = [
+			'total' => null,
+			'active' => 'active',
+			'follow-ups' => 'follow_up',
+			'expired-follow-ups' => 'follow_up_expired',
+			'booked' => 'booked',
+		];
+
+		$view = $request->query('view', 'total');
+
+		if (!array_key_exists($view, $viewFilters)) {
+			return response()->json([
+				'message' => 'Invalid lead view',
+			], 422);
+		}
+
+		if ($viewFilters[$view] !== null) {
+			$query->where('leads.status', $viewFilters[$view]);
+		}
+
+
+        // Date Range and Source filters
+        $request->validate([
+            'date_from' => 'nullable|date_format:Y-m-d',
+            'date_to' => 'nullable|date_format:Y-m-d|after_or_equal:date_from',
+            'source' => 'nullable|string|max:255',
+        ]);
+
+        // From date - lead creation date
+        if ($request->filled('date_from')) {
+            $query->whereDate(
+                'leads.created_at',
+                '>=',
+                $request->input('date_from')
+            );
+        }
+
+        // To date - lead creation date
+        if ($request->filled('date_to')) {
+            $query->whereDate(
+                'leads.created_at',
+                '<=',
+                $request->input('date_to')
+            );
+        }
+
+        // Source website
+        if ($request->filled('source')) {
+            $query->where(
+                'leads.source_website',
+                $request->input('source')
+            );
+        }
+//...
+		// Record counts
+		$totalRecords = Lead::count();
+
+		$totalRecordswithFilter = (clone $query)->count();
+
+		// Sorting
+		// Default: ID DESC
+		$query->reorder('leads.id', 'desc');
+
+		// Apply DataTables column sorting
+		if ($columnName && isset($sortableColumns[$columnName])) {
+
+			// Clear default ordering
+			$query->reorder();
+
+			if ($columnName === 'assigned_to') {
+
+				// Sort by assigned user's name
+				$query->orderBy(
+					User::select('name')
+						->whereColumn(
+							'users.id',
+							'leads.assigned_to'
+						)
+						->limit(1),
+					$columnSortOrder
+				);
+
+			} else {
+
+				$query->orderBy(
+					'leads.' . $sortableColumns[$columnName],
+					$columnSortOrder
+				);
+			}
+
+			// Secondary sorting
+			$query->orderBy('leads.id', 'desc');
+		}
+
+		// Pagination
+		if ($length !== -1) {
+			$query->skip($start)->take(max(0, $length));
+		}
+
+		$records = $query->get();
+
+		$data_arr = [];
+		$sno = $start + 1;
+
+		foreach ($records as $row) {
+
+			$encodedId = base64_encode((string) $row->id);
+
+			$assignedUserId = $row->assignedUser?->id ?? '';
+			$assignedUserName = $row->assignedUser?->name ?? '';
+
+			// Action buttons
+			$action = "
+				<button
+					class='btn btn-xs btn-info editBtn rounded-circle text-light m-1'
+					data-id='{$row->id}'
+					data-name='" . e($row->name) . "'
+					data-phone='" . e($row->phone) . "'
+					data-email='" . e($row->email) . "'
+					data-message='" . e($row->message) . "'
+					data-source='" . e($row->source_website) . "'
+					data-status='" . e($row->status) . "'
+					data-type='" . e($row->type) . "'
+					data-assigned='{$assignedUserId}'
+					data-assigned-name='" . e($assignedUserName) . "'
+					data-followup='" . e($row->follow_up_date) . "'
+				>
+					<i class='bi-pencil'></i>
+				</button>
+
+				<a
+					href='javascript:void(0)'
+					onclick=\"return myConfirm('leads/delete/{$encodedId}')\"
+					class='btn btn-xs btn-danger'
+				>
+					<i class='bi-trash'></i>
+				</a>
+			";
+
+			// Status badge
+			$statusBadge = match ($row->status) {
+				'new' => "<span class='badge bg-success'>New</span>",
+				'contacted' => "<span class='badge bg-primary'>Contacted</span>",
+				'closed' => "<span class='badge bg-dark'>Closed</span>",
+				default => "<span class='badge bg-secondary'>"
+					. e(ucfirst($row->status ?? 'Unknown'))
+					. "</span>",
+			};
+
+			// Lead type badge
+			$typeBadge = match ($row->type) {
+				'hot' => "<span class='badge bg-danger'>Hot</span>",
+				'warm' => "<span class='badge bg-warning text-dark'>Warm</span>",
+				'cold' => "<span class='badge bg-primary'>Cold</span>",
+				default => "<span class='badge bg-secondary'>"
+					. e(ucfirst($row->type ?? 'Unknown'))
+					. "</span>",
+			};
+
+
+			// DataTables row
+			$data_arr[] = [
+				'id' => $sno++, 
+				'name' => e($row->name),
+				'phone' => e($row->phone),
+				'email' => e($row->email),
+				'message' => e(\Str::limit($row->message, 50)),
+				'source_website' => e($row->source_website ?? '-'),
+				'source_page_name' => e($row->pageName ?? '-'),
+				//added
+				
+//'source_page_name' => e(
+   // Lead::resolveSourcePageName(
+       // $row->message,
+       // $row->source_website,
+       // $row->source_page_name
+   // ) ?? '-'
+//),
+//...
+
+				'status' => $statusBadge,
+				'type' => $typeBadge,
+				'assigned_to' => e($assignedUserName ?: 'Unassigned'),
+				'follow_up_date' => $row->follow_up_date
+					? date('d M Y', strtotime($row->follow_up_date))
+					: '-',
+				'created_at' => $row->created_at
+					? date('d M Y H:i', strtotime($row->created_at))
+					: '-',
+				'action' => $action,
+			];
+		}
+
+		// DataTables response
+		return response()->json([
+			'draw' => $draw,
+			'recordsTotal' => $totalRecords,
+			'recordsFiltered' => $totalRecordswithFilter,
+			'data' => $data_arr,
+
+			// Legacy DataTables compatibility
+			'iTotalRecords' => $totalRecords,
+			'iTotalDisplayRecords' => $totalRecordswithFilter,
+			'aaData' => $data_arr,
+		]);
+	}
+
 
 	
 	public function updateDetails1(Request $request, NotificationService $notificationService)
@@ -361,7 +669,11 @@ class LeadController extends Controller
 			$lead->message = $validated['message'] ?? null;
 			$lead->source_website = $validated['source_website'] ?? 'Manual';
 			$lead->status = $validated['status'] ?? 'new';
-			$lead->type = $validated['type'] ?? 'hot';
+			// $lead->type = $validated['type'] ?? 'hot';
+			//added
+			
+$lead->type = !empty($validated['type']) ? $validated['type'] : 'cold';
+
 			$lead->assigned_to = $assignedUserId;
 			$lead->follow_up_date = $validated['follow_up_date'] ?? null;
 			$lead->notes = $validated['notes'] ?? null;

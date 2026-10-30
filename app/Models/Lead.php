@@ -31,7 +31,6 @@ class Lead extends Model
         'phone',
         'email',
         'message',
-
         'source_website',
         'external_id',
 
@@ -194,4 +193,35 @@ class Lead extends Model
     {
         return $this->belongsTo(SubResponse::class);
     }
+	//added
+	
+  
+	
+	public function getPageKeyAttribute(): ?string
+	{
+		return $this->attributes['source_page_name'] ?? null;
+	}
+
+	public function getPageNameAttribute(): ?string
+	{
+		$pageKey = trim($this->getRawOriginal('source_page_name') ?? '');
+
+		if ($pageKey === '') {
+			return null;
+		}
+
+		// FE_GNW is the short form of Future Estate
+		if (stripos($pageKey, 'FE_GNW_') !== false) {
+			return 'Future Estate';
+		}
+
+		// Format remaining page names
+		$pageName = str_replace(['_', '-'], ' ', $pageKey);
+
+		return ucwords(strtolower($pageName));
+	}
+
+
+
+
 }

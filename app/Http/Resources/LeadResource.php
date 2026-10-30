@@ -21,16 +21,32 @@ class LeadResource extends JsonResource
             'follow_up_date' => $this->follow_up_date,
 			'visitStatus' => $this->visit_status,
             'visitDate'   => $this->visit_date,
+			'pageKey'  => $this->getRawOriginal('source_page_name'),
+			'pageName' => $this->page_name,
+		   
+		  //added
+		  
+//'pageName' => \App\Models\Lead::resolveSourcePageName(
+  //  $this->message,
+   // $this->source_website,
+   // $this->source_page_name
+//),
+		  
 			'notes' => $this->whenLoaded('leadResponses', function () {
-				return $this->leadResponses->map(function ($note) {
-					return [
-						'id' => $note->id,
-						'user_id' => $note->user_id,
-						'user_name' => $note->user?->name,
-						'note' => $note->note,
-						'created_at' => $note->created_at->format('d M Y, h:i A'),
-					];
-				});
+				return $this->leadResponses
+					->filter(function ($note) {
+						return $note->user_id == $this->assigned_to;
+					})
+					->values()
+					->map(function ($note) {
+						return [
+							'id' => $note->id,
+							'user_id' => $note->user_id,
+							'user_name' => $note->user?->name,
+							'note' => $note->note,
+							'created_at' => $note->created_at->format('d M Y, h:i A'),
+						];
+					});
 			}),
 			'lead_source' => $this->source_website,
 			'budget' => $this->formatBudget($this->budget_min) . ' - ' . $this->formatBudget($this->budget_max),
