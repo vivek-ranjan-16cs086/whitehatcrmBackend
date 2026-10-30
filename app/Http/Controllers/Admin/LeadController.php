@@ -122,13 +122,15 @@ $leadSources = Lead::query()
         $sortableColumns = [
             'name' => 'name',
             'phone' => 'phone',
+            'email' => 'email',
             'message' => 'message',
             'source_website' => 'source_website',
+            'source_page_name' => 'source_page_name',
             'status' => 'status',
             'type' => 'type',
             'assigned_to' => 'assigned_to',
-            'inventory' => 'inventory',
-            'visit_date' => 'visit_date',
+            'follow_up_date' => 'follow_up_date',
+            'created_at' => 'created_at',
         ];
 
         $columnName = $sortableColumns[$columnName] ?? 'created_at';
@@ -296,7 +298,7 @@ $leadSources = Lead::query()
 		// Base query
 		$query = $this->leadService
 			->getLeads($request)
-			->with(['assignedUser', 'project']);
+			->with('assignedUser');
 
 		// View filters
 		$viewFilters = [
@@ -401,6 +403,7 @@ $leadSources = Lead::query()
 		$records = $query->get();
 
 		$data_arr = [];
+		$sno = $start + 1;
 
 		foreach ($records as $row) {
 
@@ -457,30 +460,22 @@ $leadSources = Lead::query()
 					. "</span>",
 			};
 
-			$visitStatusBadge = match ($row->visit_status) {
-				'scheduled' => "<span class='badge bg-primary'>Scheduled</span>",
-				'completed' => "<span class='badge bg-success'>Completed</span>",
-				default => "<span class='badge bg-secondary'>Not scheduled</span>",
-			};
-
-			$projectPageName = implode(' / ', array_filter([
-				$row->project?->name,
-				$row->pageName,
-			], static fn ($value) => is_string($value) && trim($value) !== ''));
-
 			$data_arr[] = [
+				'id' => $sno++,
 				'name' => e($row->name),
 				'phone' => e($row->phone),
-				'source_website' => e($row->source_website ?? '-'),
+				'email' => e($row->email),
 				'message' => e(\Str::limit($row->message, 50)),
-				'project_page_name' => $projectPageName,
-				'assigned_to' => e($assignedUserName ?: 'Unassigned'),
+				'source_website' => e($row->source_website ?? '-'),
+				'source_page_name' => $row->pageName,
 				'status' => $statusBadge,
-				'inventory' => e($row->inventory ?? '-'),
 				'type' => $typeBadge,
-				'visit_status' => $visitStatusBadge,
-				'visit_date' => $row->visit_date
-					? date('d M Y', strtotime($row->visit_date))
+				'assigned_to' => e($assignedUserName ?: 'Unassigned'),
+				'follow_up_date' => $row->follow_up_date
+					? date('d M Y', strtotime($row->follow_up_date))
+					: '-',
+				'created_at' => $row->created_at
+					? date('d M Y H:i', strtotime($row->created_at))
 					: '-',
 				'edit_data' => array_intersect_key(
 					$row->getAttributes(),
