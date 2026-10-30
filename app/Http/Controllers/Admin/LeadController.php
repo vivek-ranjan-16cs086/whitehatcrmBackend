@@ -6,11 +6,14 @@ use Illuminate\Http\Request;
 use App\Services\LeadService;
 use App\Models\Lead;
 use App\Models\User;
+use App\Models\Project;
+use App\Models\SubResponse;
 use App\Imports\AdminLeadsImport;
 use Illuminate\Validation\ValidationException; 
 use App\Services\NotificationService;   
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Maatwebsite\Excel\Facades\Excel;
 
 class LeadController extends Controller
@@ -19,6 +22,44 @@ class LeadController extends Controller
 		'Facebook' => 'facebook.com',
 		'Whitehat Realty' => 'whitehat.realty',
 		'360PropGuide' => '360propguide.com',
+	];
+
+	private const EDITABLE_LEAD_FIELDS = [
+		'name',
+		'phone',
+		'email',
+		'message',
+		'external_id',
+		'status',
+		'type',
+		'source_website',
+		'assigned_to',
+		'follow_up_date',
+		'notes',
+		'visit_status',
+		'visit_date',
+		'sub_response_id',
+		'project_id',
+		'deactivate_reason',
+		'lead_source',
+		'inventory',
+		'budget_min',
+		'budget_max',
+		'remarks',
+		'source_page_id',
+		'source_page_name',
+		'source_form_id',
+		'source_form_name',
+		'campaign_id',
+		'campaign_name',
+		'adset_id',
+		'adset_name',
+		'ad_id',
+		'ad_name',
+		'purchase_timeline',
+		'site_visit_preference',
+		'funding_method',
+		'source_submitted_at',
 	];
 
 	protected $leadService;
@@ -62,6 +103,8 @@ $leadSources = Lead::query()
         'pageTitle' => $titles[$view],
 		'leadSources' => $leadSources,
         'manualLeadSources' => self::MANUAL_LEAD_SOURCES,
+		'projects' => Project::query()->orderBy('name')->get(['id', 'name']),
+		'subResponses' => SubResponse::query()->orderBy('name')->get(['id', 'name']),
     ]);
 }
 //...
@@ -447,6 +490,11 @@ $leadSources = Lead::query()
 				'created_at' => $row->created_at
 					? date('d M Y H:i', strtotime($row->created_at))
 					: '-',
+				'edit_data' => array_intersect_key(
+					$row->getAttributes(),
+					array_flip(self::EDITABLE_LEAD_FIELDS)
+				),
+				'assigned_user_name' => $assignedUserName,
 				'action' => $action,
 			];
 		}
@@ -550,28 +598,10 @@ $leadSources = Lead::query()
 	public function updateDetails(Request $request, NotificationService $notificationService)
     {
         try { 
-            $validated = $request->validate([ 
-                'id'             => 'required|integer|exists:leads,id',
-                'name'           => 'required|string|max:255',
-                'phone'          => 'nullable|string|max:20',
-                'email'          => 'nullable|email|max:255',
-                'message'        => 'nullable|string',
-                'source_website' => 'required|string|max:255',
-                'status'         => 'nullable|string|max:50',
-                'type'           => 'nullable|string|max:50',
-                'assigned_to'    => 'nullable',
-                'follow_up_date' => 'nullable|date',
-                'notes'          => 'nullable|string',
-            ]);
-
-            $lead = Lead::find($validated['id']);
-
-            if (!$lead) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Lead not found.'
-                ], 404);
-            }
+			$validatedId = $request->validate([
+				'id' => 'required|integer|exists:leads,id',
+			]);
+			$lead = Lead::findOrFail($validatedId['id']);
 
             $user = $request->user();
             if (
@@ -584,26 +614,94 @@ $leadSources = Lead::query()
                 ], 404);
             }
 
+			$availableColumns = array_flip(Schema::getColumnListing('leads'));
+			$fieldRules = [
+				'name' => 'required|string|max:255',
+				'phone' => 'nullable|string|max:20',
+				'email' => 'nullable|email|max:255',
+				'message' => 'nullable|string',
+				'external_id' => 'nullable|integer',
+				'status' => ['nullable', 'string', Rule::in([
+					'not_available',
+					'active',
+					'booked',
+					'deactive',
+					'follow_up',
+					'follow_up_expired',
+					'follow_up_complete',
+				])],
+				'type' => ['nullable', 'string', Rule::in(['hot', 'warm', 'cold'])],
+				'source_website' => [
+					'required',
+					'string',
+					'max:255',
+					Rule::in(array_unique([
+						...array_values(self::MANUAL_LEAD_SOURCES),
+						(string) $lead->source_website,
+					])),
+				],
+				'assigned_to' => 'nullable|integer|exists:users,id',
+				'follow_up_date' => 'nullable|date',
+				'notes' => 'nullable|string',
+				'visit_status' => ['nullable', 'string', Rule::in([
+					'not_scheduled',
+					'scheduled',
+					'completed',
+				])],
+				'visit_date' => 'nullable|date',
+				'sub_response_id' => 'nullable|integer|exists:sub_responses,id',
+				'project_id' => 'nullable|integer|exists:projects,id',
+				'deactivate_reason' => ['nullable', 'string', Rule::in([
+					'Plot or Villa',
+					'Budget',
+					'Location',
+					'Ready To Move',
+					'Rent',
+					'Invalid Mobile Number',
+					'Others',
+					'Switch Off',
+				])],
+				'lead_source' => 'nullable|string|max:255',
+				'inventory' => 'nullable|string|max:255',
+				'budget_min' => 'nullable|numeric|min:0',
+				'budget_max' => 'nullable|numeric|min:0|gte:budget_min',
+				'remarks' => 'nullable|string',
+				'source_page_id' => 'nullable|string|max:255',
+				'source_page_name' => 'nullable|string|max:255',
+				'source_form_id' => 'nullable|string|max:255',
+				'source_form_name' => 'nullable|string|max:255',
+				'campaign_id' => 'nullable|string|max:255',
+				'campaign_name' => 'nullable|string|max:255',
+				'adset_id' => 'nullable|string|max:255',
+				'adset_name' => 'nullable|string|max:255',
+				'ad_id' => 'nullable|string|max:255',
+				'ad_name' => 'nullable|string|max:255',
+				'purchase_timeline' => 'nullable|string|max:255',
+				'site_visit_preference' => 'nullable|string|max:255',
+				'funding_method' => 'nullable|string|max:255',
+				'source_submitted_at' => 'nullable|date',
+			];
+			$rules = array_intersect_key($fieldRules, $availableColumns);
+			$validated = $request->validate([
+				'id' => 'required|integer|exists:leads,id',
+				...$rules,
+			]);
+
             $oldStatus = $lead->status;
             $oldAssignedUserId = $lead->assigned_to;
 
             $assignedUserId = $validated['assigned_to'] ?? null;
 
-            if ($assignedUserId && !is_numeric($assignedUserId)) {
-                $assignedUserId = base64_decode($assignedUserId);
-            }
+			foreach (self::EDITABLE_LEAD_FIELDS as $field) {
+				if (array_key_exists($field, $validated) && isset($availableColumns[$field])) {
+					$lead->setAttribute(
+						$field,
+						$field === 'assigned_to' ? $assignedUserId : $validated[$field]
+					);
+				}
+			}
 
-            //UPDATE DATA
-            $lead->name = $validated['name'];
-            $lead->phone = $validated['phone'] ?? null;
-            $lead->email = $validated['email'] ?? null;
-            $lead->message = $validated['message'] ?? null;
-            $lead->source_website = $validated['source_website'];
-            $lead->status = $validated['status'] ?? $lead->status ?? 'new';
-            $lead->type = $validated['type'] ?? $lead->type ?? 'hot';
             $lead->assigned_to = $assignedUserId;
-            $lead->follow_up_date = $validated['follow_up_date'] ?? null;
-            $lead->notes = $validated['notes'] ?? null;
 
             $lead->save();
 

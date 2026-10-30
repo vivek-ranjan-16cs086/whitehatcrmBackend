@@ -206,7 +206,7 @@
 	</div>
 	<!-- MODAL -->
 	<div class="modal fade" id="editLeadModal">
-		<div class="modal-dialog modal-lg modal-dialog-centered">
+		<div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
 			<div class="modal-content">
 
 				<div class="modal-header">
@@ -216,32 +216,32 @@
 
 				<div class="modal-body">
 					<form id="editLeadForm">
-
-						<input type="hidden" id="lead_id">
+						@csrf
+						<input type="hidden" name="id" id="edit_id">
 
 						<div class="row g-3">
-
+							<div class="col-12"><h6 class="mb-0 text-primary">Lead details</h6></div>
 							<div class="col-md-6">
-								<label class="form-label">Name</label>
-								<input type="text" id="name" class="form-control">
+								<label class="form-label" for="edit_name">Name</label>
+								<input type="text" name="name" id="edit_name" class="form-control" required>
 							</div>
-
 							<div class="col-md-6">
-								<label class="form-label">Phone</label>
-								<input type="text" id="phone" class="form-control">
+								<label class="form-label" for="edit_phone">Phone</label>
+								<input type="text" name="phone" id="edit_phone" class="form-control">
 							</div>
-
 							<div class="col-md-6">
-								<label class="form-label">Email</label>
-								<input type="email" id="email" class="form-control">
+								<label class="form-label" for="edit_email">Email</label>
+								<input type="email" name="email" id="edit_email" class="form-control">
 							</div>
-
 							<div class="col-md-6">
-								<label class="form-label">Status</label>
-								<select id="status" class="form-select">
+								<label class="form-label" for="edit_external_id">External ID</label>
+								<input type="number" name="external_id" id="edit_external_id" class="form-control">
+							</div>
+							<div class="col-md-6">
+								<label class="form-label" for="edit_status">Status</label>
+								<select name="status" id="edit_status" class="form-select">
 									<option value="not_available">Not Available</option>
 									<option value="active">Active</option>
-									<option value="in_process">In Process</option>
 									<option value="booked">Booked</option>
 									<option value="deactive">Deactive</option>
 									<option value="follow_up">Follow Up</option>
@@ -249,36 +249,142 @@
 									<option value="follow_up_complete">Completed</option>
 								</select>
 							</div>
-
 							<div class="col-md-6">
-								<label class="form-label">Source</label>
-								<input type="text" id="source" class="form-control">
-							</div>
-
-							<div class="col-md-6">
-								<label class="form-label">Assigned To</label>
-								<select id="assigned" class="form-select"></select>
-							</div>
-
-							<div class="col-md-6">
-								<label class="form-label">Follow Up</label>
-								<input type="date" id="followup" class="form-control">
-							</div>
-                            <div class="col-md-6">
-								<label class="form-label">Type</label>
-								<select id="type" class="form-select">
+								<label class="form-label" for="edit_type">Lead type</label>
+								<select name="type" id="edit_type" class="form-select">
 									<option value="hot">Hot</option>
-    <option value="cold">Cold</option>
-    <option value="warm">Warm</option>
+									<option value="warm">Warm</option>
+									<option value="cold">Cold</option>
 								</select>
 							</div>
+							<div class="col-md-6">
+								<label class="form-label" for="edit_source_website">Source</label>
+								<select name="source_website" id="edit_source_website" class="form-select" required>
+									@foreach($manualLeadSources as $label => $value)
+										<option value="{{ $value }}">{{ $label }}</option>
+									@endforeach
+								</select>
+							</div>
+							<div class="col-md-6">
+								<label class="form-label" for="edit_source_page_name">Source page name</label>
+								<input type="text" name="source_page_name" id="edit_source_page_name" class="form-control">
+							</div>
 							<div class="col-md-12">
-								<label class="form-label">Message</label>
-								<textarea id="message" class="form-control" rows="3"></textarea>
+								<label class="form-label" for="edit_message">Message</label>
+								<textarea name="message" id="edit_message" class="form-control" rows="3"></textarea>
 							</div>
 
-						</div>
+							<div class="col-12 mt-4"><h6 class="mb-0 text-primary">Assignment and follow-up</h6></div>
+							<div class="col-md-6">
+								<label class="form-label" for="edit_assigned">Assigned to</label>
+								<select name="assigned_to" id="edit_assigned" class="form-select"></select>
+							</div>
+							<div class="col-md-6">
+								<label class="form-label" for="edit_follow_up_date">Follow-up date</label>
+								<input type="date" name="follow_up_date" id="edit_follow_up_date" class="form-control">
+							</div>
+							<div class="col-md-6">
+								<label class="form-label" for="edit_visit_status">Visit status</label>
+								<select name="visit_status" id="edit_visit_status" class="form-select">
+									<option value="not_scheduled">Not scheduled</option>
+									<option value="scheduled">Scheduled</option>
+									<option value="completed">Completed</option>
+								</select>
+							</div>
+							<div class="col-md-6">
+								<label class="form-label" for="edit_visit_date">Visit date</label>
+								<input type="date" name="visit_date" id="edit_visit_date" class="form-control">
+							</div>
+							<div class="col-md-6">
+								<label class="form-label" for="edit_project_id">Project</label>
+								<select name="project_id" id="edit_project_id" class="form-select">
+									<option value="">No project</option>
+									@foreach($projects as $project)
+										<option value="{{ $project->id }}">{{ $project->name }}</option>
+									@endforeach
+								</select>
+							</div>
+							<div class="col-md-6">
+								<label class="form-label" for="edit_sub_response_id">Response</label>
+								<select name="sub_response_id" id="edit_sub_response_id" class="form-select">
+									<option value="">No response</option>
+									@foreach($subResponses as $subResponse)
+										<option value="{{ $subResponse->id }}">{{ $subResponse->name }}</option>
+									@endforeach
+								</select>
+							</div>
+							<div class="col-md-6">
+								<label class="form-label" for="edit_deactivate_reason">Deactivation reason</label>
+								<select name="deactivate_reason" id="edit_deactivate_reason" class="form-select">
+									<option value="">None</option>
+									@foreach(['Plot or Villa', 'Budget', 'Location', 'Ready To Move', 'Rent', 'Invalid Mobile Number', 'Others', 'Switch Off'] as $reason)
+										<option value="{{ $reason }}">{{ $reason }}</option>
+									@endforeach
+								</select>
+							</div>
+							<div class="col-md-6">
+								<label class="form-label" for="edit_lead_source">Lead source</label>
+								<input type="text" name="lead_source" id="edit_lead_source" class="form-control">
+							</div>
+							<div class="col-md-12">
+								<label class="form-label" for="edit_notes">Notes</label>
+								<textarea name="notes" id="edit_notes" class="form-control" rows="2"></textarea>
+							</div>
 
+							<div class="col-12 mt-4"><h6 class="mb-0 text-primary">Property requirements</h6></div>
+							<div class="col-md-6">
+								<label class="form-label" for="edit_inventory">Inventory</label>
+								<input type="text" name="inventory" id="edit_inventory" class="form-control">
+							</div>
+							<div class="col-md-6">
+								<label class="form-label" for="edit_budget_min">Minimum budget</label>
+								<input type="number" name="budget_min" id="edit_budget_min" class="form-control" min="0" step="0.01">
+							</div>
+							<div class="col-md-6">
+								<label class="form-label" for="edit_budget_max">Maximum budget</label>
+								<input type="number" name="budget_max" id="edit_budget_max" class="form-control" min="0" step="0.01">
+							</div>
+							<div class="col-md-12">
+								<label class="form-label" for="edit_remarks">Remarks</label>
+								<textarea name="remarks" id="edit_remarks" class="form-control" rows="2"></textarea>
+							</div>
+
+							<div class="col-12 mt-4"><h6 class="mb-0 text-primary">Source and campaign details</h6></div>
+							@foreach([
+								'source_page_id' => 'Source page ID',
+								'source_form_id' => 'Source form ID',
+								'source_form_name' => 'Source form name',
+								'campaign_id' => 'Campaign ID',
+								'campaign_name' => 'Campaign name',
+								'adset_id' => 'Ad set ID',
+								'adset_name' => 'Ad set name',
+								'ad_id' => 'Ad ID',
+								'ad_name' => 'Ad name',
+							] as $field => $label)
+								<div class="col-md-6">
+									<label class="form-label" for="edit_{{ $field }}">{{ $label }}</label>
+									<input type="text" name="{{ $field }}" id="edit_{{ $field }}" class="form-control">
+								</div>
+							@endforeach
+							<div class="col-md-6">
+								<label class="form-label" for="edit_source_submitted_at">Source submitted at</label>
+								<input type="datetime-local" name="source_submitted_at" id="edit_source_submitted_at" class="form-control">
+							</div>
+
+							<div class="col-12 mt-4"><h6 class="mb-0 text-primary">Buyer qualification</h6></div>
+							<div class="col-md-4">
+								<label class="form-label" for="edit_purchase_timeline">Purchase timeline</label>
+								<input type="text" name="purchase_timeline" id="edit_purchase_timeline" class="form-control">
+							</div>
+							<div class="col-md-4">
+								<label class="form-label" for="edit_site_visit_preference">Site visit preference</label>
+								<input type="text" name="site_visit_preference" id="edit_site_visit_preference" class="form-control">
+							</div>
+							<div class="col-md-4">
+								<label class="form-label" for="edit_funding_method">Funding method</label>
+								<input type="text" name="funding_method" id="edit_funding_method" class="form-control">
+							</div>
+						</div>
 					</form>
 				</div>
 
@@ -543,25 +649,44 @@ $(document).on(
 );
 //---
 	$(document).on('click', '.editBtn', function () {
+		const row = $('#leads-table').DataTable().row($(this).closest('tr')).data();
+		const lead = row?.edit_data || {};
+		const fields = [
+			'name', 'phone', 'email', 'message', 'external_id', 'status', 'type',
+			'source_page_name', 'follow_up_date', 'visit_status', 'visit_date',
+			'project_id', 'sub_response_id', 'deactivate_reason', 'lead_source',
+			'notes', 'inventory', 'budget_min', 'budget_max', 'remarks',
+			'source_page_id', 'source_form_id', 'source_form_name', 'campaign_id',
+			'campaign_name', 'adset_id', 'adset_name', 'ad_id', 'ad_name',
+			'purchase_timeline', 'site_visit_preference', 'funding_method',
+			'source_submitted_at'
+		];
 
-		$('#lead_id').val($(this).data('id'));
-		$('#name').val($(this).data('name'));
-		$('#phone').val($(this).data('phone'));
-		$('#email').val($(this).data('email'));
-		$('#message').val($(this).data('message'));
-		$('#source').val($(this).data('source'));
-		$('#status').val($(this).data('status'));
-		$('#type').val($(this).data('type'));
-		$('#assigned').val($(this).data('assigned'));
-		$('#followup').val($(this).data('followup'));
-		 //  destroy old instance (important)
-		$('#assigned').val(null).trigger('change');
-		if ($('#assigned').hasClass("select2-hidden-accessible")) {
-			$('#assigned').select2('destroy');
+		$('#editLeadForm')[0].reset();
+		$('#edit_id').val($(this).data('id'));
+		fields.forEach(function (field) {
+			let value = lead[field] ?? '';
+			if (field === 'source_submitted_at' && value) {
+				value = String(value).replace(' ', 'T').substring(0, 16);
+			}
+			$('#edit_' + field).val(value);
+		});
+
+		const sourceSelect = $('#edit_source_website');
+		const source = lead.source_website || $(this).data('source') || '';
+		if (source && !sourceSelect.find('option').toArray().some(option => option.value === source)) {
+			sourceSelect.append(new Option(source, source));
+		}
+		sourceSelect.val(source);
+
+		if ($('#edit_assigned').hasClass("select2-hidden-accessible")) {
+			$('#edit_assigned').select2('destroy');
 		}
 
-		// init select2 with preselected value
-		initSalesPersonSelect($(this).data('assigned'), $(this).data('assigned-name'));
+		initSalesPersonSelect(
+			lead.assigned_to ?? $(this).data('assigned'),
+			row?.assigned_user_name ?? $(this).data('assigned-name')
+		);
 		$('#editLeadModal').modal('show');
 	});
 	
@@ -574,21 +699,9 @@ $(document).on(
 				$.ajax({
 					url: '{{route("lead-managment.update")}}',
 					type: 'POST',
-					data: {
-						id: $('#lead_id').val(),
-						name: $('#name').val(),
-						phone: $('#phone').val(),
-						email: $('#email').val(),
-						message: $('#message').val(),
-						source_website: $('#source').val(),
-						status: $('#status').val(),
-						type: $('#type').val(),
-						assigned_to: $('#assigned').val() ? $('#assigned').val() : null,
-						follow_up_date: $('#followup').val(),
-						_token: '{{ csrf_token() }}'
-					}
+					data: $('#editLeadForm').serialize()
 				}).done(function (res) {
-					if (!res.status) {
+					if (!res.success) {
 						Swal.fire({
 							icon: 'error',
 							title: 'Could not update lead',
@@ -618,7 +731,7 @@ $(document).on(
 	});
 	function initSalesPersonSelect(selectedId = null, selectedText = null) {
 
-		$('#assigned').select2({
+		$('#edit_assigned').select2({
 			dropdownParent: $('#editLeadModal'), // important for modal
 			placeholder: 'Search Sales Person',
 			allowClear: true,
@@ -661,7 +774,7 @@ $(document).on(
 		// Preselect value when editing
 		if (selectedId && selectedText) {
 			let option = new Option(selectedText, selectedId, true, true);
-			$('#assigned').append(option).trigger('change');
+			$('#edit_assigned').append(option).trigger('change');
 		}
 	}
 

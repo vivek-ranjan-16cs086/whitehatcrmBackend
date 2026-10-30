@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Lead;
+use App\Models\Project;
 use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -78,6 +80,57 @@ class AdminManualLeadSourceTest extends TestCase
         }
     }
 
+    public function test_admin_can_update_lead_details_and_change_source_from_the_dropdown_values(): void
+    {
+        $this->mock(NotificationService::class);
+        $user = $this->userWithCreateLeadPermission();
+        $project = Project::create([
+            'name' => 'Updated Project',
+            'email' => 'project@example.com',
+            'phone' => '1112223333',
+        ]);
+        $lead = Lead::create([
+            'name' => 'Lead before edit',
+            'phone' => '1234567890',
+            'source_website' => 'facebook.com',
+            'status' => 'active',
+            'assigned_to' => $user->id,
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('lead-managment.update'), [
+                'id' => $lead->id,
+                'name' => 'Lead after edit',
+                'phone' => '0987654321',
+                'email' => 'updated@example.com',
+                'message' => 'Updated message',
+                'source_website' => 'whitehat.realty',
+                'source_page_name' => 'Whitehat Campaign Page',
+                'status' => 'follow_up',
+                'type' => 'warm',
+                'assigned_to' => $user->id,
+                'follow_up_date' => '2026-11-15',
+                'project_id' => $project->id,
+                'notes' => 'Updated note',
+            ])
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseHas('leads', [
+            'id' => $lead->id,
+            'name' => 'Lead after edit',
+            'phone' => '0987654321',
+            'email' => 'updated@example.com',
+            'message' => 'Updated message',
+            'source_website' => 'whitehat.realty',
+            'source_page_name' => 'Whitehat Campaign Page',
+            'status' => 'follow_up',
+            'type' => 'warm',
+            'project_id' => $project->id,
+            'notes' => 'Updated note',
+        ]);
+    }
+
     public function test_add_lead_form_lists_the_supported_sources(): void
     {
         $user = $this->userWithCreateLeadPermission();
@@ -90,6 +143,9 @@ class AdminManualLeadSourceTest extends TestCase
             ->assertSee('360PropGuide')
             ->assertSee('lead-page-badge')
             ->assertSee('leads-management-page')
+            ->assertSee('id="edit_source_website"', false)
+            ->assertSee('name="source_form_name"', false)
+            ->assertSee('name="budget_max"', false)
             ->assertSee('download', false)
             ->assertSee('name="_token"', false);
     }
@@ -199,6 +255,10 @@ class AdminManualLeadSourceTest extends TestCase
             ]),
             Permission::create([
                 'name' => 'view.lead',
+                'guard_name' => 'web',
+            ]),
+            Permission::create([
+                'name' => 'edit.lead',
                 'guard_name' => 'web',
             ]),
         ];
