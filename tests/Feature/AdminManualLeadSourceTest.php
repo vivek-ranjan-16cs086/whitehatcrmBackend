@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Project;
 use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -59,7 +60,7 @@ class AdminManualLeadSourceTest extends TestCase
         $user = $this->userWithCreateLeadPermission();
 
         foreach ([
-            ['Whitehat lead', 'Whitehat'],
+            ['Whitehat lead', 'whitehat.realty'],
             ['360PropGuide lead', '360propguide.com'],
         ] as [$name, $source]) {
             $this->actingAs($user)
@@ -86,7 +87,7 @@ class AdminManualLeadSourceTest extends TestCase
             ->get(route('lead-management.index'))
             ->assertOk()
             ->assertSee('Facebook')
-            ->assertSee('Whitehat')
+            ->assertSee('Whitehat Realty')
             ->assertSee('360PropGuide')
             ->assertSee('download', false)
             ->assertSee('name="_token"', false);
@@ -121,6 +122,67 @@ class AdminManualLeadSourceTest extends TestCase
         ]);
     }
 
+    public function test_import_can_fill_all_lead_fields_present_in_the_database(): void
+    {
+        $this->mock(NotificationService::class);
+        $user = $this->userWithCreateLeadPermission();
+        $project = Project::create([
+            'name' => 'Import Project',
+            'email' => 'project@example.com',
+            'phone' => '1112223333',
+        ]);
+        $headers = \App\Imports\AdminLeadsImport::HEADINGS;
+        $values = array_fill_keys($headers, '');
+        $values = array_merge($values, [
+            'name' => 'Full details lead',
+            'phone' => '0987654321',
+            'email' => 'full@example.com',
+            'message' => 'Facebook form answers and lead details',
+            'external_id' => '78901',
+            'status' => 'active',
+            'type' => 'warm',
+            'assigned_to' => (string) $user->id,
+            'follow_up_date' => '2026-11-15',
+            'notes' => 'Call next week',
+            'visit_status' => 'scheduled',
+            'visit_date' => '2026-11-20 00:00:00',
+            'project_id' => (string) $project->id,
+            'deactivate_reason' => '',
+            'source_page_name' => 'Facebook Form',
+            'source_form_name' => 'Forest Walk Diwali 2026',
+            'purchase_timeline' => 'Immediate',
+            'site_visit_preference' => 'Weekend',
+            'funding_method' => 'Loan',
+            'source_submitted_at' => '2026-10-29 17:16:55',
+        ]);
+        $stream = fopen('php://temp', 'r+');
+        fputcsv($stream, $headers);
+        fputcsv($stream, array_map(fn ($header) => $values[$header], $headers));
+        rewind($stream);
+        $csvContents = stream_get_contents($stream);
+        fclose($stream);
+        $csv = UploadedFile::fake()->createWithContent('all-fields.csv', $csvContents);
+
+        $this->actingAs($user)
+            ->post(route('lead-managment.import'), [
+                'source_website' => 'facebook.com',
+                'file' => $csv,
+            ])
+            ->assertOk()
+            ->assertJsonPath('status', true);
+
+        $this->assertDatabaseHas('leads', [
+            'name' => 'Full details lead',
+            'external_id' => 78901,
+            'assigned_to' => $user->id,
+            'project_id' => $project->id,
+            'visit_status' => 'scheduled',
+            'visit_date' => '2026-11-20 00:00:00',
+            'source_website' => 'facebook.com',
+            'message' => 'Facebook form answers and lead details',
+        ]);
+    }
+
     public function test_duplicate_phone_rejects_the_import_without_partially_inserting_rows(): void
     {
         $this->mock(NotificationService::class);
@@ -136,7 +198,7 @@ class AdminManualLeadSourceTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('lead-managment.import'), [
-                'source_website' => 'Whitehat',
+                'source_website' => 'whitehat.realty',
                 'file' => $csv,
             ])
             ->assertUnprocessable()
@@ -153,11 +215,12 @@ class AdminManualLeadSourceTest extends TestCase
             ->get(route('lead-managment.import-template'));
 
         $response->assertOk()
+            ->assertDownload('lead-import-template.csv')
             ->assertHeader('content-type', 'text/csv; charset=UTF-8');
 
         $this->assertStringStartsWith(
-            'name,phone,email,message,status,type,follow_up_date,notes',
-            $response->streamedContent()
+            implode(',', \App\Imports\AdminLeadsImport::HEADINGS),
+            file_get_contents(resource_path('templates/lead-import-template.csv'))
         );
     }
 

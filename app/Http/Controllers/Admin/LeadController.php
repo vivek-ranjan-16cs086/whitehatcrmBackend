@@ -17,7 +17,7 @@ class LeadController extends Controller
 {
 	private const MANUAL_LEAD_SOURCES = [
 		'Facebook' => 'facebook.com',
-		'Whitehat' => 'Whitehat',
+		'Whitehat Realty' => 'whitehat.realty',
 		'360PropGuide' => '360propguide.com',
 	];
 
@@ -764,20 +764,7 @@ $lead->type = !empty($validated['type']) ? $validated['type'] : 'cold';
 
 	public function downloadImportTemplate()
 	{
-		return response()->streamDownload(function (): void {
-			$output = fopen('php://output', 'w');
-			fputcsv($output, [
-				'name',
-				'phone',
-				'email',
-				'message',
-				'status',
-				'type',
-				'follow_up_date',
-				'notes',
-			]);
-			fclose($output);
-		}, 'lead-import-template.csv', [
+		return response()->download(resource_path('templates/lead-import-template.csv'), 'lead-import-template.csv', [
 			'Content-Type' => 'text/csv; charset=UTF-8',
 		]);
 	}

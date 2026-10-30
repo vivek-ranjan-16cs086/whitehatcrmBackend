@@ -139,7 +139,7 @@
 					<div class="modal-body">
 						<p class="text-muted">
 							Choose the source for this upload. All leads in the CSV will be saved under that source.
-							Use the template to ensure the column names are correct.
+							Use the template to see all supported lead fields. Leave optional fields blank when unknown.
 						</p>
 						<a class="btn btn-sm btn-outline-secondary mb-3" href="{{ route('lead-managment.import-template') }}" download>
 							<i class="bi bi-download"></i> Download CSV template
@@ -158,7 +158,11 @@
 							<div class="mb-3">
 								<label for="import_file" class="form-label">CSV file <span class="text-danger">*</span></label>
 								<input type="file" id="import_file" name="file" class="form-control" accept=".csv,text/csv" required>
-								<div class="form-text">Maximum file size: 10 MB. Existing phone numbers are rejected as duplicates.</div>
+								<div class="form-text">
+									Maximum size: 10 MB. Use ISO dates (YYYY-MM-DD), valid status/type values from the template,
+									and numeric database IDs for assigned_to, project_id, and sub_response_id.
+									Existing phone numbers are rejected as duplicates.
+								</div>
 							</div>
 						</form>
 					</div>
