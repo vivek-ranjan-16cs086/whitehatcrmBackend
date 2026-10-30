@@ -8,9 +8,16 @@ use App\Models\Lead;
 use App\Models\User;
 use Illuminate\Validation\ValidationException; 
 use App\Services\NotificationService;   
+use Illuminate\Validation\Rule;
 
 class LeadController extends Controller
 {
+	private const MANUAL_LEAD_SOURCES = [
+		'Facebook' => 'facebook.com',
+		'Whitehat' => 'Whitehat',
+		'360PropGuide' => '360propguide.com',
+	];
+
 	protected $leadService;
 	protected $notificationService;
 
@@ -51,6 +58,7 @@ $leadSources = Lead::query()
         'selectedView' => $view,
         'pageTitle' => $titles[$view],
 		'leadSources' => $leadSources,
+        'manualLeadSources' => self::MANUAL_LEAD_SOURCES,
     ]);
 }
 //...
@@ -649,7 +657,7 @@ $leadSources = Lead::query()
 				'phone'          => 'required|string|max:20',
 				'email'          => 'nullable|email|max:255',
 				'message'        => 'nullable|string',
-				'source_website' => 'nullable|string|max:255',
+				'source_website' => ['required', 'string', 'max:255', Rule::in(array_values(self::MANUAL_LEAD_SOURCES))],
 				'status'         => 'nullable|string|max:50',
 				'type'           => 'nullable|string|max:50',
 				'assigned_to'    => 'nullable',

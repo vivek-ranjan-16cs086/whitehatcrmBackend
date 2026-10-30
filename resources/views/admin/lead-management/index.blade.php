@@ -166,8 +166,13 @@
 							</div>
 
 							<div class="col-md-6">
-								<label class="form-label">Source</label>
-								<input type="text" id="add_source" class="form-control">
+								<label class="form-label">Source <span class="text-danger">*</span></label>
+								<select id="add_source" class="form-select" required>
+									<option value="">Select a source</option>
+									@foreach($manualLeadSources as $label => $value)
+										<option value="{{ $value }}">{{ $label }}</option>
+									@endforeach
+								</select>
 							</div>
 
 							<div class="col-md-6">
