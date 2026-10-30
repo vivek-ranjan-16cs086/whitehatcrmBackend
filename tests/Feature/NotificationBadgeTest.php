@@ -20,6 +20,7 @@ class NotificationBadgeTest extends TestCase
             'title' => 'Lead assigned',
             'message' => 'A lead was assigned to you.',
             'type' => 'lead_assigned',
+            'data' => ['leadId' => '123'],
             'is_read' => false,
         ]);
 
@@ -43,6 +44,28 @@ class NotificationBadgeTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('unread_count', 1)
-            ->assertJsonCount(2, 'data');
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.lead_id', '123');
+    }
+
+    public function test_lead_notification_links_to_the_leads_detail_action(): void
+    {
+        $user = User::factory()->create();
+
+        Notification::create([
+            'user_id' => $user->id,
+            'title' => 'Lead assigned',
+            'message' => 'A lead was assigned to you.',
+            'type' => 'LEAD_ASSIGNED',
+            'data' => ['leadId' => '123'],
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('admin.notifications.index'))
+            ->assertOk()
+            ->assertSee(
+                'data-lead-url="' . route('lead-management.index', ['open_lead' => '123']) . '"',
+                false
+            );
     }
 }

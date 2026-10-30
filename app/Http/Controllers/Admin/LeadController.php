@@ -300,6 +300,15 @@ $leadSources = Lead::query()
 			->getLeads($request)
 			->with('assignedUser');
 
+		$request->validate([
+		    'open_lead_id' => 'nullable|integer|min:1',
+		    'date_from' => 'nullable|date_format:Y-m-d',
+		    'date_to' => 'nullable|date_format:Y-m-d|after_or_equal:date_from',
+		    'source' => 'nullable|string|max:255',
+		]);
+
+		$openLeadId = $request->input('open_lead_id');
+
 		// View filters
 		$viewFilters = [
 			'total' => null,
@@ -317,43 +326,37 @@ $leadSources = Lead::query()
 			], 422);
 		}
 
-		if ($viewFilters[$view] !== null) {
+		if ($openLeadId !== null) {
+			$query->where('leads.id', $openLeadId);
+		} elseif ($viewFilters[$view] !== null) {
 			$query->where('leads.status', $viewFilters[$view]);
 		}
 
+		if ($openLeadId === null) {
+			// Date Range and Source filters
+			if ($request->filled('date_from')) {
+				$query->whereDate(
+					'leads.created_at',
+					'>=',
+					$request->input('date_from')
+				);
+			}
 
-        // Date Range and Source filters
-        $request->validate([
-            'date_from' => 'nullable|date_format:Y-m-d',
-            'date_to' => 'nullable|date_format:Y-m-d|after_or_equal:date_from',
-            'source' => 'nullable|string|max:255',
-        ]);
+			if ($request->filled('date_to')) {
+				$query->whereDate(
+					'leads.created_at',
+					'<=',
+					$request->input('date_to')
+				);
+			}
 
-        // From date - lead creation date
-        if ($request->filled('date_from')) {
-            $query->whereDate(
-                'leads.created_at',
-                '>=',
-                $request->input('date_from')
-            );
-        }
-
-        // To date - lead creation date
-        if ($request->filled('date_to')) {
-            $query->whereDate(
-                'leads.created_at',
-                '<=',
-                $request->input('date_to')
-            );
-        }
-
-        // Source website
-        if ($request->filled('source')) {
-            $query->where(
-                'leads.source_website',
-                $request->input('source')
-            );
-        }
+			if ($request->filled('source')) {
+				$query->where(
+					'leads.source_website',
+					$request->input('source')
+				);
+			}
+		}
 //...
 		// Record counts
 		$totalRecords = Lead::count();
@@ -415,6 +418,16 @@ $leadSources = Lead::query()
 			// Action buttons
 			$action = "
 				<button
+					type='button'
+					class='btn btn-xs btn-secondary viewBtn rounded-circle text-light m-1'
+					data-id='{$row->id}'
+					title='View lead'
+					aria-label='View lead details for " . e($row->name) . "'
+				>
+					<i class='bi-eye'></i>
+				</button>
+				<button
+					type='button'
 					class='btn btn-xs btn-info editBtn rounded-circle text-light m-1'
 					data-id='{$row->id}'
 					data-name='" . e($row->name) . "'
@@ -461,6 +474,7 @@ $leadSources = Lead::query()
 			};
 
 			$data_arr[] = [
+				'lead_id' => $row->id,
 				'id' => $sno++,
 				'name' => e($row->name),
 				'phone' => e($row->phone),

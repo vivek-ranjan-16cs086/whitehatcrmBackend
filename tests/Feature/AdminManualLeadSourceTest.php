@@ -143,11 +143,37 @@ class AdminManualLeadSourceTest extends TestCase
             ->assertSee('360PropGuide')
             ->assertSee('lead-page-badge')
             ->assertSee('leads-management-page')
+            ->assertSee('id="viewLeadModal"', false)
             ->assertSee('id="edit_source_website"', false)
             ->assertSee('name="source_form_name"', false)
             ->assertSee('name="budget_max"', false)
             ->assertSee('download', false)
             ->assertSee('name="_token"', false);
+    }
+
+    public function test_notification_target_loads_the_requested_lead_for_the_eye_details_action(): void
+    {
+        $user = $this->userWithCreateLeadPermission();
+        $lead = Lead::create([
+            'name' => 'Notification target lead',
+            'phone' => '1234567890',
+            'status' => 'closed',
+        ]);
+
+        $this->actingAs($user)
+            ->getJson(route('lead-management.ajax-list', [
+                'draw' => 1,
+                'start' => 0,
+                'length' => 20,
+                'view' => 'active',
+                'date_from' => '2026-10-30',
+                'source' => 'facebook.com',
+                'open_lead_id' => $lead->id,
+            ]))
+            ->assertOk()
+            ->assertJsonPath('data.0.lead_id', $lead->id)
+            ->assertJsonPath('data.0.edit_data.name', 'Notification target lead')
+            ->assertJsonPath('data.0.action', fn ($action) => str_contains($action, 'viewBtn'));
     }
 
     public function test_admin_can_import_csv_leads_for_the_selected_source(): void

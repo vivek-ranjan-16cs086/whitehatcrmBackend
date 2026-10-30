@@ -398,6 +398,23 @@
 	</div>
 </div>
 
+<div class="modal fade" id="viewLeadModal" tabindex="-1" aria-labelledby="viewLeadModalLabel" aria-hidden="true">
+	<div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="viewLeadModalLabel">Lead details</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body">
+				<dl class="row mb-0" id="leadViewDetails"></dl>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+			</div>
+		</div>
+	</div>
+</div>
+
 
 @endsection
 
@@ -419,6 +436,12 @@ let currentLeadView =
 if (!leadViewTitles[currentLeadView]) {
     currentLeadView = 'total';
 }
+
+let pendingLeadId = new URLSearchParams(window.location.search).get('open_lead');
+if (pendingLeadId && !/^\d+$/.test(pendingLeadId)) {
+    pendingLeadId = null;
+}
+
 //...
 	$(document).ready(function () {
     updateLeadFilterButtons(currentLeadView);
@@ -444,6 +467,7 @@ ajax: {
 	d.date_from = $('#leadDateFrom').val();
 d.date_to = $('#leadDateTo').val();
 d.source = $('#leadSourceFilter').val();
+d.open_lead_id = pendingLeadId;
 }
 },
 //...
@@ -574,6 +598,35 @@ d.source = $('#leadSourceFilter').val();
 			language: {
 				search: "",
 				searchPlaceholder: "Search leads..."
+			},
+
+			drawCallback: function () {
+				if (!pendingLeadId) {
+					return;
+				}
+
+				const requestedLeadId = pendingLeadId;
+				pendingLeadId = null;
+
+				const destination = new URL(window.location.href);
+				destination.searchParams.delete('open_lead');
+				history.replaceState(history.state, '', destination.pathname + destination.search + destination.hash);
+
+				const leadRow = this.api().rows().data().toArray()
+					.find(function (row) {
+						return String(row.lead_id) === requestedLeadId;
+					});
+
+				if (leadRow) {
+					$('#leads-table .viewBtn[data-id="' + requestedLeadId + '"]').trigger('click');
+					return;
+				}
+
+				Swal.fire({
+					icon: 'info',
+					title: 'Lead unavailable',
+					text: 'This lead could not be found or is not available to your account.'
+				});
 			}
 		});
 	}
@@ -681,6 +734,75 @@ $(document).on(
 			row?.assigned_user_name ?? $(this).data('assigned-name')
 		);
 		$('#editLeadModal').modal('show');
+	});
+
+	$(document).on('click', '.viewBtn', function () {
+		const row = $('#leads-table').DataTable().row($(this).closest('tr')).data();
+		const lead = row?.edit_data || {};
+		const labels = {
+			name: 'Name',
+			phone: 'Phone',
+			email: 'Email',
+			message: 'Message',
+			external_id: 'External ID',
+			status: 'Status',
+			type: 'Lead type',
+			source_website: 'Source',
+			source_page_name: 'Source page name',
+			follow_up_date: 'Follow-up date',
+			visit_status: 'Visit status',
+			visit_date: 'Visit date',
+			project_id: 'Project ID',
+			sub_response_id: 'Response ID',
+			deactivate_reason: 'Deactivation reason',
+			lead_source: 'Lead source',
+			notes: 'Notes',
+			inventory: 'Inventory',
+			budget_min: 'Minimum budget',
+			budget_max: 'Maximum budget',
+			remarks: 'Remarks',
+			source_page_id: 'Source page ID',
+			source_form_id: 'Source form ID',
+			source_form_name: 'Source form name',
+			campaign_id: 'Campaign ID',
+			campaign_name: 'Campaign name',
+			adset_id: 'Ad set ID',
+			adset_name: 'Ad set name',
+			ad_id: 'Ad ID',
+			ad_name: 'Ad name',
+			purchase_timeline: 'Purchase timeline',
+			site_visit_preference: 'Site visit preference',
+			funding_method: 'Funding method',
+			source_submitted_at: 'Source submitted at'
+		};
+		const details = $('#leadViewDetails').empty();
+
+		Object.keys(labels).forEach(function (field) {
+			const value = lead[field];
+			if (value === null || value === undefined || value === '') {
+				return;
+			}
+
+			details.append(
+				$('<dt class="col-sm-4 text-muted">').text(labels[field]),
+				$('<dd class="col-sm-8">').text(value)
+			);
+		});
+
+		if (row?.assigned_user_name) {
+			details.append(
+				$('<dt class="col-sm-4 text-muted">').text('Assigned to'),
+				$('<dd class="col-sm-8">').text(row.assigned_user_name)
+			);
+		}
+		if (row?.created_at) {
+			details.append(
+				$('<dt class="col-sm-4 text-muted">').text('Created'),
+				$('<dd class="col-sm-8">').text(row.created_at)
+			);
+		}
+
+		$('#viewLeadModal').modal('show');
 	});
 	
 	$('#updateLead').click(function () {

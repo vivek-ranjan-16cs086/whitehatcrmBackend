@@ -36,6 +36,8 @@ class NotificationController extends Controller
 					'id' => $notif->id,
 					'title' => $notif->title,
 					'message' => $notif->message,
+					'lead_id' => data_get($notif->data, 'leadId')
+						?? data_get($notif->data, 'lead_id'),
 					'is_read' => $notif->is_read,
 					'time' => $notif->created_at->diffForHumans()
 				];
@@ -55,7 +57,8 @@ class NotificationController extends Controller
     //Mark as read
     public function markAsRead($id)
     {
-        $notification = Notification::findOrFail($id);
+        $notification = Notification::where('user_id', auth()->id())
+            ->findOrFail($id);
 
         $notification->update(['is_read' => 1]);
 

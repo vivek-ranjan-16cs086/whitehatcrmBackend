@@ -20,7 +20,21 @@
                 <div class="card-body p-0">
                     <div class="list-group list-group-flush" id="all-notifications-list">
                         @forelse($notifications as $notification)
-                            <div class="list-group-item list-group-item-action border-0 px-4 py-3 {{ $notification->is_read ? 'opacity-75' : 'bg-light-subtle' }}" id="notification-{{ $notification->id }}">
+                            @php
+                                $leadId = data_get($notification->data, 'leadId')
+                                    ?? data_get($notification->data, 'lead_id');
+                            @endphp
+                            <div
+                                class="list-group-item list-group-item-action border-0 px-4 py-3 {{ $notification->is_read ? 'opacity-75' : 'bg-light-subtle' }}"
+                                id="notification-{{ $notification->id }}"
+                                @if($leadId)
+                                    role="link"
+                                    tabindex="0"
+                                    data-lead-url="{{ route('lead-management.index', ['open_lead' => $leadId]) }}"
+                                    data-notification-id="{{ $notification->id }}"
+                                    style="cursor: pointer;"
+                                @endif
+                            >
                                 <div class="d-flex align-items-center">
                                     <div class="flex-shrink-0 me-3">
                                         <div class="avatar-circle {{ $notification->is_read ? 'bg-secondary' : 'bg-primary' }}">
@@ -81,10 +95,74 @@
                     $(`#notification-${id} button`).fadeOut();
                     // Update unread count locally without fetching the API
                     if(typeof decrementUnreadCount === 'function') decrementUnreadCount();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Could not mark as read',
+                        text: response.message || 'The notification could not be updated.'
+                    });
                 }
+            },
+            error: function(xhr) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Could not mark as read',
+                    text: xhr.responseJSON?.message || 'The notification could not be updated.'
+                });
             }
         });
     }
+
+    function openLeadFromNotification(element) {
+        const url = element.dataset.leadUrl;
+        const notificationId = element.dataset.notificationId;
+
+        $.ajax({
+            url: "{{ route('admin.notifications.read', ':id') }}".replace(':id', notificationId),
+            type: 'PATCH',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                if (response.status) {
+                    window.location.assign(url);
+                    return;
+                }
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Could not open lead',
+                    text: response.message || 'The notification could not be updated.'
+                });
+            },
+            error: function(xhr) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Could not open lead',
+                    text: xhr.responseJSON?.message || 'The notification could not be updated.'
+                });
+            }
+        });
+    }
+
+    $(document).on('click', '[data-lead-url]', function(event) {
+        if (event.target.closest('button')) {
+            return;
+        }
+
+        openLeadFromNotification(this);
+    });
+
+    $(document).on('keydown', '[data-lead-url]', function(event) {
+        if (event.target.closest('button')) {
+            return;
+        }
+
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openLeadFromNotification(this);
+        }
+    });
 
     function clearAllNotifications() {
         confirmAdminAction({
