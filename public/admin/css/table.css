@@ -158,8 +158,9 @@ table.dataTable tbody td:last-child {
     align-items: flex-end;
     flex-wrap: wrap;
     gap: 0.75rem 1rem;
-    padding: 0.55rem 1rem;
+    padding: 0.9rem 1.2rem;
     border-bottom: 1px solid #e7eaf1;
+    background: #ffffff;
 }
 
 .lead-date-filter .form-label,
@@ -237,11 +238,17 @@ table.dataTable tbody td:last-child {
 }
 
 .leads-card > .card-header {
-    padding: 0.7rem 1rem;
+    padding: 1rem 1.2rem;
+    background: #ffffff;
+}
+
+.leads-card > .card-header h6 {
+    color: #202b3c;
+    font-size: 0.98rem;
 }
 
 .leads-card > .card-body {
-    padding: 0.65rem 1rem;
+    padding: 0.9rem 1.2rem;
 }
 
 #users-table tbody tr.odd > *,

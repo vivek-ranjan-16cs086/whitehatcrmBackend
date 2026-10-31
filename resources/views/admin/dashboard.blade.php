@@ -1,5 +1,6 @@
 @extends('layouts.admin')
 
+@section('body-class', 'dashboard-page')
 @section('title', 'Dashboard')
 @section('page-title', 'Dashboard')
 @section('page-subtitle', 'Welcome back, ' . auth()->user()->name)
@@ -9,7 +10,7 @@
         {{-- ── Welcome Section ── --}}
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card">
+                <div class="card dashboard-welcome-card">
                     <div class="card-body">
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
@@ -276,24 +277,24 @@
 <div class="row g-3 mb-4">
 
     <div class="col-md-4">
-        <span class="text-muted">Overdue:</span>
-        <strong>
-            {{ number_format($overdueFollowups) }}
-        </strong>
+    <div class="risk-breakdown-item">
+        <span class="text-muted">Overdue</span>
+        <strong>{{ number_format($overdueFollowups) }}</strong>
+    </div>
     </div>
 
     <div class="col-md-4">
-        <span class="text-muted">No follow-up:</span>
-        <strong>
-            {{ number_format($noFollowup) }}
-        </strong>
+    <div class="risk-breakdown-item">
+        <span class="text-muted">No follow-up</span>
+        <strong>{{ number_format($noFollowup) }}</strong>
+    </div>
     </div>
 
-    <div class="col-md-4 text-md-end">
-        <span class="text-muted">Stale:</span>
-        <strong>
-            {{ number_format($staleLeads) }}
-        </strong>
+    <div class="col-md-4">
+    <div class="risk-breakdown-item">
+        <span class="text-muted">Stale</span>
+        <strong>{{ number_format($staleLeads) }}</strong>
+    </div>
     </div>
 
 </div>
@@ -311,26 +312,45 @@
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h6 class="mb-0">
                             <i data-lucide="bar-chart-3" class="me-2"></i>
-                            Analytics Overview
+                            Lead pipeline
                         </h6>
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                                data-bs-toggle="dropdown">
-                                Last 30 days
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#">Last 7 days</a></li>
-                                <li><a class="dropdown-item" href="#">Last 30 days</a></li>
-                                <li><a class="dropdown-item" href="#">Last 90 days</a></li>
-                            </ul>
-                        </div>
+                        @if($canViewLeads)
+                            <span class="dashboard-chart-caption">Leads by status</span>
+                        @endif
                     </div>
-                    <div class="card-body">
-                        <div class="text-center py-5">
-                            <i data-lucide="bar-chart-3" class="text-muted" style="width: 48px; height: 48px;"></i>
-                            <p class="text-muted mt-2">Chart visualization would go here</p>
-                            <small class="text-muted">Integrate with Chart.js or similar library</small>
-                        </div>
+                    <div class="card-body dashboard-chart-body">
+                        @if($canViewLeads && $leadCounts->isNotEmpty())
+                            @php
+                                $pipelineChartData = $leadCounts->sortDesc()->take(6);
+                                $pipelineChartMax = max(1, (int) $pipelineChartData->max());
+                            @endphp
+                            <div class="pipeline-chart" role="group" aria-label="Lead counts by status">
+                                @foreach($pipelineChartData as $status => $count)
+                                    @php
+                                        $barHeight = max(8, (int) round(($count / $pipelineChartMax) * 100));
+                                        $statusLabel = ucwords(str_replace(['_', '-'], ' ', $status));
+                                    @endphp
+                                    <div class="pipeline-chart-column" title="{{ $statusLabel }}: {{ number_format($count) }}">
+                                        <span class="pipeline-chart-count">{{ number_format($count) }}</span>
+                                        <div class="pipeline-chart-track">
+                                            <span class="pipeline-chart-bar" style="height: {{ $barHeight }}%"></span>
+                                        </div>
+                                        <span class="pipeline-chart-label">{{ $statusLabel }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="dashboard-chart-empty">
+                                <span class="dashboard-chart-empty-icon"><i data-lucide="bar-chart-3"></i></span>
+                                @if($canViewLeads)
+                                    <p class="mb-1">Lead analytics will appear here</p>
+                                    <span>There are no lead statuses to display yet.</span>
+                                @else
+                                    <p class="mb-1">Lead analytics are unavailable</p>
+                                    <span>Your account does not have permission to view lead data.</span>
+                                @endif
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
