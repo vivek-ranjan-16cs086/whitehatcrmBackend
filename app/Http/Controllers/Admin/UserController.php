@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 use App\Services\UserService;
 
@@ -139,7 +140,7 @@ class UserController extends Controller
     {
         $request->validate([
             'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email,{$user->id}',
+            'email'    => ['required', 'email', Rule::unique('users', 'email')->ignore($user)],
             'password' => 'nullable|min:8|confirmed',
             'role'     => 'required|exists:roles,name',
         ]);
