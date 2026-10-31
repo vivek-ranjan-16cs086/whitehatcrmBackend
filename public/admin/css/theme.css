@@ -251,3 +251,9 @@ body :is(#users-table,#leads-table,table.dataTable,.admin-panel-table,.table) tb
 @keyframes message-alert-pulse { 0%,100% { box-shadow: 0 0 0 0 rgb(37 99 235 / 0); } 50% { box-shadow: 0 0 0 5px rgb(37 99 235 / .16); } }
 @media(prefers-reduced-motion:reduce) { .message-indicator.has-unread,.sidebar-message-count.show { animation: none; } }
 .chat-avatar { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+
+/* Profile images stay circular; other controls retain the shared 3px corners. */
+body :is(#chatProfileButton,.user-avatar,.user-dropdown-avatar,.chat-profile-picture,.chat-conversation-avatar,.admin-profile-preview) { border-radius: 50% !important; overflow: hidden; }
+body .chat-avatar { border-radius: 50% !important; }
+.admin-profile-preview { display: grid; place-items: center; width: 96px; height: 96px; margin: 0 auto 20px; background: #f1f5f9; color: #64748b; font-size: 30px; font-weight: 600; }
+.sidebar .sidebar-nav .nav-item a { font-weight: 700; }

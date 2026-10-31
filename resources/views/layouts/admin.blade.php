@@ -124,7 +124,7 @@
                     <i data-lucide="chevron-down" class="user-dropdown-chevron"></i>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="{{ route('admin.chat.index') }}#chatProfileButton"><i data-lucide="user" class="me-2"></i>Profile picture</a></li>
+                    <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#adminProfilePictureModal"><i data-lucide="user" class="me-2"></i>Profile picture</button></li>
                     <li><a class="dropdown-item" href="#"><i data-lucide="settings" class="me-2"></i>Settings</a></li>
                     <li>
                         <hr class="dropdown-divider">
@@ -967,6 +967,8 @@ function isDataTableRequest(settings) {
     <script src="{{ url('admin/libraries/js/echo.iife.js') }}"></script>
     <script id="crmChatRealtimeScript" data-base="{{ url('admin/chat') }}" data-chat-url="{{ route('admin.chat.index') }}"
         src="{{ url('admin/js/chat-realtime.js') }}?v={{ filemtime(public_path('admin/js/chat-realtime.js')) }}"></script>
+    @include('admin.partials.profile-picture-modal')
+    <script src="{{ url('admin/js/profile-picture.js') }}?v={{ filemtime(public_path('admin/js/profile-picture.js')) }}"></script>
     @stack('scripts')
 
 </body>
