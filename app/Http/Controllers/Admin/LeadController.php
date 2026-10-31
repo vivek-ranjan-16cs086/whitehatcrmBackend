@@ -287,6 +287,10 @@ $leadSources = Lead::query()
 			'assigned_to' => 'assigned_to',
 			'follow_up_date' => 'follow_up_date',
 			'created_at' => 'created_at',
+            'project' => 'project_id',
+            'inventory' => 'inventory',
+            'visit_date' => 'visit_date',
+            'visit_status' => 'visit_status',
 		];
 
 		$columnSortOrder = in_array(
@@ -298,7 +302,7 @@ $leadSources = Lead::query()
 		// Base query
 		$query = $this->leadService
 			->getLeads($request)
-			->with('assignedUser');
+			->with(['assignedUser', 'project']);
 
 		$request->validate([
 		    'open_lead_id' => 'nullable|integer|min:1',
@@ -411,7 +415,9 @@ $leadSources = Lead::query()
 					$columnSortOrder
 				);
 
-			} else {
+			} elseif ($columnName === 'project') {
+                $query->orderBy(Project::select('name')->whereColumn('projects.id', 'leads.project_id')->limit(1), $columnSortOrder);
+            } else {
 
 				$query->orderBy(
 					'leads.' . $sortableColumns[$columnName],
@@ -507,6 +513,10 @@ $leadSources = Lead::query()
 				'message' => e(\Str::limit($row->message, 50)),
 				'source_website' => e($row->source_website ?? '-'),
 				'source_page_name' => $row->pageName,
+                'project' => e($row->project?->name ?? '-'),
+                'inventory' => e($row->inventory ?: '-'),
+                'visit_date' => $row->visit_date?->format('d M Y') ?? '-',
+                'visit_status' => e($row->visit_status ? ucwords(str_replace('_', ' ', $row->visit_status)) : '-'),
 				'status' => $statusBadge,
 				'type' => $typeBadge,
 				'assigned_to' => e($assignedUserName ?: 'Unassigned'),

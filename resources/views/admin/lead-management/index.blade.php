@@ -56,15 +56,16 @@
 							<th>S.No</th>
 							<th>Name</th>
 							<th>Phone</th>
-							<th>Email</th>
-							<th>Message</th>
 							<th>Source</th>
-							<th>Page</th>
-							<th>Status</th>
+							<th>Message</th>
+							<th>Page Name</th>
+							<th>Project</th>
 							<th>Assigned To</th>
+							<th>Status</th>
+							<th>Inventory</th>
 							<th>Type</th>
-							<th>Follow Up</th>
-							<th>Created</th>
+							<th>Visit</th>
+							<th>Visit Status</th>
 							<th>Action</th>
 						</tr>
 					</thead>    
@@ -500,11 +501,8 @@ d.open_lead_id = pendingLeadId;
 
 				{ data: 'phone' },
 
-				{ data: 'email' },
-
-				{ data: 'message' },
-
 				{ data: 'source_website' },
+				{ data: 'message' },
 
 				{
 					data: 'source_page_name',
@@ -531,13 +529,14 @@ d.open_lead_id = pendingLeadId;
 					}
 				},
 
+				{ data: 'project' },
+				{ data: 'assigned_to' },
 				{
 					data: 'status',
 					orderable: false,
 					searchable: false
 				},
-
-				{ data: 'assigned_to' },
+                { data: 'inventory' },
 
 				{
 					data: 'type',
@@ -548,9 +547,9 @@ d.open_lead_id = pendingLeadId;
 					}
 				},
 
-				{ data: 'follow_up_date' },
+				{ data: 'visit_date' },
 
-				{ data: 'created_at' },
+				{ data: 'visit_status' },
 
 				{
 					data: 'action',
@@ -576,27 +575,27 @@ d.open_lead_id = pendingLeadId;
 						{
 							extend: 'copyHtml5',
 							title: 'Leads',
-							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
+							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10,11,12] }
 						},
 						{
 							extend: 'excelHtml5',
 							title: 'Leads',
-							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
+							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10,11,12] }
 						},
 						{
 							extend: 'csv',
 							title: 'Leads',
-							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
+							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10,11,12] }
 						},
 						{
 							extend: 'pdfHtml5',
 							title: 'Leads',
-							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
+							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10,11,12] }
 						},
 						{
 							extend: 'print',
 							title: 'Leads',
-							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10] }
+							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10,11,12] }
 						}
 					]
 				},

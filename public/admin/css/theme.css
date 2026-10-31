@@ -186,3 +186,58 @@ body :is(.select2-container .select2-selection--multiple,.select2-selection__cho
     body :is(.dataTables_wrapper .dataTables_filter label,.dt-container .dt-search label) { width: 100%; }
     body :is(.dataTables_wrapper .dataTables_filter input,.dt-container .dt-search input) { width: 100% !important; }
 }
+
+/* Comfortable compact spacing across module lists. */
+body:not(.dashboard-page) .main-content {
+    padding-top: calc(var(--topbar-height) + 16px);
+    padding-right: 18px;
+    padding-bottom: 24px;
+    padding-left: 18px;
+}
+body:not(.dashboard-page) .main-content > .card > .card-header,
+body:not(.dashboard-page) .main-content > div > .card > .card-header { padding: 12px 16px; }
+body:not(.dashboard-page) .main-content > .card > .card-body,
+body:not(.dashboard-page) .main-content > div > .card > .card-body { padding: 12px 16px; }
+body .leads-card > .card-header { padding: 12px 16px; }
+body .leads-card > .card-body { padding: 12px 16px; }
+body .lead-filter-bar { padding: 10px 16px; gap: 8px 14px; }
+body .lead-filter-bar :is(.form-control,.form-select) { min-height: 36px; height: 36px; }
+body .dataTables_wrapper { gap: 8px 12px; }
+body :is(.dataTables_wrapper .dataTables_filter input,.dt-container .dt-search input) {
+    min-height: 36px; height: 36px !important; padding-top: 6px !important; padding-bottom: 6px !important;
+}
+body :is(#users-table,#leads-table,table.dataTable) > thead > tr > th { padding: 9px 12px !important; }
+body :is(#users-table,#leads-table,table.dataTable) > tbody > tr > td { padding: 8px 12px !important; }
+/* Keep the hidden scrolling header collapsed for column alignment. */
+body .dataTables_scrollBody > table.dataTable > thead > tr > :is(th,td) { padding-top: 0 !important; padding-bottom: 0 !important; }
+@media(max-width:575px) {
+    body:not(.dashboard-page) .main-content { padding-top: calc(var(--topbar-height) + 12px); padding-left: 10px; padding-right: 10px; }
+    body .leads-card > .card-header, body .leads-card > .card-body, body .lead-filter-bar { padding: 10px 12px; }
+    body :is(#users-table,#leads-table,table.dataTable) > tbody > tr > td { padding: 8px 10px !important; }
+}
+
+/* Compact, rounded row actions: neutral view, gold edit, danger delete. */
+body :is(#users-table,#leads-table,table.dataTable,.admin-panel-table,.table) tbody td:last-child .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; min-width: 28px; min-height: 28px;
+    padding: 0 !important; margin: 0 3px !important;
+    border-radius: 50% !important; border: 1px solid #e2e8f0 !important;
+    background: #f1f5f9 !important; color: #475569 !important;
+    font-size: 12px; line-height: 1; box-shadow: none;
+    vertical-align: middle; flex: 0 0 28px;
+}
+body :is(#users-table,#leads-table,table.dataTable,.admin-panel-table,.table) tbody td:last-child .btn :is(i,svg) { width: 13px; height: 13px; font-size: 12px; line-height: 1; margin: 0 !important; }
+body :is(#users-table,#leads-table,table.dataTable,.admin-panel-table,.table) tbody td:last-child .btn:hover { background: #e2e8f0 !important; border-color: #cbd5e1 !important; color: #334155 !important; }
+body :is(#users-table,#leads-table,table.dataTable,.admin-panel-table,.table) tbody td:last-child .btn:is(.editBtn,.js-edit-user,.btn-edit-project,.btn-edit-target,.btn-warning,.btn-outline-warning,[title^="Edit"],[title^="Update"],[href*="/edit"]) {
+    background: #fef3c7 !important; border-color: #fde68a !important; color: #a16207 !important;
+}
+body :is(#users-table,#leads-table,table.dataTable,.admin-panel-table,.table) tbody td:last-child .btn:is(.editBtn,.js-edit-user,.btn-edit-project,.btn-edit-target,.btn-warning,.btn-outline-warning,[title^="Edit"],[title^="Update"],[href*="/edit"]):hover {
+    background: #facc15 !important; border-color: #eab308 !important; color: #713f12 !important;
+}
+body :is(#users-table,#leads-table,table.dataTable,.admin-panel-table,.table) tbody td:last-child .btn:is(.btn-danger,.btn-outline-danger,.btn-delete,.btn-delete-target,[title^="Delete"]) {
+    background: #fee2e2 !important; border-color: #fecaca !important; color: #dc2626 !important;
+}
+body :is(#users-table,#leads-table,table.dataTable,.admin-panel-table,.table) tbody td:last-child .btn:is(.btn-danger,.btn-outline-danger,.btn-delete,.btn-delete-target,[title^="Delete"]):hover {
+    background: #dc2626 !important; border-color: #dc2626 !important; color: #fff !important;
+}
+body :is(#users-table,#leads-table,table.dataTable,.admin-panel-table,.table) tbody td:last-child .btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
