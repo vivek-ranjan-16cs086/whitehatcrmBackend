@@ -111,7 +111,7 @@ class SidebarService
         }
 
         $menus[] = [
-            'label' => 'Team Chat', 'icon' => 'messages-square',
+            'label' => 'Team Chat', 'icon' => 'messages-square', 'badge' => 'messages',
             'url' => route('admin.chat.index'), 'active' => request()->routeIs('admin.chat.*'),
             'section' => 'Workspace', 'children' => [],
         ];

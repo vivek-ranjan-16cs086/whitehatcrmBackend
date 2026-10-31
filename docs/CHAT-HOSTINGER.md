@@ -38,6 +38,12 @@ The production server must allow outbound HTTPS to Pusher. Open **Team Chat** in
 
 The shared admin layout now connects on every CRM page. Incoming messages show a notification with an **Open chat** link even while the recipient uses Leads, Dashboard, or another module. The chat screen reuses this same connection. This requires a CRM tab to remain open; notifications while every CRM tab/browser is closed require a separate browser Web Push/service-worker integration, which is not included.
 
+The header has separate Messages and Notifications controls. The Messages badge counts unread messages, highlights while unread messages remain, and clears as messages are read. The speaker button controls a saved browser sound preference. Browsers may require a click or keypress before allowing notification audio. The web client confirms delivery when it receives messages on any admin page. Sent messages show one gray tick, two gray received ticks, or two blue read ticks; group double ticks require all other members to confirm. Deploy the `2026_10_31_000004_add_delivery_cursor_to_chat_members.php` migration before using these receipts.
+
+Chat now supports profile-picture upload (2 MB), one image/PDF/audio attachment per message (10 MB), and browser voice recording (up to 2 minutes). Run the attachment migration `2026_10_31_000005_add_attachments_to_chat_messages.php`. Voice recording requires HTTPS and microphone permission. Files are stored under `storage/app/private/chat/attachments` and served through member-authorized routes, not public links. Keep that directory writable and persistent across deployments. Profile pictures use the existing public storage disk and must be accessible at its configured URL. The FTP workflow excludes private uploads and local test-storage files.
+
+In Hostinger PHP settings, allow at least `upload_max_filesize=10M` and `post_max_size=12M` for the advertised attachment limit; a lower host limit can reject the request before Laravel validates it. This does not change the app's existing PHP configuration automatically. Only the web chat recording/upload interface is included; mobile developers can use the same endpoints with native pickers/recorders.
+
 To diagnose delayed delivery after uploading the latest code:
 
 ```sh
@@ -69,7 +75,7 @@ Use the existing release-signing process to distribute an updated Android/iOS bu
 - Only conversation members can list history, send messages, mark reads, or send typing updates. Super admins do not gain access to private chats they have not joined.
 - Private channels are personal: `private-chat.user.{user_id}`. Web subscription authorization uses the session; mobile authorization uses the existing JWT Bearer token.
 - Messages have a 5,000-character limit. Clients send a UUID `client_id`; retrying the same message does not create another row or send another notification.
-- Read cursors only move forward. History supports older-page loading and incremental catch-up. Group membership is set when a group is created; membership editing and attachments are not included.
+- Read cursors only move forward. History supports older-page loading and incremental catch-up. Group membership is set when a group is created; membership editing is not included.
 - Each new message creates a `CHAT_MESSAGE` record in the existing Notifications module for every other active conversation member, even if they have no mobile device token. The admin bell refreshes on message/read events and through the polling fallback. Notification links open the matching conversation. Reading messages marks their corresponding chat notifications read without clearing unrelated lead alerts. Retrying a message does not duplicate its saved notifications.
 - Message broadcasts are synchronous (`ShouldBroadcastNow`). Provider failures do not discard saved messages; polling recovers them. Firebase delivery is best effort and uses the existing device token for each user.
 

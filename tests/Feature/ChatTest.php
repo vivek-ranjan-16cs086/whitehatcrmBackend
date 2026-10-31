@@ -208,4 +208,35 @@ class ChatTest extends TestCase
         $this->getJson("/admin/chat/conversations/$id/messages")->assertOk()
             ->assertJsonPath('data.0.body', 'Available through polling');
     }
+
+    public function test_delivery_acknowledgement_does_not_mark_messages_read_and_never_moves_backwards(): void
+    {
+        $sender = $this->user();
+        $recipient = $this->user();
+        $id = $this->direct($sender, $recipient);
+        $ids = [];
+        foreach (['First', 'Second'] as $body) {
+            $ids[] = $this->actingAs($sender)->postJson("/admin/chat/conversations/$id/messages", ['body' => $body, 'client_id' => Str::uuid()])->json('id');
+        }
+        foreach (array_reverse($ids) as $messageId) {
+            $this->actingAs($recipient)->postJson("/admin/chat/conversations/$id/delivered", ['message_id' => $messageId])->assertOk();
+        }
+        $this->assertDatabaseHas('chat_members', ['conversation_id' => $id, 'user_id' => $recipient->id,
+            'last_delivered_message_id' => $ids[1], 'last_read_message_id' => 0]);
+        $this->getJson('/admin/chat/unread')->assertOk()->assertJsonPath('unread_count', 2);
+        $this->getJson(route('admin.notifications.list'))->assertJsonPath('unread_count', 2);
+        $this->actingAs($this->user())->postJson("/admin/chat/conversations/$id/delivered", ['message_id' => $ids[1]])->assertForbidden();
+    }
+
+    public function test_unread_summary_counts_messages_across_conversations_and_excludes_own_messages(): void
+    {
+        $recipient = $this->user();
+        foreach ([$this->user(), $this->user()] as $sender) {
+            $id = $this->direct($sender, $recipient);
+            $this->actingAs($sender)->postJson("/admin/chat/conversations/$id/messages", ['body' => 'Incoming', 'client_id' => Str::uuid()])->assertCreated();
+        }
+        $this->actingAs($recipient)->postJson("/admin/chat/conversations/$id/messages", ['body' => 'Own reply', 'client_id' => Str::uuid()])->assertCreated();
+        $this->getJson('/admin/chat/unread')->assertOk()->assertJsonPath('unread_count', 2)->assertJsonCount(2, 'conversations');
+        $this->actingAs($this->user())->getJson('/admin/chat/unread')->assertJsonPath('unread_count', 0)->assertJsonCount(0, 'conversations');
+    }
 }

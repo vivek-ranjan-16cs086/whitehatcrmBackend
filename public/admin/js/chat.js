@@ -18,10 +18,16 @@
     let connected = false,
         busy = false,
         refreshing = false,
+        refreshAgain = false,
         lastTyping = 0,
         typingTimer,
         peopleTimer,
         pending;
+    let selectedFile = null,
+        recorder = null,
+        recordingStream = null,
+        recordingTimer,
+        recordingDiscard = false;
     const selectedPeople = new Set();
     const modal = new bootstrap.Modal($("chatNewModal"));
     function clientId() {
@@ -45,10 +51,19 @@
             credentials: "same-origin",
             headers: {
                 Accept: "application/json",
-                "Content-Type": "application/json",
+                ...(body instanceof FormData
+                    ? {}
+                    : { "Content-Type": "application/json" }),
                 "X-CSRF-TOKEN": csrf,
             },
-            ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+            ...(body === undefined
+                ? {}
+                : {
+                      body:
+                          body instanceof FormData
+                              ? body
+                              : JSON.stringify(body),
+                  }),
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok)
@@ -79,9 +94,19 @@
                 const button = node(
                     "button",
                     "chat-conversation" +
-                        (c.id === active?.id ? " is-active" : "")
+                        (c.id === active?.id ? " is-active" : "") +
+                        (c.unread_count ? " has-unread" : "")
                 );
                 button.type = "button";
+                const other = c.members.find(
+                    (member) => member.id !== config.user_id
+                );
+                if (c.type === "direct" && other?.avatar_url) {
+                    const avatar = node("img", "chat-conversation-avatar");
+                    avatar.src = other.avatar_url;
+                    avatar.alt = c.name;
+                    button.prepend(avatar);
+                }
                 const top = node("span", "chat-conversation-top");
                 top.append(node("strong", "", c.name));
                 if (c.unread_count)
@@ -91,7 +116,10 @@
                     node(
                         "span",
                         "chat-conversation-preview",
-                        c.latest_message?.body || "Start the conversation"
+                        c.latest_message?.body ||
+                            (c.latest_message?.attachment
+                                ? "Shared " + c.latest_message.attachment.kind
+                                : "Start the conversation")
                     )
                 );
                 button.onclick = () => select(c);
@@ -131,6 +159,26 @@
             oldTop = list.scrollTop,
             wasNearBottom =
                 list.scrollHeight - list.scrollTop - list.clientHeight < 80;
+        const signature = JSON.stringify([
+            messages,
+            active?.id,
+            active?.members,
+            hasOlder,
+        ]);
+        if (list.dataset.signature === signature) {
+            if (scroll) list.scrollTop = list.scrollHeight;
+            return;
+        }
+        list.dataset.signature = signature;
+        const playback = new Map(
+            Array.from(
+                list.querySelectorAll("audio[data-message-id]"),
+                (audio) => [
+                    audio.dataset.messageId,
+                    { time: audio.currentTime, playing: !audio.paused },
+                ]
+            )
+        );
         list.replaceChildren();
         if (hasOlder) {
             const button = node(
@@ -156,25 +204,98 @@
                 ),
                 node("div", "chat-message-body", message.body)
             );
-            const readers = own
-                ? active.members.filter(
-                      (m) =>
-                          m.id !== config.user_id &&
-                          m.last_read_message_id >= message.id
-                  ).length
-                : 0;
-            const receipt = own
-                ? readers
-                    ? ` | Read by ${readers}`
-                    : " | Sent"
-                : "";
-            bubble.append(
-                node(
-                    "span",
-                    "chat-message-meta",
-                    new Date(message.created_at).toLocaleString() + receipt
-                )
+            if (message.attachment) {
+                const attachment = message.attachment;
+                if (attachment.kind === "image") {
+                    const image = node("img", "chat-shared-image");
+                    image.src = attachment.url;
+                    image.alt = attachment.name;
+                    image.loading = "lazy";
+                    bubble.append(image);
+                } else if (attachment.kind === "audio") {
+                    const audio = node("audio", "chat-shared-audio");
+                    audio.controls = true;
+                    audio.preload = "none";
+                    audio.src = attachment.url;
+                    audio.dataset.messageId = message.id;
+                    const previous = playback.get(String(message.id));
+                    if (previous) {
+                        audio.addEventListener(
+                            "loadedmetadata",
+                            () => {
+                                audio.currentTime = previous.time;
+                                if (previous.playing)
+                                    audio.play().catch(() => {});
+                            },
+                            { once: true }
+                        );
+                        audio.preload = "metadata";
+                    }
+                    bubble.append(audio);
+                }
+                const link = node(
+                    "a",
+                    "chat-file-link",
+                    attachment.kind === "pdf"
+                        ? "PDF: " + attachment.name
+                        : attachment.name
+                );
+                link.href = attachment.url;
+                link.target = "_blank";
+                link.rel = "noopener";
+                bubble.append(link);
+            }
+            const meta = node(
+                "span",
+                "chat-message-meta",
+                new Date(message.created_at).toLocaleString()
             );
+            if (own) {
+                const others = active.members.filter(
+                    (member) => member.id !== config.user_id
+                );
+                const readers = others.filter(
+                    (member) => member.last_read_message_id >= message.id
+                ).length;
+                const delivered = others.filter(
+                    (member) =>
+                        Math.max(
+                            member.last_delivered_message_id || 0,
+                            member.last_read_message_id
+                        ) >= message.id
+                ).length;
+                const allRead = others.length > 0 && readers === others.length,
+                    allDelivered =
+                        others.length > 0 && delivered === others.length;
+                const label = allRead
+                    ? "Read"
+                    : allDelivered
+                    ? "Received"
+                    : "Sent";
+                const receipt = node(
+                    "span",
+                    "chat-receipt" + (allRead ? " is-read" : "")
+                );
+                receipt.setAttribute("aria-label", label);
+                receipt.title =
+                    label +
+                    " | Received by " +
+                    delivered +
+                    "/" +
+                    others.length +
+                    " | Read by " +
+                    readers +
+                    "/" +
+                    others.length;
+                receipt.innerHTML =
+                    '<svg viewBox="0 0 24 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m2 8 4 4 9-9"/>' +
+                    (allDelivered || allRead
+                        ? '<path d="m10 10 2 2 9-9"/>'
+                        : "") +
+                    "</svg>";
+                meta.append(receipt);
+            }
+            bubble.append(meta);
             list.append(bubble);
         });
         if (!messages.length)
@@ -202,9 +323,12 @@
             window.fetchNotifications();
         if (me) me.last_read_message_id = last;
         conversation.unread_count = 0;
+        window.CrmChatRealtime?.refreshUnread();
         renderConversations();
     }
     async function select(conversation) {
+        stopRecording(true);
+        setAttachment(null);
         active = conversation;
         if (window.CrmChatRealtime)
             window.CrmChatRealtime.activeConversationId = conversation.id;
@@ -216,7 +340,11 @@
         $("chatMembers").textContent = conversation.members
             .map((m) => m.name)
             .join(", ");
-        $("chatBody").disabled = $("chatSend").disabled = false;
+        $("chatBody").disabled =
+            $("chatSend").disabled =
+            $("chatAttach").disabled =
+            $("chatRecord").disabled =
+                false;
         $("chatBody").value = "";
         $("chatTyping").textContent = "";
         error("");
@@ -275,7 +403,11 @@
         }
     }
     async function refresh() {
-        if (refreshing || document.hidden) return;
+        if (document.hidden) return;
+        if (refreshing) {
+            refreshAgain = true;
+            return;
+        }
         refreshing = true;
         try {
             await loadConversations();
@@ -285,6 +417,10 @@
             error(e.message);
         } finally {
             refreshing = false;
+            if (refreshAgain) {
+                refreshAgain = false;
+                refresh();
+            }
         }
     }
     function receive(event) {
@@ -390,23 +526,40 @@
     };
     $("chatComposer").onsubmit = async (event) => {
         event.preventDefault();
-        if (busy || !active || !$("chatBody").value.trim()) return;
+        if (
+            busy ||
+            !active ||
+            recorder?.state === "recording" ||
+            (!$("chatBody").value.trim() && !selectedFile)
+        )
+            return;
         const id = active.id,
             snapshot = version,
             body = $("chatBody").value.trim();
-        if (!pending || pending.body !== body || pending.id !== id)
-            pending = { id, body, client_id: clientId() };
+        if (
+            !pending ||
+            pending.body !== body ||
+            pending.id !== id ||
+            pending.file !== selectedFile
+        )
+            pending = { id, body, client_id: clientId(), file: selectedFile };
         busy = true;
         $("chatSend").disabled = true;
         error("");
         try {
-            await api(`conversations/${id}/messages`, {
-                body,
-                client_id: pending.client_id,
-            });
+            const payload = selectedFile
+                ? new FormData()
+                : { body, client_id: pending.client_id };
+            if (payload instanceof FormData) {
+                payload.append("body", body);
+                payload.append("client_id", pending.client_id);
+                payload.append("file", selectedFile);
+            }
+            await api(`conversations/${id}/messages`, payload);
             pending = null;
             if (snapshot === version) {
                 $("chatBody").value = "";
+                setAttachment(null);
                 await loadMessages();
                 $("chatMessages").scrollTop = $("chatMessages").scrollHeight;
             }
@@ -418,6 +571,156 @@
             $("chatSend").disabled = !active;
         }
     };
+    function setAttachment(file) {
+        if (file && file.size > (config?.max_attachment_bytes || 10485760)) {
+            error("Choose a file smaller than 10 MB.");
+            return;
+        }
+        selectedFile = file;
+        $("chatAttachmentPreview").hidden = !file;
+        $("chatAttachmentName").textContent = file
+            ? file.name + " (" + (file.size / 1024).toFixed(0) + " KB)"
+            : "";
+        if (!file) $("chatFile").value = "";
+    }
+    $("chatAttach").onclick = () => {
+        if (active && !busy) $("chatFile").click();
+    };
+    $("chatFile").onchange = () =>
+        setAttachment($("chatFile").files[0] || null);
+    $("chatRemoveAttachment").onclick = () => setAttachment(null);
+    function stopRecording(discard = false) {
+        recordingDiscard = discard;
+        clearInterval(recordingTimer);
+        if (recorder?.state === "recording") recorder.stop();
+        recordingStream?.getTracks().forEach((track) => track.stop());
+        $("chatRecordingStatus").hidden = true;
+        $("chatRecord").innerHTML = '<i class="bi bi-mic"></i>';
+        $("chatRecord").setAttribute("aria-label", "Record voice message");
+        $("chatSend").disabled = busy || !active;
+    }
+    $("chatRecord").onclick = async () => {
+        if (recorder?.state === "recording") {
+            stopRecording();
+            return;
+        }
+        if (!active || busy) return;
+        if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+            error(
+                "Voice recording needs HTTPS and browser microphone support. You can also attach an audio file."
+            );
+            return;
+        }
+        const recordingVersion = version;
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+            });
+            if (recordingVersion !== version) {
+                stream.getTracks().forEach((track) => track.stop());
+                return;
+            }
+            recordingStream = stream;
+            recordingDiscard = false;
+            const mime = [
+                "audio/webm;codecs=opus",
+                "audio/ogg;codecs=opus",
+                "audio/mp4",
+            ].find((type) => MediaRecorder.isTypeSupported(type));
+            recorder = new MediaRecorder(
+                stream,
+                mime ? { mimeType: mime } : undefined
+            );
+            const chunks = [],
+                recording = recorder;
+            recording.ondataavailable = (event) => {
+                if (event.data.size) chunks.push(event.data);
+            };
+            recording.onstop = () => {
+                if (!recordingDiscard && recordingVersion === version) {
+                    const type = (recording.mimeType || "audio/webm").split(
+                            ";"
+                        )[0],
+                        extension = type.includes("mp4")
+                            ? "m4a"
+                            : type.includes("ogg")
+                            ? "ogg"
+                            : "webm";
+                    setAttachment(
+                        new File(
+                            chunks,
+                            "voice-" + Date.now() + "." + extension,
+                            { type }
+                        )
+                    );
+                }
+                stream.getTracks().forEach((track) => track.stop());
+            };
+            recorder.start(1000);
+            let elapsed = 0;
+            const recordingStarted = Date.now();
+            $("chatRecordingStatus").hidden = false;
+            $("chatRecordingStatus").textContent =
+                "Recording 0:00 | click Stop to attach";
+            $("chatRecord").innerHTML = '<i class="bi bi-stop-fill"></i>';
+            $("chatRecord").setAttribute("aria-label", "Stop voice recording");
+            $("chatSend").disabled = true;
+            recordingTimer = setInterval(() => {
+                elapsed = Math.floor((Date.now() - recordingStarted) / 1000);
+                $("chatRecordingStatus").textContent =
+                    "Recording " +
+                    Math.floor(elapsed / 60) +
+                    ":" +
+                    String(elapsed % 60).padStart(2, "0") +
+                    " | click Stop to attach";
+                if (elapsed >= 120) stopRecording();
+            }, 1000);
+        } catch (e) {
+            stopRecording(true);
+            error(
+                e.name === "NotAllowedError"
+                    ? "Microphone permission was denied. Allow it in browser settings or attach an audio file."
+                    : e.message
+            );
+        }
+    };
+    function showProfilePicture(url) {
+        if (!url) return;
+        [
+            $("chatProfileButton"),
+            ...document.querySelectorAll(".user-avatar,.user-dropdown-avatar"),
+        ]
+            .filter(Boolean)
+            .forEach((element) => {
+                const image = node("img", "chat-avatar");
+                image.src = url;
+                image.alt = "Your profile picture";
+                element.replaceChildren(image);
+            });
+    }
+    $("chatProfileButton").onclick = () => $("chatProfileFile").click();
+    $("chatProfileFile").onchange = async () => {
+        const file = $("chatProfileFile").files[0];
+        if (!file) return;
+        if (file.size > 2097152) {
+            error("Profile pictures must be smaller than 2 MB.");
+            return;
+        }
+        const form = new FormData();
+        form.append("profile_pic", file);
+        $("chatProfileButton").disabled = true;
+        try {
+            const result = await api("profile-picture", form);
+            showProfilePicture(result.profile_picture_url);
+            error("");
+        } catch (e) {
+            error(e.message);
+        } finally {
+            $("chatProfileButton").disabled = false;
+            $("chatProfileFile").value = "";
+        }
+    };
+    window.addEventListener("pagehide", () => stopRecording(true));
     $("chatBody").onkeydown = (event) => {
         if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
             event.preventDefault();
@@ -441,6 +744,7 @@
                 );
             $("chatKind").querySelector('[value="group"]').hidden =
                 !config.can_create_group;
+            showProfilePicture(config.profile_picture_url);
             await loadConversations();
             $("chatConnection").textContent = "Polling every 15 seconds";
             if (window.CrmChatRealtime) {

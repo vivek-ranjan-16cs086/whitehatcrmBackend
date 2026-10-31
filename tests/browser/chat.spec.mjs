@@ -7,6 +7,33 @@ test.use({ channel: "chrome", viewport: { width: 1280, height: 900 } });
 test("chat renders safely, sends messages, and starts groups using the actual UI", async ({
     page,
 }) => {
+    await page.addInitScript(() => {
+        Object.defineProperty(navigator, "mediaDevices", {
+            configurable: true,
+            value: {
+                getUserMedia: async () => ({
+                    getTracks: () => [{ stop() {} }],
+                }),
+            },
+        });
+        window.MediaRecorder = class {
+            state = "inactive";
+            mimeType = "audio/webm";
+            static isTypeSupported() {
+                return true;
+            }
+            start() {
+                this.state = "recording";
+            }
+            stop() {
+                this.state = "inactive";
+                this.ondataavailable({
+                    data: new Blob(["audio-test"], { type: "audio/webm" }),
+                });
+                queueMicrotask(() => this.onstop());
+            }
+        };
+    });
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     const messages = [
@@ -55,12 +82,31 @@ test("chat renders safely, sends messages, and starts groups using the actual UI
         const json = (data) => route.fulfill({ json: data });
         if (path === "/")
             return route.fulfill({ contentType: "text/html", body: html });
+        if (path === "/admin/chat/profile-picture")
+            return json({ profile_picture_url: "/test-avatar.png" });
+        if (path === "/test-avatar.png" || path === "/test-attachment.png")
+            return route.fulfill({
+                contentType: "image/png",
+                body: Buffer.from(
+                    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=",
+                    "base64"
+                ),
+            });
         if (path === "/admin/chat/config")
             return json({
                 user_id: 1,
                 realtime_enabled: false,
                 can_create_group: true,
             });
+        if (path === "/admin/chat/unread")
+            return json({
+                unread_count: conversations.reduce(
+                    (sum, item) => sum + item.unread_count,
+                    0
+                ),
+                conversations: [],
+            });
+        if (path.endsWith("/delivered")) return json({ status: true });
         if (path === "/admin/chat/users")
             return json({
                 data: [{ id: 2, name: "Sales User" }],
@@ -86,12 +132,39 @@ test("chat renders safely, sends messages, and starts groups using the actual UI
             if (path.includes("/2/"))
                 return json({ data: [], has_more: false });
             if (route.request().method() === "POST") {
-                const input = route.request().postDataJSON();
+                let input;
+                if (
+                    route
+                        .request()
+                        .headers()
+                        ["content-type"].includes("multipart/form-data")
+                ) {
+                    const raw = route
+                        .request()
+                        .postDataBuffer()
+                        .toString("latin1");
+                    const filename = raw.match(/filename="([^"]+)"/)[1];
+                    input = {
+                        body: "",
+                        client_id: raw.match(
+                            /name="client_id"\r\n\r\n([^\r]+)/
+                        )[1],
+                        attachment: {
+                            name: filename,
+                            kind: filename.endsWith(".webm")
+                                ? "audio"
+                                : "image",
+                            url: filename.endsWith(".webm")
+                                ? "/test-audio.webm"
+                                : "/test-attachment.png",
+                        },
+                    };
+                } else input = route.request().postDataJSON();
                 expect(input.client_id).toMatch(/^[\da-f-]{36}$/);
                 const message = {
                     ...messages[0],
                     ...input,
-                    id: 2,
+                    id: messages.length + 1,
                     sender_id: 1,
                     sender_name: "Admin",
                 };
@@ -133,6 +206,57 @@ test("chat renders safely, sends messages, and starts groups using the actual UI
         "Hello from the web CRM"
     );
     await expect(page.locator("#chatBody")).toHaveValue("");
+    await expect(page.locator(".chat-receipt")).toHaveAttribute(
+        "aria-label",
+        "Sent"
+    );
+    members[1].last_delivered_message_id = 2;
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect(page.locator(".chat-receipt")).toHaveAttribute(
+        "aria-label",
+        "Received"
+    );
+    members[1].last_read_message_id = 2;
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect(page.locator(".chat-receipt")).toHaveAttribute(
+        "aria-label",
+        "Read"
+    );
+    await expect(page.locator(".chat-receipt")).toHaveClass(/is-read/);
+    await page
+        .locator("#chatProfileFile")
+        .setInputFiles({
+            name: "avatar.png",
+            mimeType: "image/png",
+            buffer: Buffer.from("png-test"),
+        });
+    await expect(page.locator("#chatProfileButton img")).toHaveAttribute(
+        "src",
+        "/test-avatar.png"
+    );
+    await page
+        .locator("#chatFile")
+        .setInputFiles({
+            name: "photo.png",
+            mimeType: "image/png",
+            buffer: Buffer.from("png-test"),
+        });
+    await expect(page.locator("#chatAttachmentPreview")).toBeVisible();
+    await page.getByRole("button", { name: "Send", exact: true }).click();
+    await expect(page.locator(".chat-shared-image")).toHaveAttribute(
+        "src",
+        "/test-attachment.png"
+    );
+    await page
+        .getByRole("button", { name: "Record voice message", exact: true })
+        .click();
+    await expect(page.locator("#chatRecordingStatus")).toBeVisible();
+    await page
+        .getByRole("button", { name: "Stop voice recording", exact: true })
+        .click();
+    await expect(page.locator("#chatAttachmentName")).toContainText("voice-");
+    await page.getByRole("button", { name: "Send", exact: true }).click();
+    await expect(page.locator(".chat-shared-audio")).toHaveCount(1);
     await page.getByRole("button", { name: "New chat" }).click();
     await page.locator("#chatKind").selectOption("group");
     await page.getByLabel("Group name").fill("Sales Team");
@@ -165,6 +289,33 @@ test("a live message displays a notification on another CRM page without waiting
     page,
 }) => {
     await page.addInitScript(() => {
+        window.chatSoundPlays = 0;
+        window.AudioContext = class {
+            state = "running";
+            currentTime = 0;
+            destination = {};
+            createOscillator() {
+                return {
+                    type: "",
+                    frequency: { value: 0 },
+                    connect() {},
+                    start() {
+                        window.chatSoundPlays++;
+                    },
+                    stop() {},
+                };
+            }
+            createGain() {
+                return {
+                    gain: {
+                        setValueAtTime() {},
+                        linearRampToValueAtTime() {},
+                        exponentialRampToValueAtTime() {},
+                    },
+                    connect() {},
+                };
+            }
+        };
         window.notificationRefreshes = 0;
         window.fetchNotifications = () => {
             window.notificationRefreshes++;
@@ -197,7 +348,7 @@ test("a live message displays a notification on another CRM page without waiting
             return route.fulfill({
                 contentType: "text/html",
                 body: `<!doctype html><html><head><meta name="csrf-token" content="test"></head><body>
-            <h1>All Leads</h1><script src="/admin/libraries/js/bootstrap.bundle.min.js"></script>
+            <h1>All Leads</h1><a id="messageIndicator" aria-label="Messages"><span id="messageCount"></span></a><button id="messageSoundToggle" type="button">Sound</button><script src="/admin/libraries/js/bootstrap.bundle.min.js"></script>
             <script id="crmChatRealtimeScript" data-base="/admin/chat" data-chat-url="/admin/chat" src="/admin/js/chat-realtime.js"></script></body></html>`,
             });
         if (path === "/admin/chat/config")
@@ -209,6 +360,21 @@ test("a live message displays a notification on another CRM page without waiting
                     cluster: "ap2",
                 },
             });
+        if (path === "/admin/chat/unread")
+            return route.fulfill({
+                json: {
+                    unread_count: 3,
+                    conversations: [
+                        {
+                            conversation_id: 7,
+                            incoming_message_id: 10,
+                            last_delivered_message_id: 0,
+                        },
+                    ],
+                },
+            });
+        if (path.endsWith("/delivered"))
+            return route.fulfill({ json: { status: true } });
         if (path === "/admin/chat/conversations")
             return route.fulfill({ json: { data: [], next_page_url: null } });
         const file = resolve("public", "." + path);
@@ -223,6 +389,9 @@ test("a live message displays a notification on another CRM page without waiting
         );
     });
     await expect.poll(() => page.evaluate(() => window.chatLive)).toBe(true);
+    await expect(page.locator("#messageCount")).toHaveText("3");
+    await expect(page.locator("#messageIndicator")).toHaveClass(/has-unread/);
+    await page.getByRole("heading", { name: "All Leads" }).click();
     await page.evaluate(() =>
         window.testChatReceive({
             kind: "message",
@@ -234,6 +403,7 @@ test("a live message displays a notification on another CRM page without waiting
         })
     );
     await expect(page.locator("#crmChatAlerts .toast")).toHaveCount(1);
+    expect(await page.evaluate(() => window.chatSoundPlays)).toBeGreaterThan(0);
     expect(
         await page.evaluate(() => window.notificationRefreshes)
     ).toBeGreaterThan(1);

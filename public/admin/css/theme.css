@@ -241,3 +241,13 @@ body :is(#users-table,#leads-table,table.dataTable,.admin-panel-table,.table) tb
     background: #dc2626 !important; border-color: #dc2626 !important; color: #fff !important;
 }
 body :is(#users-table,#leads-table,table.dataTable,.admin-panel-table,.table) tbody td:last-child .btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+/* Separate unread messages indicator and sound preference. */
+.message-indicator.has-unread { animation: message-alert-pulse 1.6s ease-in-out infinite; }
+.message-sound-toggle { display: inline-grid; place-items: center; width: 30px; height: 30px; padding: 5px; border: 1px solid #e2e8f0; background: #fff; color: #64748b; }
+.message-sound-toggle svg { width: 16px; height: 16px; }
+.sidebar-message-count { display: none; margin-left: auto; min-width: 20px; padding: 2px 6px; background: #2563eb; color: #fff; border-radius: 3px; font-size: 10px; text-align: center; }
+.sidebar-message-count.show { display: inline-block; animation: message-alert-pulse 1.6s ease-in-out infinite; }
+@keyframes message-alert-pulse { 0%,100% { box-shadow: 0 0 0 0 rgb(37 99 235 / 0); } 50% { box-shadow: 0 0 0 5px rgb(37 99 235 / .16); } }
+@media(prefers-reduced-motion:reduce) { .message-indicator.has-unread,.sidebar-message-count.show { animation: none; } }
+.chat-avatar { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }

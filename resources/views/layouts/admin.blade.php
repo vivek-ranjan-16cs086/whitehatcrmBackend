@@ -66,7 +66,7 @@
 
         <div class="sidebar-footer">
             <div class="user-info">
-                <div class="user-avatar">{{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}</div>
+                <div class="user-avatar">@if(auth()->user()->profile_pic)<img class="chat-avatar" src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url(auth()->user()->profile_pic) }}" alt="Your profile picture">@else{{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}@endif</div>
                 <div class="user-details">
                     <div class="user-name">{{ auth()->user()->name ?? '' }}</div>
                     <div class="user-role">{{ auth()->user()->roles->first()?->name ?? 'guest' }}</div>
@@ -99,10 +99,17 @@
                 <input type="text" class="search-input" placeholder="Search...">
             </div>
 
+            <a href="{{ route('admin.chat.index') }}" id="messageIndicator" class="notification-btn message-indicator position-relative text-decoration-none" aria-label="Messages" title="Messages">
+                <i data-lucide="messages-square"></i>
+                <span class="notification-badge" id="messageCount" aria-live="polite"></span>
+            </a>
+            <button type="button" id="messageSoundToggle" class="message-sound-toggle" aria-label="Enable message sound" aria-pressed="false" title="Enable message sound">
+                <i data-lucide="volume-x"></i>
+            </button>
             <!-- Notifications -->
             <div>
 				<a href="{{ route('admin.notifications.index') }}" 
-				   class="notification-btn position-relative text-decoration-none">
+				   class="notification-btn position-relative text-decoration-none" aria-label="Notifications" title="Notifications">
 					<i data-lucide="bell"></i>
 					<span class="notification-badge" id="notificationCount"></span>
 				</a>
@@ -112,12 +119,12 @@
             <div class="dropdown">
                 <a class="user-dropdown-toggle dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
                     aria-expanded="false">
-                    <div class="user-dropdown-avatar">{{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}</div>
+                    <div class="user-dropdown-avatar">@if(auth()->user()->profile_pic)<img class="chat-avatar" src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url(auth()->user()->profile_pic) }}" alt="Your profile picture">@else{{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}@endif</div>
                     <div class="user-dropdown-name">{{ auth()->user()->name ?? '' }}</div>
                     <i data-lucide="chevron-down" class="user-dropdown-chevron"></i>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="#"><i data-lucide="user" class="me-2"></i>Profile</a></li>
+                    <li><a class="dropdown-item" href="{{ route('admin.chat.index') }}#chatProfileButton"><i data-lucide="user" class="me-2"></i>Profile picture</a></li>
                     <li><a class="dropdown-item" href="#"><i data-lucide="settings" class="me-2"></i>Settings</a></li>
                     <li>
                         <hr class="dropdown-divider">
@@ -390,6 +397,13 @@ if (menu.attention) {
                     document.createTextNode(' ' + menu.label)
                 );
 
+                if (menu.badge === 'messages') {
+                    const badge = document.createElement('span');
+                    badge.className = 'sidebar-message-count';
+                    badge.hidden = true;
+                    badge.setAttribute('aria-label', 'Unread messages');
+                    link.appendChild(badge);
+                }
                 if (menu.badge === 'notifications') {
                     const badge = document.createElement('span');
                     badge.className = 'sidebar-notification-count';
@@ -481,6 +495,7 @@ if (menu.attention) {
                 lucide.createIcons();
             }
 
+            window.CrmChatRealtime?.refreshUnread();
             if (typeof fetchNotifications === 'function') {
                 fetchNotifications();
             }

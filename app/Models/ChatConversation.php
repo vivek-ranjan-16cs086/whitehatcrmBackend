@@ -14,7 +14,7 @@ class ChatConversation extends Model
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'chat_members', 'conversation_id', 'user_id')
-            ->withPivot('last_read_message_id')->withTimestamps();
+            ->withPivot('last_read_message_id', 'last_delivered_message_id')->withTimestamps();
     }
 
     public function messages(): HasMany

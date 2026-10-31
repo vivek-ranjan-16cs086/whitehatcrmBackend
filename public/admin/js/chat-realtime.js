@@ -17,6 +17,7 @@
     const realtime = (window.CrmChatRealtime = {
         ready: null,
         activeConversationId: null,
+        refreshUnread,
         subscribe(callback) {
             listeners.add(callback);
             return () => listeners.delete(callback);
@@ -40,11 +41,150 @@
         if (!response.ok) throw new Error("Chat request failed");
         return response.json();
     }
+    let unreadBusy = false,
+        unreadAgain = false,
+        audio,
+        soundEnabled = true,
+        lastSound = 0;
+    try {
+        soundEnabled = localStorage.getItem("crm-chat-sound") !== "off";
+    } catch {}
+    const soundButton = document.getElementById("messageSoundToggle");
+    function soundUI() {
+        if (!soundButton) return;
+        soundButton.setAttribute("aria-pressed", String(soundEnabled));
+        soundButton.setAttribute(
+            "aria-label",
+            soundEnabled ? "Mute message sound" : "Enable message sound"
+        );
+        soundButton.title = soundEnabled
+            ? "Message sound on ? click to mute"
+            : "Enable message sound";
+        soundButton.innerHTML = soundEnabled
+            ? '<i data-lucide="volume-2"></i>'
+            : '<i data-lucide="volume-x"></i>';
+        if (window.lucide) window.lucide.createIcons();
+    }
+    function unlockAudio() {
+        if (!soundEnabled) return;
+        try {
+            const Audio = window.AudioContext || window.webkitAudioContext;
+            if (!Audio) return;
+            audio ||= new Audio();
+            if (audio.state === "suspended") audio.resume().catch(() => {});
+        } catch {}
+    }
+    function playSound() {
+        if (!soundEnabled || Date.now() - lastSound < 800) return;
+        unlockAudio();
+        if (!audio || audio.state !== "running") return;
+        lastSound = Date.now();
+        const start = audio.currentTime;
+        [740, 980].forEach((frequency, index) => {
+            const oscillator = audio.createOscillator(),
+                gain = audio.createGain(),
+                time = start + index * 0.12;
+            oscillator.type = "sine";
+            oscillator.frequency.value = frequency;
+            gain.gain.setValueAtTime(0, time);
+            gain.gain.linearRampToValueAtTime(0.075, time + 0.012);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.16);
+            oscillator.connect(gain);
+            gain.connect(audio.destination);
+            oscillator.start(time);
+            oscillator.stop(time + 0.18);
+        });
+    }
+    if (soundButton)
+        soundButton.onclick = () => {
+            soundEnabled = !soundEnabled;
+            try {
+                localStorage.setItem(
+                    "crm-chat-sound",
+                    soundEnabled ? "on" : "off"
+                );
+            } catch {}
+            soundUI();
+            if (soundEnabled) {
+                unlockAudio();
+                playSound();
+            }
+        };
+    document.addEventListener("pointerdown", unlockAudio, { passive: true });
+    document.addEventListener("keydown", unlockAudio);
+    soundUI();
+    async function acknowledge(conversationId, messageId) {
+        await fetch(base + "/conversations/" + conversationId + "/delivered", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": csrf,
+            },
+            body: JSON.stringify({ message_id: messageId }),
+        });
+    }
+    async function refreshUnread() {
+        if (!config) return;
+        if (unreadBusy) {
+            unreadAgain = true;
+            return;
+        }
+        unreadBusy = true;
+        try {
+            const summary = await get("unread"),
+                count = Number(summary.unread_count) || 0;
+            const indicator = document.getElementById("messageIndicator"),
+                badge = document.getElementById("messageCount");
+            if (badge) {
+                badge.textContent = count > 99 ? "99+" : String(count);
+                badge.classList.toggle("show", count > 0);
+                badge.hidden = count === 0;
+            }
+            if (indicator) {
+                indicator.classList.toggle("has-unread", count > 0);
+                indicator.setAttribute(
+                    "aria-label",
+                    count ? count + " unread messages" : "Messages"
+                );
+            }
+            document
+                .querySelectorAll(".sidebar-message-count")
+                .forEach((element) => {
+                    element.textContent = count > 99 ? "99+" : String(count);
+                    element.classList.toggle("show", count > 0);
+                    element.hidden = count === 0;
+                });
+            await Promise.all(
+                (summary.conversations || [])
+                    .filter(
+                        (item) =>
+                            item.incoming_message_id >
+                            item.last_delivered_message_id
+                    )
+                    .map((item) =>
+                        acknowledge(
+                            item.conversation_id,
+                            item.incoming_message_id
+                        ).catch(() => {})
+                    )
+            );
+        } catch {
+        } finally {
+            unreadBusy = false;
+            if (unreadAgain) {
+                unreadAgain = false;
+                refreshUnread();
+            }
+        }
+    }
     function alertMessage(event) {
         if (event.sender_id === config.user_id || seen.has(event.message_id))
             return;
         seen.add(event.message_id);
         if (seen.size > 1000) seen.delete(seen.values().next().value);
+        playSound();
         if (
             realtime.activeConversationId === event.conversation_id &&
             !document.hidden &&
@@ -96,6 +236,7 @@
         new bootstrap.Toast(toast, { delay: 10000 }).show();
     }
     async function receive(event) {
+        if (["message", "read"].includes(event.kind)) refreshUnread();
         if (
             ["message", "read"].includes(event.kind) &&
             typeof window.fetchNotifications === "function"
@@ -120,7 +261,7 @@
                         ...event,
                         sender_id: message.sender_id,
                         sender_name: message.sender_name,
-                        preview: message.body.slice(0, 120),
+                        preview: (message.body || (message.attachment ? "Shared " + message.attachment.kind + ": " + message.attachment.name : "")).slice(0, 120),
                     };
             } catch {
                 return;
@@ -129,10 +270,16 @@
         alertMessage(event);
     }
     async function poll() {
-        if (polling || connected || !config) return;
+        if (!config) return;
+        if (connected) {
+            refreshUnread();
+            return;
+        }
+        if (polling) return;
         polling = true;
         try {
             const result = await get("conversations");
+            await refreshUnread();
             if (typeof window.fetchNotifications === "function")
                 window.fetchNotifications();
             for (const conversation of result.data) {
