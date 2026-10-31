@@ -383,7 +383,7 @@
                 focusCancel: true,
                 confirmButtonText: options.confirmButtonText || 'Confirm',
                 cancelButtonText: 'Cancel',
-                confirmButtonColor: options.destructive ? '#dc3545' : '#5548d9',
+                confirmButtonColor: options.destructive ? '#dc3545' : '#5146d8',
                 cancelButtonColor: '#667085',
                 customClass: {
                     popup: 'admin-swal-popup',
@@ -421,7 +421,7 @@
                         icon: 'success',
                         title: options.successTitle || 'Done',
                         text: data.message || options.successMessage || 'The action completed successfully.',
-                        confirmButtonColor: '#5548d9',
+                        confirmButtonColor: '#5146d8',
                         customClass: { popup: 'admin-swal-popup' }
                     }).then(() => {
                         if (options.reloadOnSuccess === false) {

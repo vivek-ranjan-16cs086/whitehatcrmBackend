@@ -831,7 +831,7 @@ $(document).on(
 						icon: 'success',
 						title: 'Lead updated',
 						text: res.message || 'The lead was updated successfully.',
-						confirmButtonColor: '#5548d9',
+						confirmButtonColor: '#5146d8',
 						customClass: { popup: 'admin-swal-popup' }
 					});
 				}).fail(function (xhr) {
@@ -947,7 +947,7 @@ $(document).on(
 				icon: 'warning',
 				title: 'Required details missing',
 				text: 'Enter both a name and phone number to continue.',
-				confirmButtonColor: '#5548d9',
+				confirmButtonColor: '#5146d8',
 				customClass: { popup: 'admin-swal-popup' }
 			});
 			return;
@@ -977,7 +977,7 @@ $(document).on(
 						icon: 'success',
 						title: 'Lead created',
 						text: res.message || 'The lead was created successfully.',
-						confirmButtonColor: '#5548d9',
+						confirmButtonColor: '#5146d8',
 						customClass: { popup: 'admin-swal-popup' }
 					});
 				} else {
@@ -996,7 +996,7 @@ $(document).on(
 						icon: 'warning',
 						title: 'Check the lead details',
 						text: errorMsg,
-						confirmButtonColor: '#5548d9',
+						confirmButtonColor: '#5146d8',
 						customClass: { popup: 'admin-swal-popup' }
 					});
 				} else {
@@ -1031,7 +1031,7 @@ $(document).on(
 					icon: 'success',
 					title: 'Import complete',
 					text: res.message || 'Leads imported successfully.',
-					confirmButtonColor: '#5548d9',
+					confirmButtonColor: '#5146d8',
 					customClass: { popup: 'admin-swal-popup' }
 				});
 			},
@@ -1041,7 +1041,7 @@ $(document).on(
 					icon: 'error',
 					title: 'Import failed',
 					text: message,
-					confirmButtonColor: '#5548d9',
+					confirmButtonColor: '#5146d8',
 					customClass: { popup: 'admin-swal-popup' }
 				});
 			},
