@@ -310,6 +310,10 @@ $leadSources = Lead::query()
 		    'date_to' => 'nullable|date_format:Y-m-d|after_or_equal:date_from',
 		    'source' => 'nullable|string|max:255',
 		    'attention' => 'nullable|in:unassigned,overdue,no-follow-up,stale',
+            'filter_status' => 'nullable|string|max:50',
+            'filter_project' => 'nullable|integer|min:1',
+            'filter_inventory' => 'nullable|string|max:255',
+            'filter_visit' => 'nullable|string|max:255',
 		]);
 
 		$user = $request->user();
@@ -382,6 +386,15 @@ $leadSources = Lead::query()
 				);
 			}
 		}
+        if ($openLeadId === null) {
+            foreach (['filter_status' => 'status', 'filter_project' => 'project_id'] as $key => $column) {
+                if ($request->filled($key)) $query->where('leads.'.$column, $request->input($key));
+            }
+            foreach (['filter_inventory' => 'inventory', 'filter_visit' => 'visit_status'] as $key => $column) {
+                if ($request->filled($key)) $query->where('leads.'.$column, 'like', '%'.$request->input($key).'%');
+            }
+        }
+
 //...
 		// Record counts
 		$totalRecordsQuery = Lead::query();
@@ -727,7 +740,7 @@ $leadSources = Lead::query()
             $oldStatus = $lead->status;
             $oldAssignedUserId = $lead->assigned_to;
 
-            $assignedUserId = $validated['assigned_to'] ?? null;
+            $assignedUserId = array_key_exists('assigned_to', $validated) ? $validated['assigned_to'] : $oldAssignedUserId;
 
 			foreach (self::EDITABLE_LEAD_FIELDS as $field) {
 				if (array_key_exists($field, $validated) && isset($availableColumns[$field])) {
@@ -740,7 +753,19 @@ $leadSources = Lead::query()
 
             $lead->assigned_to = $assignedUserId;
 
-            $lead->save();
+            DB::transaction(function () use ($lead, $oldAssignedUserId, $assignedUserId, $user) {
+                $lead->save();
+                if ((string) $oldAssignedUserId !== (string) $assignedUserId) {
+                    $oldName = User::find($oldAssignedUserId)?->name ?? 'Unassigned';
+                    $newName = User::find($assignedUserId)?->name ?? 'Unassigned';
+                    \App\Models\LeadTimelineEvent::create([
+                        'lead_id' => $lead->id, 'user_id' => $user->id, 'user_name' => $user->name,
+                        'user_role' => $user->getRoleNames()->first(), 'event_type' => 'TRANSFER',
+                        'message' => "Lead transferred from {$oldName} to {$newName}",
+                        'assigned_to_user_id' => $assignedUserId,
+                    ]);
+                }
+            });
 
             
             // ASSIGNMENT NOTIFICATION

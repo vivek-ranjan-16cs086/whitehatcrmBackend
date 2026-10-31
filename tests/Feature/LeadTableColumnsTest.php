@@ -13,6 +13,22 @@ class LeadTableColumnsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_more_filters_combine_and_clearing_them_restores_leads(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::create(['name' => 'super-admin', 'guard_name' => 'web']));
+        $project = Project::create(['name' => 'Filter project', 'email' => 'test@example.com', 'phone' => '1234567890']);
+        $match = Lead::create(['name' => 'Matching lead', 'status' => 'active', 'inventory' => 'Premium 3 BHK', 'visit_status' => 'scheduled']);
+        $match->forceFill(['project_id' => $project->id])->save();
+        Lead::create(['name' => 'Other lead', 'status' => 'booked', 'inventory' => '2 BHK']);
+        $this->actingAs($admin)->getJson(route('lead-management.ajax-list', [
+            'start' => 0, 'length' => 20, 'filter_status' => 'active',
+            'filter_project' => $project->id, 'filter_inventory' => '3 BHK', 'filter_visit' => 'scheduled',
+        ]))->assertOk()->assertJsonPath('recordsFiltered', 1)->assertJsonPath('data.0.edit_data.name', 'Matching lead');
+        $this->getJson(route('lead-management.ajax-list', ['start' => 0, 'length' => 20]))
+            ->assertOk()->assertJsonPath('recordsFiltered', 2);
+    }
+
     public function test_arrival_time_is_converted_to_indian_time_including_date_rollover(): void
     {
         $originalTimezone = date_default_timezone_get();

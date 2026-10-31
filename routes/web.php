@@ -59,6 +59,8 @@ Route::get('/admin/sidebar/menu', function (
 		Route::middleware('permission:view.lead,web')->group(function () {
 			Route::GET('/', [LeadController::class, 'index'])->name('lead-management.index');
 			Route::GET('ajax-list', [LeadController::class, 'ajaxList'])->name('lead-management.ajax-list');
+			Route::get('{lead}/details', [Admin\LeadDetailsController::class, 'show'])->name('lead-management.details');
+			Route::get('{lead}/responses/{response}/recording', [Admin\LeadDetailsController::class, 'recording'])->name('lead-management.recording');
 		});
 		
 		//POST METHOD 

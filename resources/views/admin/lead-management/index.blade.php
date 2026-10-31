@@ -9,7 +9,9 @@
 	<div class="card leads-card">
 		<div class="card-header d-flex justify-content-between align-items-center">
 			<h6 class="mb-0 fw-bold">All Leads</h6>
-			<div class="d-flex gap-2">
+			<div class="d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#leadMoreFilters" aria-expanded="false" aria-controls="leadMoreFilters"><i class="bi bi-plus"></i> More filters</button>
+                <button type="button" id="resetLeadFilters" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-counterclockwise"></i> Reset filters</button>
 				@can('create.lead')
 					<button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#importLeadsModal">
 						<i class="bi bi-upload"></i> Import CSV
@@ -47,6 +49,15 @@
 				<button type="button" class="btn btn-sm btn-outline-secondary lead-filter-btn" data-view="booked">Booked Leads</button>
 			</div>
 		</div>
+
+        <div class="collapse" id="leadMoreFilters">
+            <div class="row g-2 px-3 py-2 border-bottom">
+                <div class="col-sm-6 col-lg-3"><label class="form-label small" for="leadStatusFilter">Status</label><select id="leadStatusFilter" class="form-select form-select-sm lead-extra-filter"><option value="">All statuses</option>@foreach(['not_available', 'active', 'in_process', 'booked', 'deactive', 'follow_up', 'follow_up_expired', 'follow_up_complete', 'visit'] as $status)<option value="{{ $status }}">{{ ucwords(str_replace('_', ' ', $status)) }}</option>@endforeach</select></div>
+                <div class="col-sm-6 col-lg-3"><label class="form-label small" for="leadProjectFilter">Project</label><select id="leadProjectFilter" class="form-select form-select-sm lead-extra-filter"><option value="">All projects</option>@foreach($projects as $project)<option value="{{ $project->id }}">{{ $project->name }}</option>@endforeach</select></div>
+                <div class="col-sm-6 col-lg-3"><label class="form-label small" for="leadInventoryFilter">Inventory contains</label><input id="leadInventoryFilter" class="form-control form-control-sm lead-extra-filter" maxlength="255" placeholder="e.g. 3 BHK"></div>
+                <div class="col-sm-6 col-lg-3"><label class="form-label small" for="leadVisitFilter">Visit status contains</label><input id="leadVisitFilter" class="form-control form-control-sm lead-extra-filter" maxlength="255" placeholder="e.g. scheduled"></div>
+            </div>
+        </div>
 
 		<div class="card-body">
 			<div class="table-responsive">
@@ -399,15 +410,34 @@
 	</div>
 </div>
 
-<div class="modal fade" id="viewLeadModal" tabindex="-1" aria-labelledby="viewLeadModalLabel" aria-hidden="true">
-	<div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+<div class="modal fade" id="viewLeadModal" data-details-url="{{ url('lead-managment') }}" tabindex="-1" aria-labelledby="viewLeadModalLabel" aria-hidden="true">
+	<div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
 		<div class="modal-content">
 			<div class="modal-header">
 				<h5 class="modal-title" id="viewLeadModalLabel">Lead details</h5>
 				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 			</div>
 			<div class="modal-body">
-				<dl class="row mb-0" id="leadViewDetails"></dl>
+				<div id="leadViewStatus" role="status" aria-live="polite"></div>
+                <div id="leadViewContent" hidden>
+                    <p id="leadViewSummary" class="small text-muted"></p>
+                    <ul class="nav nav-tabs mb-3" role="tablist">
+                        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#leadDetailsPane" type="button" role="tab">Details</button></li>
+                        @foreach(['timeline' => 'Timeline', 'responses' => 'Responses & calls', 'ownership' => 'Ownership history'] as $section => $label)
+                        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#lead-{{ $section }}" type="button" role="tab">{{ $label }} <span data-count="{{ $section }}" class="badge bg-light text-dark">0</span></button></li>
+                        @endforeach
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="leadDetailsPane" role="tabpanel"><dl class="row mb-0" id="leadViewDetails" style="overflow-wrap:anywhere;white-space:pre-wrap"></dl></div>
+                        @foreach(['timeline', 'responses', 'ownership'] as $section)
+                        <div class="tab-pane fade" id="lead-{{ $section }}" role="tabpanel">
+                            @if($section === 'ownership')<p class="small text-muted">Recorded assignments and transfers, newest first. Earlier changes appear only if they were recorded.</p>@endif
+                            <div data-history="{{ $section }}"></div>
+                            <button type="button" class="btn btn-outline-primary btn-sm mt-2" data-load-history="{{ $section }}" hidden>Load more</button>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
 			</div>
 			<div class="modal-footer">
 				<button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
@@ -420,6 +450,7 @@
 @endsection
 
 @push('scripts')
+<script src="{{ asset('admin/js/lead-details.js') }}?v={{ filemtime(public_path('admin/js/lead-details.js')) }}"></script>
 <script>
 
 //added
@@ -479,6 +510,10 @@ ajax: {
 	d.date_from = $('#leadDateFrom').val();
 d.date_to = $('#leadDateTo').val();
 d.source = $('#leadSourceFilter').val();
+d.filter_status = $('#leadStatusFilter').val();
+d.filter_project = $('#leadProjectFilter').val();
+d.filter_inventory = $('#leadInventoryFilter').val();
+d.filter_visit = $('#leadVisitFilter').val();
 d.open_lead_id = pendingLeadId;
 }
 },
@@ -694,6 +729,24 @@ $(document).on('click', '.lead-filter-btn', function () {
 });
 
 
+let extraFilterTimer;
+$(document).on('input change', '.lead-extra-filter', function () {
+    clearTimeout(extraFilterTimer);
+    if (this.id === 'leadStatusFilter' && this.value) {
+        currentLeadView = 'total'; pendingAttention = null;
+        sessionStorage.setItem('selectedLeadView', 'total');
+        updateLeadFilterButtons('total');
+    }
+    extraFilterTimer = setTimeout(() => $('#leads-table').DataTable().ajax.reload(null, true), 300);
+});
+$(document).on('click', '#resetLeadFilters', function () {
+    clearTimeout(extraFilterTimer);
+    $('#leadDateFrom, #leadDateTo, #leadSourceFilter, .lead-extra-filter').val('');
+    const table = $('#leads-table').DataTable();
+    table.search(''); table.columns().search('');
+    window.setLeadView('total');
+});
+
 // Reload leads when Date Range or Source changes
 $(document).on(
     'change',
@@ -758,75 +811,6 @@ $(document).on(
 		$('#editLeadModal').modal('show');
 	});
 
-	$(document).on('click', '.viewBtn', function () {
-		const row = $('#leads-table').DataTable().row($(this).closest('tr')).data();
-		const lead = row?.edit_data || {};
-		const labels = {
-			name: 'Name',
-			phone: 'Phone',
-			email: 'Email',
-			message: 'Message',
-			external_id: 'External ID',
-			status: 'Status',
-			type: 'Lead type',
-			source_website: 'Source',
-			source_page_name: 'Source page name',
-			follow_up_date: 'Follow-up date',
-			visit_status: 'Visit status',
-			visit_date: 'Visit date',
-			project_id: 'Project ID',
-			sub_response_id: 'Response ID',
-			deactivate_reason: 'Deactivation reason',
-			lead_source: 'Lead source',
-			notes: 'Notes',
-			inventory: 'Inventory',
-			budget_min: 'Minimum budget',
-			budget_max: 'Maximum budget',
-			remarks: 'Remarks',
-			source_page_id: 'Source page ID',
-			source_form_id: 'Source form ID',
-			source_form_name: 'Source form name',
-			campaign_id: 'Campaign ID',
-			campaign_name: 'Campaign name',
-			adset_id: 'Ad set ID',
-			adset_name: 'Ad set name',
-			ad_id: 'Ad ID',
-			ad_name: 'Ad name',
-			purchase_timeline: 'Purchase timeline',
-			site_visit_preference: 'Site visit preference',
-			funding_method: 'Funding method',
-			source_submitted_at: 'Source submitted at'
-		};
-		const details = $('#leadViewDetails').empty();
-
-		Object.keys(labels).forEach(function (field) {
-			const value = lead[field];
-			if (value === null || value === undefined || value === '') {
-				return;
-			}
-
-			details.append(
-				$('<dt class="col-sm-4 text-muted">').text(labels[field]),
-				$('<dd class="col-sm-8">').text(value)
-			);
-		});
-
-		if (row?.assigned_user_name) {
-			details.append(
-				$('<dt class="col-sm-4 text-muted">').text('Assigned to'),
-				$('<dd class="col-sm-8">').text(row.assigned_user_name)
-			);
-		}
-		if (row?.created_at) {
-			details.append(
-				$('<dt class="col-sm-4 text-muted">').text('Created'),
-				$('<dd class="col-sm-8">').text(row.created_at)
-			);
-		}
-
-		$('#viewLeadModal').modal('show');
-	});
-	
 	$('#updateLead').click(function () {
 		confirmAdminAction({
 			title: 'Save lead changes?',
