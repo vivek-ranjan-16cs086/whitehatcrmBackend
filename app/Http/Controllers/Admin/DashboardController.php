@@ -19,8 +19,18 @@ class DashboardController extends Controller
         $this->middleware('auth');
     }
 
-    public function index()
+    public function index(\Illuminate\Http\Request $request)
     {
+        $request->validate([
+            'chart_start' => ['nullable', 'date_format:Y-m-d'],
+            'chart_end' => ['nullable', 'date_format:Y-m-d'],
+        ]);
+        $chartStart = \Carbon\Carbon::parse($request->input('chart_start') ?: now()->subDays(29)->toDateString())->startOfDay();
+        $chartEnd = \Carbon\Carbon::parse($request->input('chart_end') ?: now()->toDateString())->endOfDay();
+        if ($chartEnd->lt($chartStart) || $chartStart->diffInDays($chartEnd) > 366) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['chart_end' => 'Choose a date range of up to 366 days, ending after the start date.']);
+        }
+        $chartRows = collect();
         $totalUsers       = User::count();
         $totalRoles       = Role::count();
         $totalPermissions = Permission::count();
@@ -44,6 +54,11 @@ class DashboardController extends Controller
             if (!$canViewTeam) {
                 $leadQuery->where('assigned_to', $currentUser->id);
             }
+
+            $chartRows = (clone $leadQuery)
+                ->whereBetween('created_at', [$chartStart, $chartEnd])
+                ->selectRaw('DATE(created_at) as day, status, COUNT(*) as total')
+                ->groupByRaw('DATE(created_at), status')->orderBy('day')->get();
 
             // One grouped query instead of loading every lead
             $leadCounts = $leadQuery
@@ -105,7 +120,8 @@ class DashboardController extends Controller
 		//added
 		
 		return view('admin.dashboard', compact(
-					'totalUsers',
+					'chartStart', 'chartEnd', 'chartRows',
+                    'totalUsers',
 					'totalRoles',
 					'totalPermissions',
 					'totalLeads',

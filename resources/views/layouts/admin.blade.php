@@ -23,6 +23,7 @@
     <link href="{{ url('admin/css/admin.css') }}?v={{ filemtime(public_path('admin/css/admin.css')) }}" rel="stylesheet">
 	 <link href="{{ url('admin/css/table.css') }}?v={{ filemtime(public_path('admin/css/table.css')) }}" rel="stylesheet">
 	
+    <link href="{{ url('admin/css/theme.css') }}?v={{ filemtime(public_path('admin/css/theme.css')) }}" rel="stylesheet">
 </head>
 
 <body class="@yield('body-class')">

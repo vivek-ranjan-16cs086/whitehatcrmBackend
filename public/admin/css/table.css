@@ -4,12 +4,12 @@
     --table-head-bg: #f5f7fc;
     --table-head-color: #344054;
     --table-row-alt: #f8f9fc;
-    --table-row-hover: #f0f2ff;
-    --btn-action-bg: #5146d8;
+    --table-row-hover: #eff6ff;
+    --btn-action-bg: #2563eb;
     --btn-action-color: #ffffff;
     --btn-action-hover-bg: #4338b8;
-    --btn-danger-bg: #dc3545;
-    --btn-danger-hover-bg: #bd2130;
+    --btn-danger-bg: #2563eb;
+    --btn-danger-hover-bg: #2563eb;
 }
 
 /* Shared admin table enhancements */
@@ -128,9 +128,9 @@ table.dataTable tbody td:last-child {
     gap: 0.45rem;
     max-width: 100%;
     padding: 0.35rem 0.65rem;
-    border: 1px solid #dedcff;
+    border: 1px solid #eff6ff;
     border-radius: 999px;
-    background: #f2f1ff;
+    background: #eff6ff;
     color: #4b43b8;
     font-size: 0.78rem;
     font-weight: 600;
@@ -286,7 +286,7 @@ table.dataTable tbody tr:hover > * {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: #e9e8ff;
+    background: #eff6ff;
     color: #4338a8;
     display: inline-flex;
     align-items: center;
@@ -489,8 +489,8 @@ table.dataTable tbody tr:hover > * {
 .dataTable .btn-edit-project,
 .dataTable .btn-edit-target {
     color: #fff !important;
-    background: #5146d8 !important;
-    border: 1px solid #5146d8 !important;
+    background: #2563eb !important;
+    border: 1px solid #2563eb !important;
     border-radius: var(--border-radius) !important;
 }
 
@@ -514,8 +514,8 @@ table.dataTable tbody tr:hover > * {
 .dataTable td:last-child .btn-outline-danger,
 .dataTable .btn-delete {
     color: #fff !important;
-    background: #e5484d !important;
-    border: 1px solid #e5484d !important;
+    background: #2563eb !important;
+    border: 1px solid #2563eb !important;
     border-radius: var(--border-radius) !important;
 }
 
@@ -528,8 +528,8 @@ table.dataTable tbody tr:hover > * {
 .dataTable td:last-child .btn-danger:hover,
 .dataTable td:last-child .btn-outline-danger:hover,
 .dataTable .btn-delete:hover {
-    background: #c9363c !important;
-    border-color: #c9363c !important;
+    background: #2563eb !important;
+    border-color: #2563eb !important;
 }
 
 /* Keep DataTables actions and search aligned as one responsive toolbar. */

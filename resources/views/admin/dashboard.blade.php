@@ -83,7 +83,7 @@
  
 @if($canViewLeads)
 
-<div class="row g-4 mb-4">
+<div class="dashboard-count-grid mb-4">
 
     <!-- Total Leads -->
     <div class="col-xl-3 col-md-6">
@@ -177,14 +177,10 @@
         </a>
     </div>
 
-</div>
-
 @endif
 
-
-
         {{-- ── Stat Cards ── --}}
-        <div class="row g-4 mb-4">
+        @if(!$canViewLeads)<div class="dashboard-count-grid mb-4">@endif
             <div class="col-xl-4 col-md-6">
 			<a href="{{ route('admin.users.index') }}"
    class="text-decoration-none d-block h-100">
@@ -370,37 +366,10 @@
                         @endif
                     </div>
                     <div class="card-body dashboard-chart-body">
-                        @if($canViewLeads && $leadCounts->isNotEmpty())
-                            @php
-                                $pipelineChartData = $leadCounts->sortDesc()->take(6);
-                                $pipelineChartMax = max(1, (int) $pipelineChartData->max());
-                            @endphp
-                            <div class="pipeline-chart" role="group" aria-label="Lead counts by status">
-                                @foreach($pipelineChartData as $status => $count)
-                                    @php
-                                        $barHeight = max(8, (int) round(($count / $pipelineChartMax) * 100));
-                                        $statusLabel = ucwords(str_replace(['_', '-'], ' ', $status));
-                                    @endphp
-                                    <div class="pipeline-chart-column" title="{{ $statusLabel }}: {{ number_format($count) }}">
-                                        <span class="pipeline-chart-count">{{ number_format($count) }}</span>
-                                        <div class="pipeline-chart-track">
-                                            <span class="pipeline-chart-bar" style="height: {{ $barHeight }}%"></span>
-                                        </div>
-                                        <span class="pipeline-chart-label">{{ $statusLabel }}</span>
-                                    </div>
-                                @endforeach
-                            </div>
+                        @if($canViewLeads)
+                            @include('admin.partials.pipeline-chart')
                         @else
-                            <div class="dashboard-chart-empty">
-                                <span class="dashboard-chart-empty-icon"><i data-lucide="bar-chart-3"></i></span>
-                                @if($canViewLeads)
-                                    <p class="mb-1">Lead analytics will appear here</p>
-                                    <span>There are no lead statuses to display yet.</span>
-                                @else
-                                    <p class="mb-1">Lead analytics are unavailable</p>
-                                    <span>Your account does not have permission to view lead data.</span>
-                                @endif
-                            </div>
+                            <p class="text-muted">Your account does not have permission to view lead data.</p>
                         @endif
                     </div>
                 </div>
