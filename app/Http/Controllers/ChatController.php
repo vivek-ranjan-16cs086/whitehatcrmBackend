@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ChatConversation;
 use App\Models\ChatMessage;
+use App\Models\Notification;
 use App\Models\User;
 use App\Services\ChatRealtimeService;
 use App\Services\FirebaseNotificationService;
@@ -84,6 +85,13 @@ class ChatController extends Controller
             ->orderByDesc('updated_at')->orderByDesc('id')->paginate(50);
 
         return response()->json($conversations->through(fn ($conversation) => $this->conversationData($conversation, $user)));
+    }
+
+    public function show(Request $request, ChatConversation $conversation)
+    {
+        $user = $this->member($request, $conversation);
+
+        return response()->json($this->conversationData($conversation, $user));
     }
 
     private function conversationData(ChatConversation $conversation, User $user): array
@@ -178,12 +186,26 @@ class ChatController extends Controller
             ], ['body' => trim($data['body'])]);
             if ($message->wasRecentlyCreated) {
                 $conversation->touch();
+                foreach ($conversation->members()->where('enable', true)->whereKeyNot($user->id)->pluck('users.id') as $recipientId) {
+                    Notification::create([
+                        'user_id' => $recipientId,
+                        'title' => \Illuminate\Support\Str::limit('New message from '.$user->name, 250),
+                        'message' => \Illuminate\Support\Str::limit($message->body, 120),
+                        'type' => 'CHAT_MESSAGE',
+                        'data' => ['conversationId' => $conversation->id, 'messageId' => $message->id, 'senderId' => $user->id],
+                        'is_read' => false,
+                    ]);
+                }
             }
 
             return $message;
         });
         if ($message->wasRecentlyCreated) {
-            $this->realtime->notify($conversation, 'message', ['message_id' => $message->id]);
+            $this->realtime->notify($conversation, 'message', [
+                'message_id' => $message->id, 'sender_id' => $user->id,
+                'sender_name' => $user->name,
+                'preview' => \Illuminate\Support\Str::limit($message->body, 120),
+            ]);
             // Send through the existing Firebase setup only when a recipient has a device token.
             foreach ($conversation->members()->where('enable', true)->whereKeyNot($user->id)->whereNotNull('device_token')->get() as $recipient) {
                 if (! $recipient->device_token) {
@@ -208,7 +230,10 @@ class ChatController extends Controller
         $data = $request->validate(['message_id' => ['required', 'integer', Rule::exists('chat_messages', 'id')->where('conversation_id', $conversation->id)]]);
         $updated = DB::table('chat_members')->where('conversation_id', $conversation->id)->where('user_id', $user->id)
             ->where('last_read_message_id', '<', $data['message_id'])->update(['last_read_message_id' => $data['message_id'], 'updated_at' => now()]);
-        if ($updated) {
+        $notificationsRead = Notification::where('user_id', $user->id)->where('type', 'CHAT_MESSAGE')
+            ->where('data->conversationId', $conversation->id)->where('data->messageId', '<=', (int) $data['message_id'])
+            ->where('is_read', false)->update(['is_read' => true]);
+        if ($updated || $notificationsRead) {
             $this->realtime->notify($conversation, 'read', ['user_id' => $user->id, 'message_id' => (int) $data['message_id']]);
         }
 

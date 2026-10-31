@@ -948,6 +948,10 @@ function isDataTableRequest(settings) {
             fetchNotifications();
         });
     </script>
+    <script src="{{ url('admin/libraries/js/pusher.min.js') }}"></script>
+    <script src="{{ url('admin/libraries/js/echo.iife.js') }}"></script>
+    <script id="crmChatRealtimeScript" data-base="{{ url('admin/chat') }}" data-chat-url="{{ route('admin.chat.index') }}"
+        src="{{ url('admin/js/chat-realtime.js') }}?v={{ filemtime(public_path('admin/js/chat-realtime.js')) }}"></script>
     @stack('scripts')
 
 </body>

@@ -39,14 +39,16 @@
                             @php
                                 $leadId = data_get($notification->data, 'leadId')
                                     ?? data_get($notification->data, 'lead_id');
+                                $notificationUrl = $notification->destinationUrl();
                             @endphp
                             <div
                                 class="list-group-item list-group-item-action border-0 px-4 py-3 {{ $notification->is_read ? 'opacity-75' : 'bg-light-subtle' }}"
                                 id="notification-{{ $notification->id }}"
-                                @if($leadId)
+                                @if($notificationUrl)
                                     role="link"
                                     tabindex="0"
-                                    data-lead-url="{{ route('lead-management.index', ['open_lead' => $leadId]) }}"
+                                    data-notification-url="{{ $notificationUrl }}"
+                                    @if($leadId) data-lead-url="{{ $notificationUrl }}" @endif
                                     data-notification-id="{{ $notification->id }}"
                                     style="cursor: pointer;"
                                 @endif
@@ -54,7 +56,7 @@
                                 <div class="d-flex align-items-center">
                                     <div class="flex-shrink-0 me-3">
                                         <div class="avatar-circle {{ $notification->is_read ? 'bg-secondary' : 'bg-primary' }}">
-                                            <i class="bi {{ $notification->is_read ? 'bi-bell' : 'bi-bell-fill' }}"></i>
+                                            <i class="bi {{ $notification->type === 'CHAT_MESSAGE' ? 'bi-chat-dots' : ($notification->is_read ? 'bi-bell' : 'bi-bell-fill') }}"></i>
                                         </div>
                                     </div>
                                     <div class="flex-grow-1">
@@ -154,7 +156,7 @@
                     const $notification = $(this);
                     $notification.addClass('opacity-75').removeClass('bg-light-subtle');
                     $notification.find('.avatar-circle').removeClass('bg-primary').addClass('bg-secondary');
-                    $notification.find('.avatar-circle i').removeClass('bi-bell-fill').addClass('bi-bell');
+                    $notification.find('.avatar-circle i.bi-bell-fill').removeClass('bi-bell-fill').addClass('bi-bell');
                     $notification.find('h6').removeClass('text-dark').addClass('text-muted');
                     $notification.find('button[title="Mark as read"]').closest('.ms-3').remove();
                 });
@@ -174,8 +176,8 @@
         });
     }
 
-    function openLeadFromNotification(element) {
-        const url = element.dataset.leadUrl;
+    function openFromNotification(element) {
+        const url = element.dataset.notificationUrl;
         const notificationId = element.dataset.notificationId;
 
         $.ajax({
@@ -192,36 +194,36 @@
 
                 Swal.fire({
                     icon: 'error',
-                    title: 'Could not open lead',
+                    title: 'Could not open notification',
                     text: response.message || 'The notification could not be updated.'
                 });
             },
             error: function(xhr) {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Could not open lead',
+                    title: 'Could not open notification',
                     text: xhr.responseJSON?.message || 'The notification could not be updated.'
                 });
             }
         });
     }
 
-    $(document).on('click', '[data-lead-url]', function(event) {
+    $(document).on('click', '[data-notification-url]', function(event) {
         if (event.target.closest('button')) {
             return;
         }
 
-        openLeadFromNotification(this);
+        openFromNotification(this);
     });
 
-    $(document).on('keydown', '[data-lead-url]', function(event) {
+    $(document).on('keydown', '[data-notification-url]', function(event) {
         if (event.target.closest('button')) {
             return;
         }
 
         if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
-            openLeadFromNotification(this);
+            openFromNotification(this);
         }
     });
 

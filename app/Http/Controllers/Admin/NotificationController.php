@@ -39,6 +39,9 @@ class NotificationController extends Controller
 					'id' => $notif->id,
 					'title' => $notif->title,
 					'message' => $notif->message,
+					'type' => $notif->type,
+					'conversation_id' => data_get($notif->data, 'conversationId'),
+					'url' => $notif->destinationUrl(),
 					'lead_id' => data_get($notif->data, 'leadId')
 						?? data_get($notif->data, 'lead_id'),
 					'is_read' => $notif->is_read,

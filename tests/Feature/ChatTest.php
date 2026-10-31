@@ -49,9 +49,73 @@ class ChatTest extends TestCase
             ->assertCreated()->assertJsonPath('body', $body['body'])->json('id');
         $this->postJson("/admin/chat/conversations/$id/messages", $body)->assertOk()->assertJsonPath('id', $message);
         $this->assertDatabaseCount('chat_messages', 1);
+        $this->assertDatabaseCount('notifications', 1);
+        $this->assertDatabaseHas('notifications', ['user_id' => $recipient->id, 'type' => 'CHAT_MESSAGE', 'is_read' => false]);
         $this->actingAs($recipient)->getJson('/admin/chat/conversations')->assertOk()->assertJsonPath('data.0.unread_count', 1);
         $this->postJson("/admin/chat/conversations/$id/read", ['message_id' => $message])->assertOk();
         $this->getJson('/admin/chat/conversations')->assertJsonPath('data.0.unread_count', 0);
+        $this->getJson(route('admin.notifications.list'))->assertOk()->assertJsonPath('unread_count', 0);
+    }
+
+    public function test_chat_messages_appear_in_the_existing_notification_module_and_link_to_the_conversation(): void
+    {
+        $sender = $this->user();
+        $recipient = $this->user();
+        $id = $this->direct($sender, $recipient);
+        $this->actingAs($sender)->postJson("/admin/chat/conversations/$id/messages", [
+            'body' => 'Please follow up on this lead.', 'client_id' => Str::uuid(),
+        ])->assertCreated();
+
+        $url = route('admin.chat.index', ['conversation' => $id]);
+        $this->actingAs($recipient)->getJson(route('admin.notifications.list'))
+            ->assertOk()->assertJsonPath('unread_count', 1)->assertJsonPath('data.0.type', 'CHAT_MESSAGE')
+            ->assertJsonPath('data.0.conversation_id', $id)->assertJsonPath('data.0.url', $url);
+        $this->get(route('admin.notifications.index'))->assertOk()
+            ->assertSee('Please follow up on this lead.')
+            ->assertSee('data-notification-url="'.$url.'"', false);
+        $this->actingAs($sender)->getJson(route('admin.notifications.list'))->assertJsonPath('unread_count', 0);
+    }
+
+    public function test_reading_one_message_does_not_clear_newer_chat_or_lead_notifications(): void
+    {
+        $sender = $this->user();
+        $recipient = $this->user();
+        $id = $this->direct($sender, $recipient);
+        $messageIds = [];
+        foreach (['First', 'Second'] as $body) {
+            $messageIds[] = $this->actingAs($sender)->postJson("/admin/chat/conversations/$id/messages", [
+                'body' => $body, 'client_id' => Str::uuid(),
+            ])->assertCreated()->json('id');
+        }
+        \App\Models\Notification::create(['user_id' => $recipient->id, 'title' => 'Lead assigned', 'message' => 'Existing lead alert', 'type' => 'LEAD_ASSIGNED']);
+        $this->actingAs($recipient)->postJson("/admin/chat/conversations/$id/read", ['message_id' => $messageIds[0]])->assertOk();
+        $this->getJson(route('admin.notifications.list'))->assertJsonPath('unread_count', 2);
+        $this->assertDatabaseHas('notifications', ['user_id' => $recipient->id, 'message' => 'First', 'is_read' => true]);
+        $this->assertDatabaseHas('notifications', ['user_id' => $recipient->id, 'message' => 'Second', 'is_read' => false]);
+        $this->assertDatabaseHas('notifications', ['user_id' => $recipient->id, 'type' => 'LEAD_ASSIGNED', 'is_read' => false]);
+    }
+
+    public function test_group_notifications_only_go_to_other_active_members(): void
+    {
+        $sender = $this->user();
+        $sender->assignRole(Role::create(['name' => 'super-admin', 'guard_name' => 'web']));
+        $first = $this->user();
+        $second = $this->user();
+        $disabled = $this->user();
+        $outsider = $this->user();
+        $id = $this->actingAs($sender)->postJson('/admin/chat/conversations', [
+            'type' => 'group', 'name' => 'Sales team', 'member_ids' => [$first->id, $second->id, $disabled->id],
+        ])->assertCreated()->json('id');
+        $disabled->update(['enable' => false]);
+        $this->postJson("/admin/chat/conversations/$id/messages", ['body' => 'Team update', 'client_id' => Str::uuid()])->assertCreated();
+
+        $this->assertDatabaseCount('notifications', 2);
+        foreach ([$first, $second] as $recipient) {
+            $this->assertDatabaseHas('notifications', ['user_id' => $recipient->id, 'type' => 'CHAT_MESSAGE', 'message' => 'Team update']);
+        }
+        foreach ([$sender, $disabled, $outsider] as $excluded) {
+            $this->assertDatabaseMissing('notifications', ['user_id' => $excluded->id, 'type' => 'CHAT_MESSAGE']);
+        }
     }
 
     public function test_nonmembers_cannot_read_send_type_or_mark_read_even_if_they_are_admin(): void
@@ -60,6 +124,7 @@ class ChatTest extends TestCase
         $outsider = $this->user();
         $outsider->assignRole(Role::create(['name' => 'super-admin', 'guard_name' => 'web']));
         $this->actingAs($outsider)->getJson("/admin/chat/conversations/$id/messages")->assertForbidden();
+        $this->getJson("/admin/chat/conversations/$id")->assertForbidden();
         foreach (['messages', 'read', 'typing'] as $action) {
             $this->postJson("/admin/chat/conversations/$id/$action", ['body' => 'Not allowed', 'client_id' => (string) Str::uuid(), 'message_id' => 1])->assertForbidden();
         }

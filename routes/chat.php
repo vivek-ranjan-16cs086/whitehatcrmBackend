@@ -9,6 +9,7 @@ Route::get('config', [ChatController::class, 'configuration']);
 Route::get('users', [ChatController::class, 'users']);
 Route::get('conversations', [ChatController::class, 'conversations']);
 Route::post('conversations', [ChatController::class, 'create'])->middleware('throttle:30,1');
+Route::get('conversations/{conversation}', [ChatController::class, 'show']);
 Route::get('conversations/{conversation}/messages', [ChatController::class, 'messages']);
 Route::post('conversations/{conversation}/messages', [ChatController::class, 'send'])->middleware('throttle:60,1');
 Route::post('conversations/{conversation}/read', [ChatController::class, 'read'])->middleware('throttle:120,1');

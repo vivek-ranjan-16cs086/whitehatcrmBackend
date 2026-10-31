@@ -36,6 +36,18 @@ Pusher credentials are not stored in frontend bundles. Only the public key and c
 
 The production server must allow outbound HTTPS to Pusher. Open **Team Chat** in the CRM sidebar. Before credentials are configured, chat uses a 15-second polling fallback. With Pusher connected, messages arrive through private channels and periodic HTTP reconciliation recovers missed events.
 
+The shared admin layout now connects on every CRM page. Incoming messages show a notification with an **Open chat** link even while the recipient uses Leads, Dashboard, or another module. The chat screen reuses this same connection. This requires a CRM tab to remain open; notifications while every CRM tab/browser is closed require a separate browser Web Push/service-worker integration, which is not included.
+
+To diagnose delayed delivery after uploading the latest code:
+
+```sh
+php artisan config:clear
+php artisan config:cache
+php artisan chat:status --probe
+```
+
+This command displays whether credentials are present without printing their values. The optional probe performs a read-only Pusher API request; it does not send anyone a test message. A successful HTTPS check confirms server credentials/connectivity, but the recipient's browser must also successfully authorize and subscribe to its private channel. The Team Chat status should read **Live connection**. **Polling**, **Reconnecting**, or **Subscription failed** means fallback delivery is active.
+
 ## Deploy the mobile app
 
 The sibling `Mobile App` includes the chat screen, drawer entry, JWT-authenticated API client, and official Pusher React Native SDK. Its key and cluster come from `/api/v1/chat/config`; no separate mobile credentials are needed.
@@ -58,6 +70,7 @@ Use the existing release-signing process to distribute an updated Android/iOS bu
 - Private channels are personal: `private-chat.user.{user_id}`. Web subscription authorization uses the session; mobile authorization uses the existing JWT Bearer token.
 - Messages have a 5,000-character limit. Clients send a UUID `client_id`; retrying the same message does not create another row or send another notification.
 - Read cursors only move forward. History supports older-page loading and incremental catch-up. Group membership is set when a group is created; membership editing and attachments are not included.
+- Each new message creates a `CHAT_MESSAGE` record in the existing Notifications module for every other active conversation member, even if they have no mobile device token. The admin bell refreshes on message/read events and through the polling fallback. Notification links open the matching conversation. Reading messages marks their corresponding chat notifications read without clearing unrelated lead alerts. Retrying a message does not duplicate its saved notifications.
 - Message broadcasts are synchronous (`ShouldBroadcastNow`). Provider failures do not discard saved messages; polling recovers them. Firebase delivery is best effort and uses the existing device token for each user.
 
 ## API reference

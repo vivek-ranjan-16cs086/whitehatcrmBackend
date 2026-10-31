@@ -15,8 +15,7 @@
         conversationMore = false,
         peoplePage = 1,
         peopleMore = false;
-    let echo,
-        connected = false,
+    let connected = false,
         busy = false,
         refreshing = false,
         lastTyping = 0,
@@ -199,12 +198,16 @@
         await api(`conversations/${conversation.id}/read`, {
             message_id: last,
         });
+        if (typeof window.fetchNotifications === "function")
+            window.fetchNotifications();
         if (me) me.last_read_message_id = last;
         conversation.unread_count = 0;
         renderConversations();
     }
     async function select(conversation) {
         active = conversation;
+        if (window.CrmChatRealtime)
+            window.CrmChatRealtime.activeConversationId = conversation.id;
         messages = [];
         hasOlder = false;
         pending = null;
@@ -429,51 +432,32 @@
     };
     async function init() {
         try {
-            config = await api("config");
+            config = window.CrmChatRealtime
+                ? await window.CrmChatRealtime.ready
+                : await api("config");
+            if (!config)
+                throw new Error(
+                    "Chat is unavailable. Check the server configuration."
+                );
             $("chatKind").querySelector('[value="group"]').hidden =
                 !config.can_create_group;
             await loadConversations();
             $("chatConnection").textContent = "Polling every 15 seconds";
-            if (config.realtime_enabled && window.Pusher && window.Echo) {
-                const EchoClient =
-                    typeof window.Echo === "function"
-                        ? window.Echo
-                        : window.Echo.default;
-                echo = new EchoClient({
-                    broadcaster: "pusher",
-                    key: config.key,
-                    cluster: config.cluster,
-                    forceTLS: true,
-                    authEndpoint: base + "/broadcasting/auth",
-                    auth: { headers: { "X-CSRF-TOKEN": csrf } },
+            if (window.CrmChatRealtime) {
+                window.CrmChatRealtime.subscribe(receive);
+                window.CrmChatRealtime.onState((state) => {
+                    connected = state.connected;
+                    $("chatConnection").textContent = state.status;
                 });
-                echo.private("chat.user." + config.user_id)
-                    .listen(".chat.updated", receive)
-                    .subscribed(() => {
-                        connected = true;
-                        $("chatConnection").textContent = "Live connection";
-                        refresh();
-                    })
-                    .error(() => {
-                        connected = false;
-                        $("chatConnection").textContent =
-                            "Subscription unavailable | Polling enabled";
-                    });
-                echo.connector.pusher.connection.bind(
-                    "state_change",
-                    (state) => {
-                        if (state.current !== "connected") {
-                            connected = false;
-                            $("chatConnection").textContent =
-                                "Reconnecting | Polling enabled";
-                        }
-                    }
-                );
-                echo.connector.pusher.connection.bind("error", () => {
-                    connected = false;
-                    $("chatConnection").textContent =
-                        "Connection interrupted | Polling enabled";
-                });
+            }
+            const requested = Number(
+                new URL(window.location.href).searchParams.get("conversation")
+            );
+            if (requested > 0) {
+                const conversation =
+                    conversations.find((item) => item.id === requested) ||
+                    (await api("conversations/" + requested));
+                await select(conversation);
             }
             setInterval(() => {
                 if (!connected) refresh();
@@ -489,6 +473,5 @@
     document.addEventListener("visibilitychange", () => {
         if (!document.hidden) refresh();
     });
-    window.addEventListener("pagehide", () => echo?.disconnect());
     init();
 })();

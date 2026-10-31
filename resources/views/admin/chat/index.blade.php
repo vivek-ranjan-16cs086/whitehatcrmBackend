@@ -41,7 +41,5 @@
 </div>
 @endsection
 @push('scripts')
-<script src="{{ url('admin/libraries/js/pusher.min.js') }}"></script>
-<script src="{{ url('admin/libraries/js/echo.iife.js') }}"></script>
 <script src="{{ url('admin/js/chat.js') }}?v={{ filemtime(public_path('admin/js/chat.js')) }}"></script>
 @endpush

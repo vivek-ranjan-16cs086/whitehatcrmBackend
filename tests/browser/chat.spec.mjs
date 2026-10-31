@@ -48,7 +48,7 @@ test("chat renders safely, sends messages, and starts groups using the actual UI
     const html = `<!doctype html><html><head><meta name="csrf-token" content="test-token">
         <link rel="stylesheet" href="/admin/libraries/css/bootstrap.min.css"><link rel="stylesheet" href="/admin/css/admin.css">
         <link rel="stylesheet" href="/admin/css/theme.css"><link rel="stylesheet" href="/admin/css/chat.css"></head><body class="chat-page">
-        ${content}<script src="/admin/libraries/js/bootstrap.bundle.min.js"></script><script src="/admin/js/chat.js"></script></body></html>`;
+        ${content}<script src="/admin/libraries/js/bootstrap.bundle.min.js"></script><script id="crmChatRealtimeScript" data-base="/admin/chat" data-chat-url="/admin/chat" src="/admin/js/chat-realtime.js"></script><script src="/admin/js/chat.js"></script></body></html>`;
     await page.route("http://chat.test/**", async (route) => {
         const url = new URL(route.request().url()),
             path = url.pathname;
@@ -159,4 +159,110 @@ test("bundled Echo exposes a working constructor for the Pusher client", async (
                     : window.Echo.default)
         )
     ).toBe("function");
+});
+
+test("a live message displays a notification on another CRM page without waiting for polling", async ({
+    page,
+}) => {
+    await page.addInitScript(() => {
+        window.notificationRefreshes = 0;
+        window.fetchNotifications = () => {
+            window.notificationRefreshes++;
+        };
+        window.Pusher = function () {};
+        window.Echo = class {
+            connector = { pusher: { connection: { bind() {} }, connect() {} } };
+            private() {
+                const channel = {
+                    listen(name, receive) {
+                        window.testChatReceive = receive;
+                        return channel;
+                    },
+                    subscribed(callback) {
+                        queueMicrotask(callback);
+                        return channel;
+                    },
+                    error() {
+                        return channel;
+                    },
+                };
+                return channel;
+            }
+            disconnect() {}
+        };
+    });
+    await page.route("http://chat.test/**", async (route) => {
+        const path = new URL(route.request().url()).pathname;
+        if (path === "/")
+            return route.fulfill({
+                contentType: "text/html",
+                body: `<!doctype html><html><head><meta name="csrf-token" content="test"></head><body>
+            <h1>All Leads</h1><script src="/admin/libraries/js/bootstrap.bundle.min.js"></script>
+            <script id="crmChatRealtimeScript" data-base="/admin/chat" data-chat-url="/admin/chat" src="/admin/js/chat-realtime.js"></script></body></html>`,
+            });
+        if (path === "/admin/chat/config")
+            return route.fulfill({
+                json: {
+                    user_id: 1,
+                    realtime_enabled: true,
+                    key: "test",
+                    cluster: "ap2",
+                },
+            });
+        if (path === "/admin/chat/conversations")
+            return route.fulfill({ json: { data: [], next_page_url: null } });
+        const file = resolve("public", "." + path);
+        if (existsSync(file)) return route.fulfill({ path: file });
+        return route.abort();
+    });
+    await page.goto("http://chat.test/");
+    await page.evaluate(async () => {
+        await window.CrmChatRealtime.ready;
+        window.CrmChatRealtime.onState(
+            (state) => (window.chatLive = state.connected)
+        );
+    });
+    await expect.poll(() => page.evaluate(() => window.chatLive)).toBe(true);
+    await page.evaluate(() =>
+        window.testChatReceive({
+            kind: "message",
+            message_id: 10,
+            conversation_id: 7,
+            sender_id: 2,
+            sender_name: "Sales User",
+            preview: "Please check this lead.",
+        })
+    );
+    await expect(page.locator("#crmChatAlerts .toast")).toHaveCount(1);
+    expect(
+        await page.evaluate(() => window.notificationRefreshes)
+    ).toBeGreaterThan(1);
+    await expect(page.locator("#crmChatAlerts")).toContainText(
+        "Please check this lead."
+    );
+    await expect(page.getByRole("link", { name: "Open chat" })).toHaveAttribute(
+        "href",
+        "/admin/chat?conversation=7"
+    );
+    await page.evaluate(() =>
+        window.testChatReceive({
+            kind: "message",
+            message_id: 10,
+            conversation_id: 7,
+            sender_id: 2,
+            sender_name: "Sales User",
+            preview: "Duplicate",
+        })
+    );
+    await page.evaluate(() =>
+        window.testChatReceive({
+            kind: "message",
+            message_id: 11,
+            conversation_id: 7,
+            sender_id: 1,
+            sender_name: "Me",
+            preview: "Own message",
+        })
+    );
+    await expect(page.locator("#crmChatAlerts .toast")).toHaveCount(1);
 });
