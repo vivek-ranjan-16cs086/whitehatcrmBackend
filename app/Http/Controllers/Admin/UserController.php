@@ -65,6 +65,7 @@ class UserController extends Controller
 					'serialNo' => $sno++,
 					'id'	   => $id,
 					'name'	   => $user->name,
+					'username' => $user->username,
 					'email'    => $user->email,
 					'role'     => $roleName,
 					'created_at' => date('d M Y', strtotime($user->created_at)),
@@ -97,8 +98,12 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
+        if (is_string($request->input('username'))) {
+            $request->merge(['username' => strtolower(trim($request->input('username')))]);
+        }
         $request->validate([
             'name'                  => 'required|string|max:255',
+            'username' => ['required', 'string', 'min:3', 'max:255', 'regex:/^[a-z0-9._-]+$/', Rule::unique('users', 'username')],
             'email'                 => 'required|email|unique:users,email',
             'password'              => 'required|min:8|confirmed',
             'role'                  => 'required|exists:roles,name',
@@ -106,6 +111,7 @@ class UserController extends Controller
 
         $user = User::create([
             'name'     => $request->name,
+            'username' => $request->username,
             'email'    => $request->email,
             'password' => Hash::make($request->password),
         ]);
@@ -138,8 +144,14 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
+        if ($request->has('username') && is_string($request->input('username'))) {
+            $request->merge(['username' => strtolower(trim($request->input('username')))]);
+        }
         $request->validate([
             'name'     => 'required|string|max:255',
+            'username' => ['sometimes', 'required', 'string', 'max:255',
+                ...($request->input('username') === $user->username ? [] : ['min:3', 'regex:/^[a-z0-9._-]+$/']),
+                Rule::unique('users', 'username')->ignore($user)],
             'email'    => ['required', 'email', Rule::unique('users', 'email')->ignore($user)],
             'password' => 'nullable|min:8|confirmed',
             'role'     => 'required|exists:roles,name',
@@ -148,6 +160,7 @@ class UserController extends Controller
         $user->update([
             'name'  => $request->name,
             'email' => $request->email,
+            ...($request->has('username') ? ['username' => $request->username] : []),
         ]);
 
         if ($request->filled('password')) {

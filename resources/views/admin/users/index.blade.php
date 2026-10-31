@@ -370,7 +370,10 @@
 
             $('#name').val(name);
 
-            $('#username').val(username);
+            const savedUsername = typeof username === 'string' ? username.trim() : '';
+            const suggestedUsername = (email.split('@')[0] || name || ('user.' + userId))
+                .toLowerCase().replace(/\s+/g, '.').replace(/[^a-z0-9._-]/g, '');
+            $('#username').val(savedUsername || (suggestedUsername.length >= 3 ? suggestedUsername : 'user.' + userId));
 
             $('#email').val(email);
 
@@ -406,7 +409,11 @@
             $('#passwordHelp').show();
 
             // Check existing username
-            if (username) {
+            if (savedUsername) {
+                usernameAvailable = true;
+                $('#username').addClass('is-valid');
+                $('#usernameMessage').text('Current username').removeClass('text-danger text-warning').addClass('text-success');
+            } else {
                 checkUsernameAvailability();
             }
 
@@ -575,6 +582,7 @@
         clearTimeout(usernameCheckTimer);
 
         const username = $('#username').val().trim();
+        const checkedUserId = editUserId;
 
         usernameAvailable = false;
 
@@ -645,11 +653,12 @@
 
                 data: {
                     username: username,
-                    user_id: editUserId
+                    user_id: checkedUserId
                 },
 
 
                 success: function (response) {
+                    if ($('#username').val().trim() !== username || editUserId !== checkedUserId) return;
 
                     if (response.available) {
 
@@ -697,7 +706,7 @@
 
 
                 error: function () {
-
+                    if ($('#username').val().trim() !== username || editUserId !== checkedUserId) return;
                     usernameAvailable = false;
 
                     $('#usernameStatus').html(

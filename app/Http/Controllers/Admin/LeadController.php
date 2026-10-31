@@ -508,6 +508,7 @@ $leadSources = Lead::query()
 				'lead_id' => $row->id,
 				'id' => $sno++,
 				'name' => e($row->name),
+				'arrived_at_ist' => $row->created_at ? $row->created_at->copy()->timezone('Asia/Kolkata')->format('d M Y, h:i A').' IST' : null,
 				'phone' => e($row->phone),
 				'email' => e($row->email),
 				'message' => e(\Str::limit($row->message, 50)),

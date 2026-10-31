@@ -13,6 +13,24 @@ class LeadTableColumnsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_arrival_time_is_converted_to_indian_time_including_date_rollover(): void
+    {
+        $originalTimezone = date_default_timezone_get();
+        date_default_timezone_set('UTC');
+        try {
+            config(['app.timezone' => 'UTC']);
+            $admin = User::factory()->create();
+            $admin->assignRole(Role::create(['name' => 'super-admin', 'guard_name' => 'web']));
+            $lead = Lead::create(['name' => 'Late arrival', 'assigned_to' => $admin->id]);
+            $lead->forceFill(['created_at' => '2026-10-30 22:45:00'])->save();
+
+            $this->actingAs($admin)->getJson(route('lead-management.ajax-list', ['start' => 0, 'length' => 20]))
+                ->assertOk()->assertJsonPath('data.0.arrived_at_ist', '31 Oct 2026, 04:15 AM IST');
+        } finally {
+            date_default_timezone_set($originalTimezone);
+        }
+    }
+
     public function test_lead_list_includes_project_inventory_and_visit_details_and_sorts_projects_by_name(): void
     {
         $admin = User::factory()->create();

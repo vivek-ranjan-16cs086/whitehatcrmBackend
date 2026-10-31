@@ -757,3 +757,5 @@ table.dataTable tbody tr:hover > * {
         margin-left: auto;
     }
 }
+.lead-arrival-time { display: block; margin-top: 3px; font-size: 10px; line-height: 1.4; white-space: nowrap; }
+.lead-name-text { line-height: 1.4; }

@@ -62,4 +62,29 @@ class AdminUserUpdateTest extends TestCase
         $this->assertSame($user->name, $user->fresh()->name);
         $this->assertSame($originalPassword, $user->fresh()->password);
     }
+
+    public function test_username_is_saved_on_creation_and_returned_in_the_edit_payload(): void
+    {
+        $this->postJson(route('admin.users.store'), ['name' => 'New User', 'username' => 'new.user',
+            'email' => 'new@example.com', 'password' => 'Password123!', 'password_confirmation' => 'Password123!', 'role' => 'sales'])
+            ->assertOk()->assertJsonPath('user.username', 'new.user');
+        $user = User::where('email', 'new@example.com')->firstOrFail();
+        $this->getJson(route('admin.users.index', ['start' => 0, 'length' => 20]))->assertOk()
+            ->assertJsonPath('data.0.username', 'new.user');
+        $html = view('admin.users.partials.actions', compact('user'))->render();
+        preg_match('/data-user="([^"]+)"/', $html, $matches);
+        $this->assertSame('new.user', json_decode(html_entity_decode($matches[1], ENT_QUOTES), true)['username']);
+    }
+
+    public function test_existing_username_can_be_kept_or_changed_and_duplicates_are_rejected(): void
+    {
+        $user = User::factory()->create(['username' => 'existing.user']);
+        $other = User::factory()->create(['username' => 'other.user']);
+        $payload = ['name' => $user->name, 'email' => $user->email, 'role' => 'sales'];
+        $this->putJson(route('admin.users.update', $user), $payload + ['username' => 'existing.user'])->assertOk();
+        $this->putJson(route('admin.users.update', $user), $payload + ['username' => ' UPDATED.USER '])->assertOk();
+        $this->assertSame('updated.user', $user->fresh()->username);
+        $this->putJson(route('admin.users.update', $user), $payload + ['username' => $other->username])->assertUnprocessable()->assertJsonValidationErrors('username');
+        $this->assertSame('updated.user', $user->fresh()->username);
+    }
 }

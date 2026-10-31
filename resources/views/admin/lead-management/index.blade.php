@@ -497,7 +497,15 @@ d.open_lead_id = pendingLeadId;
 					}
 				},
 
-				{ data: 'name' },
+				{
+                    data: 'name',
+                    render: function (data, type, row) {
+                        if (type !== 'display') return data;
+                        const name = $('<div class="lead-name-text">').html(data || '-');
+                        const arrival = $('<small class="lead-arrival-time text-muted">').text(row.arrived_at_ist || '');
+                        return $('<div>').append(name, arrival).html();
+                    }
+                },
 
 				{ data: 'phone' },
 
