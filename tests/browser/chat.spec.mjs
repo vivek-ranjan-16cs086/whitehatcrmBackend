@@ -194,6 +194,15 @@ test("chat renders safely, sends messages, and starts groups using the actual UI
     });
     await page.goto("http://chat.test/");
     await page.getByRole("button", { name: /Sales User/ }).click();
+    await expect(
+        page.locator("#chatConversations .chat-contact-avatar")
+    ).toHaveText("S");
+    await expect(
+        page.locator("#chatThreadAvatar .chat-contact-avatar")
+    ).toHaveText("S");
+    await expect(
+        page.locator("#chatThreadAvatar .chat-contact-avatar")
+    ).toHaveCSS("border-radius", "50%");
     await expect(page.locator(".chat-message-body")).toHaveText(
         messages[0].body
     );
@@ -223,24 +232,29 @@ test("chat renders safely, sends messages, and starts groups using the actual UI
         "Read"
     );
     await expect(page.locator(".chat-receipt")).toHaveClass(/is-read/);
-    await page
-        .locator("#chatProfileFile")
-        .setInputFiles({
-            name: "avatar.png",
-            mimeType: "image/png",
-            buffer: Buffer.from("png-test"),
-        });
+    members[1].avatar_url = "/test-avatar.png";
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect(page.locator("#chatThreadAvatar img")).toHaveAttribute(
+        "src",
+        "/test-avatar.png"
+    );
+    await expect(
+        page.locator("#chatConversations .chat-contact-avatar img")
+    ).toHaveAttribute("src", "/test-avatar.png");
+    await page.locator("#chatProfileFile").setInputFiles({
+        name: "avatar.png",
+        mimeType: "image/png",
+        buffer: Buffer.from("png-test"),
+    });
     await expect(page.locator("#chatProfileButton img")).toHaveAttribute(
         "src",
         "/test-avatar.png"
     );
-    await page
-        .locator("#chatFile")
-        .setInputFiles({
-            name: "photo.png",
-            mimeType: "image/png",
-            buffer: Buffer.from("png-test"),
-        });
+    await page.locator("#chatFile").setInputFiles({
+        name: "photo.png",
+        mimeType: "image/png",
+        buffer: Buffer.from("png-test"),
+    });
     await expect(page.locator("#chatAttachmentPreview")).toBeVisible();
     await page.getByRole("button", { name: "Send", exact: true }).click();
     await expect(page.locator(".chat-shared-image")).toHaveAttribute(
@@ -348,7 +362,7 @@ test("a live message displays a notification on another CRM page without waiting
             return route.fulfill({
                 contentType: "text/html",
                 body: `<!doctype html><html><head><meta name="csrf-token" content="test"></head><body>
-            <h1>All Leads</h1><a id="messageIndicator" aria-label="Messages"><span id="messageCount"></span></a><button id="messageSoundToggle" type="button">Sound</button><script src="/admin/libraries/js/bootstrap.bundle.min.js"></script>
+            <h1>All Leads</h1><a id="messageIndicator" aria-label="Messages"><span id="messageCount"></span></a><script src="/admin/libraries/js/bootstrap.bundle.min.js"></script>
             <script id="crmChatRealtimeScript" data-base="/admin/chat" data-chat-url="/admin/chat" src="/admin/js/chat-realtime.js"></script></body></html>`,
             });
         if (path === "/admin/chat/config")

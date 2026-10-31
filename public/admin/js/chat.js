@@ -84,6 +84,42 @@
         if (text !== undefined) result.textContent = text;
         return result;
     }
+    function contactAvatar(name, url) {
+        const avatar = node(
+            "span",
+            "chat-contact-avatar",
+            (Array.from((name || "?").trim())[0] || "?").toLocaleUpperCase()
+        );
+        avatar.setAttribute(
+            "aria-label",
+            (name || "User") + " profile picture"
+        );
+        if (url) {
+            const image = node("img", "");
+            image.alt = name || "Profile picture";
+            image.onerror = () => image.remove();
+            image.src = url;
+            avatar.append(image);
+        }
+        return avatar;
+    }
+    function renderHeader() {
+        if (!active) return;
+        $("chatTitle").textContent = active.name;
+        $("chatMembers").textContent = active.members
+            .map((member) => member.name)
+            .join(", ");
+        const other = active.members.find(
+            (member) => member.id !== config.user_id
+        );
+        $("chatThreadAvatar").hidden = false;
+        $("chatThreadAvatar").replaceChildren(
+            contactAvatar(
+                active.name,
+                active.type === "direct" ? other?.avatar_url : null
+            )
+        );
+    }
     function renderConversations() {
         const list = $("chatConversations");
         list.replaceChildren();
@@ -101,17 +137,16 @@
                 const other = c.members.find(
                     (member) => member.id !== config.user_id
                 );
-                if (c.type === "direct" && other?.avatar_url) {
-                    const avatar = node("img", "chat-conversation-avatar");
-                    avatar.src = other.avatar_url;
-                    avatar.alt = c.name;
-                    button.prepend(avatar);
-                }
+                const avatar = contactAvatar(
+                    c.name,
+                    c.type === "direct" ? other?.avatar_url : null
+                );
+                const copy = node("span", "chat-conversation-copy");
                 const top = node("span", "chat-conversation-top");
                 top.append(node("strong", "", c.name));
                 if (c.unread_count)
                     top.append(node("span", "chat-unread", c.unread_count));
-                button.append(
+                copy.append(
                     top,
                     node(
                         "span",
@@ -122,6 +157,7 @@
                                 : "Start the conversation")
                     )
                 );
+                button.append(avatar, copy);
                 button.onclick = () => select(c);
                 list.append(button);
             });
@@ -151,6 +187,7 @@
             $("chatMembers").textContent = active.members
                 .map((m) => m.name)
                 .join(", ");
+            renderHeader();
             renderMessages(false);
         }
     }
@@ -336,6 +373,7 @@
         hasOlder = false;
         pending = null;
         version++;
+        renderHeader();
         $("chatTitle").textContent = conversation.name;
         $("chatMembers").textContent = conversation.members
             .map((m) => m.name)

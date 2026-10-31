@@ -244,8 +244,8 @@ body :is(#users-table,#leads-table,table.dataTable,.admin-panel-table,.table) tb
 
 /* Separate unread messages indicator and sound preference. */
 .message-indicator.has-unread { animation: message-alert-pulse 1.6s ease-in-out infinite; }
-.message-sound-toggle { display: inline-grid; place-items: center; width: 30px; height: 30px; padding: 5px; border: 1px solid #e2e8f0; background: #fff; color: #64748b; }
-.message-sound-toggle svg { width: 16px; height: 16px; }
+
+
 .sidebar-message-count { display: none; margin-left: auto; min-width: 20px; padding: 2px 6px; background: #2563eb; color: #fff; border-radius: 3px; font-size: 10px; text-align: center; }
 .sidebar-message-count.show { display: inline-block; animation: message-alert-pulse 1.6s ease-in-out infinite; }
 @keyframes message-alert-pulse { 0%,100% { box-shadow: 0 0 0 0 rgb(37 99 235 / 0); } 50% { box-shadow: 0 0 0 5px rgb(37 99 235 / .16); } }
@@ -257,3 +257,8 @@ body :is(#chatProfileButton,.user-avatar,.user-dropdown-avatar,.chat-profile-pic
 body .chat-avatar { border-radius: 50% !important; }
 .admin-profile-preview { display: grid; place-items: center; width: 96px; height: 96px; margin: 0 auto 20px; background: #f1f5f9; color: #64748b; font-size: 30px; font-weight: 600; }
 .sidebar .sidebar-nav .nav-item a { font-weight: 700; }
+
+/* White header on every module; contact avatars use photo or initial. */
+body .topbar { background: #fff !important; }
+body .chat-contact-avatar { position: relative; display: inline-grid; place-items: center; width: 40px; height: 40px; flex: 0 0 40px; border-radius: 50% !important; overflow: hidden; background: #e9eef5; color: #475569; font-size: 16px; font-weight: 700; }
+.chat-contact-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }

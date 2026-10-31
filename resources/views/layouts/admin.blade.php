@@ -103,9 +103,6 @@
                 <i data-lucide="messages-square"></i>
                 <span class="notification-badge" id="messageCount" aria-live="polite"></span>
             </a>
-            <button type="button" id="messageSoundToggle" class="message-sound-toggle" aria-label="Enable message sound" aria-pressed="false" title="Enable message sound">
-                <i data-lucide="volume-x"></i>
-            </button>
             <!-- Notifications -->
             <div>
 				<a href="{{ route('admin.notifications.index') }}" 

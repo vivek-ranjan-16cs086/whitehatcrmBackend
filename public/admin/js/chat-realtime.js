@@ -44,29 +44,8 @@
     let unreadBusy = false,
         unreadAgain = false,
         audio,
-        soundEnabled = true,
         lastSound = 0;
-    try {
-        soundEnabled = localStorage.getItem("crm-chat-sound") !== "off";
-    } catch {}
-    const soundButton = document.getElementById("messageSoundToggle");
-    function soundUI() {
-        if (!soundButton) return;
-        soundButton.setAttribute("aria-pressed", String(soundEnabled));
-        soundButton.setAttribute(
-            "aria-label",
-            soundEnabled ? "Mute message sound" : "Enable message sound"
-        );
-        soundButton.title = soundEnabled
-            ? "Message sound on ? click to mute"
-            : "Enable message sound";
-        soundButton.innerHTML = soundEnabled
-            ? '<i data-lucide="volume-2"></i>'
-            : '<i data-lucide="volume-x"></i>';
-        if (window.lucide) window.lucide.createIcons();
-    }
     function unlockAudio() {
-        if (!soundEnabled) return;
         try {
             const Audio = window.AudioContext || window.webkitAudioContext;
             if (!Audio) return;
@@ -75,7 +54,7 @@
         } catch {}
     }
     function playSound() {
-        if (!soundEnabled || Date.now() - lastSound < 800) return;
+        if (Date.now() - lastSound < 800) return;
         unlockAudio();
         if (!audio || audio.state !== "running") return;
         lastSound = Date.now();
@@ -95,24 +74,8 @@
             oscillator.stop(time + 0.18);
         });
     }
-    if (soundButton)
-        soundButton.onclick = () => {
-            soundEnabled = !soundEnabled;
-            try {
-                localStorage.setItem(
-                    "crm-chat-sound",
-                    soundEnabled ? "on" : "off"
-                );
-            } catch {}
-            soundUI();
-            if (soundEnabled) {
-                unlockAudio();
-                playSound();
-            }
-        };
     document.addEventListener("pointerdown", unlockAudio, { passive: true });
     document.addEventListener("keydown", unlockAudio);
-    soundUI();
     async function acknowledge(conversationId, messageId) {
         await fetch(base + "/conversations/" + conversationId + "/delivered", {
             method: "POST",
@@ -261,7 +224,15 @@
                         ...event,
                         sender_id: message.sender_id,
                         sender_name: message.sender_name,
-                        preview: (message.body || (message.attachment ? "Shared " + message.attachment.kind + ": " + message.attachment.name : "")).slice(0, 120),
+                        preview: (
+                            message.body ||
+                            (message.attachment
+                                ? "Shared " +
+                                  message.attachment.kind +
+                                  ": " +
+                                  message.attachment.name
+                                : "")
+                        ).slice(0, 120),
                     };
             } catch {
                 return;

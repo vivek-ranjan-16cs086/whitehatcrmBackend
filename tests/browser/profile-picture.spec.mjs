@@ -11,6 +11,7 @@ test("profile picture opens and saves on the current page with circular avatars"
         "resources/views/layouts/admin.blade.php",
         "utf8"
     );
+    expect(layout).not.toContain('id="messageSoundToggle"');
     const button = layout.match(
         /<button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#adminProfilePictureModal">[\s\S]*?<\/button>/
     )[0];
@@ -54,13 +55,11 @@ test("profile picture opens and saves on the current page with circular avatars"
         .click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page).toHaveURL("http://profile.test/dashboard");
-    await page
-        .getByLabel("Choose a picture")
-        .setInputFiles({
-            name: "avatar.png",
-            mimeType: "image/png",
-            buffer: Buffer.from("image-test"),
-        });
+    await page.getByLabel("Choose a picture").setInputFiles({
+        name: "avatar.png",
+        mimeType: "image/png",
+        buffer: Buffer.from("image-test"),
+    });
     await page.getByRole("button", { name: "Save picture" }).click();
     await expect(page.getByRole("dialog")).toBeHidden();
     await expect(page.locator(".user-dropdown-avatar img")).toHaveAttribute(

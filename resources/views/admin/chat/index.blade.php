@@ -15,7 +15,7 @@
         <span id="chatConnection" class="chat-connection" role="status">Connecting...</span>
     </aside>
     <section class="chat-thread">
-        <div class="chat-thread-heading"><div><h6 id="chatTitle" class="mb-1">Your team, one conversation away</h6><span id="chatMembers" class="text-muted small">Choose a conversation or start a new chat.</span></div></div>
+        <div class="chat-thread-heading"><div id="chatThreadAvatar" hidden></div><div><h6 id="chatTitle" class="mb-1">Your team, one conversation away</h6><span id="chatMembers" class="text-muted small">Choose a conversation or start a new chat.</span></div></div>
         <div id="chatError" class="alert alert-danger m-3" role="alert" hidden></div>
         <div id="chatMessages" class="chat-messages" role="log" aria-label="Messages"></div>
         <div id="chatTyping" class="chat-typing" aria-live="polite"></div>

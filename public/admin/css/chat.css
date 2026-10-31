@@ -300,3 +300,6 @@
         padding: 7px;
     }
 }
+.chat-conversation { display: flex; flex-direction: row; align-items: center; gap: 12px; }
+.chat-conversation-copy { display: grid; gap: 5px; flex: 1; min-width: 0; }
+.chat-thread-heading { display: flex; align-items: center; gap: 12px; background: #fff; }
