@@ -11,11 +11,27 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                     <h6 class="mb-0 fw-bold">All Notifications</h6>
-                    @if($notifications->count() > 0)
-                        <button onclick="clearAllNotifications()" class="btn btn-outline-danger btn-sm">
-                            <i class="bi bi-trash me-1"></i> Clear All
-                        </button>
-                    @endif
+                    <div class="d-flex flex-wrap justify-content-end gap-2">
+                        @if(auth()->user()->hasCrmPermission('view.lead'))
+                            <a href="{{ route('lead-management.index') }}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-people me-1"></i> View all leads
+                            </a>
+                        @endif
+                        @if($notifications->total() > 0)
+                            <button
+                                type="button"
+                                id="markAllNotificationsRead"
+                                onclick="markAllAsRead()"
+                                class="btn btn-outline-primary btn-sm"
+                                @if($unreadCount === 0) disabled @endif
+                            >
+                                <i class="bi bi-check2-all me-1"></i> Mark all as read
+                            </button>
+                            <button type="button" onclick="clearAllNotifications()" class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-trash me-1"></i> Clear All
+                            </button>
+                        @endif
+                    </div>
                 </div>
                 <div class="card-body p-0">
                     <div class="list-group list-group-flush" id="all-notifications-list">
@@ -108,6 +124,51 @@
                     icon: 'error',
                     title: 'Could not mark as read',
                     text: xhr.responseJSON?.message || 'The notification could not be updated.'
+                });
+            }
+        });
+    }
+
+    function markAllAsRead() {
+        const $button = $('#markAllNotificationsRead');
+        $button.prop('disabled', true);
+
+        $.ajax({
+            url: "{{ route('admin.notifications.readAll') }}",
+            type: 'PATCH',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                if (!response.status) {
+                    $button.prop('disabled', false);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Could not mark notifications as read',
+                        text: response.message || 'The notifications could not be updated.'
+                    });
+                    return;
+                }
+
+                $('#all-notifications-list .list-group-item').each(function() {
+                    const $notification = $(this);
+                    $notification.addClass('opacity-75').removeClass('bg-light-subtle');
+                    $notification.find('.avatar-circle').removeClass('bg-primary').addClass('bg-secondary');
+                    $notification.find('.avatar-circle i').removeClass('bi-bell-fill').addClass('bi-bell');
+                    $notification.find('h6').removeClass('text-dark').addClass('text-muted');
+                    $notification.find('button[title="Mark as read"]').closest('.ms-3').remove();
+                });
+
+                if (typeof updateNotificationUI === 'function') {
+                    updateNotificationUI({ unread_count: response.unread_count });
+                }
+            },
+            error: function(xhr) {
+                $button.prop('disabled', false);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Could not mark notifications as read',
+                    text: xhr.responseJSON?.message || 'The notifications could not be updated.'
                 });
             }
         });

@@ -305,9 +305,20 @@ $leadSources = Lead::query()
 		    'date_from' => 'nullable|date_format:Y-m-d',
 		    'date_to' => 'nullable|date_format:Y-m-d|after_or_equal:date_from',
 		    'source' => 'nullable|string|max:255',
+		    'attention' => 'nullable|in:unassigned,overdue,no-follow-up,stale',
 		]);
 
+		$user = $request->user();
+		$canViewTeam = $user->hasRole('super-admin', 'web')
+			|| $user->canViewAllLeads();
+		$attention = $request->input('attention');
+
+		if (!$canViewTeam && $attention !== null) {
+			$query->where('leads.assigned_to', $user->id);
+		}
+
 		$openLeadId = $request->input('open_lead_id');
+		$activeStatuses = ['new', 'active', 'follow_up'];
 
 		// View filters
 		$viewFilters = [
@@ -328,6 +339,16 @@ $leadSources = Lead::query()
 
 		if ($openLeadId !== null) {
 			$query->where('leads.id', $openLeadId);
+		} elseif ($attention !== null) {
+			$query->whereIn('leads.status', $activeStatuses);
+
+			match ($attention) {
+				'unassigned' => $query->whereNull('leads.assigned_to'),
+				'overdue' => $query->whereNotNull('leads.follow_up_date')
+					->whereDate('leads.follow_up_date', '<', now()->toDateString()),
+				'no-follow-up' => $query->whereNull('leads.follow_up_date'),
+				'stale' => $query->where('leads.created_at', '<', now()->subDays(7)),
+			};
 		} elseif ($viewFilters[$view] !== null) {
 			$query->where('leads.status', $viewFilters[$view]);
 		}
@@ -359,7 +380,11 @@ $leadSources = Lead::query()
 		}
 //...
 		// Record counts
-		$totalRecords = Lead::count();
+		$totalRecordsQuery = Lead::query();
+		if (!$canViewTeam && $attention !== null) {
+			$totalRecordsQuery->where('leads.assigned_to', $user->id);
+		}
+		$totalRecords = $totalRecordsQuery->count();
 
 		$totalRecordswithFilter = (clone $query)->count();
 

@@ -433,6 +433,16 @@ const leadViewTitles = {
 let currentLeadView =
     sessionStorage.getItem('selectedLeadView') || 'total';
 
+const attentionFilters = ['unassigned', 'overdue', 'no-follow-up', 'stale'];
+let pendingAttention = new URLSearchParams(window.location.search).get('attention');
+if (!attentionFilters.includes(pendingAttention)) {
+    pendingAttention = null;
+}
+
+if (pendingAttention) {
+    currentLeadView = 'total';
+}
+
 if (!leadViewTitles[currentLeadView]) {
     currentLeadView = 'total';
 }
@@ -463,6 +473,7 @@ ajax: {
      data: function (d) {
     d.page = (d.start / d.length) + 1;
     d.view = currentLeadView;
+    d.attention = pendingAttention;
 	 // New filters
 	d.date_from = $('#leadDateFrom').val();
 d.date_to = $('#leadDateTo').val();
@@ -652,8 +663,12 @@ window.setLeadView = function (view) {
     }
 
     currentLeadView = view;
+    pendingAttention = null;
 
     sessionStorage.setItem('selectedLeadView', view);
+    const destination = new URL(window.location.href);
+    destination.searchParams.delete('attention');
+    history.replaceState(history.state, '', destination.pathname + destination.search + destination.hash);
 
     updateLeadFilterButtons(view);
 

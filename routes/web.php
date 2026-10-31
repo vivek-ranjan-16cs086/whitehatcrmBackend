@@ -105,6 +105,7 @@ Route::get('/admin/sidebar/menu', function (
         Route::get('/', [NotificationController::class, 'index'])->name('admin.notifications.index');
         Route::get('/list', [NotificationController::class, 'getNotifications'])->name('admin.notifications.list');
         Route::patch('/read/{id}', [NotificationController::class, 'markAsRead'])->name('admin.notifications.read');
+        Route::patch('/read-all', [NotificationController::class, 'markAllAsRead'])->name('admin.notifications.readAll');
         Route::delete('/clear-all', [NotificationController::class, 'clearAllNotifications'])->name('admin.notifications.clearAll');
     });	
 

@@ -16,8 +16,11 @@ class NotificationController extends Controller
         $notifications = Notification::where('user_id', auth()->id())
             ->latest()
             ->paginate(15);
+        $unreadCount = Notification::where('user_id', auth()->id())
+            ->where('is_read', false)
+            ->count();
 
-        return view('admin.notifications.index', compact('notifications'));
+        return view('admin.notifications.index', compact('notifications', 'unreadCount'));
     }
 	
 	
@@ -65,6 +68,19 @@ class NotificationController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Marked as read'
+        ]);
+    }
+
+    public function markAllAsRead()
+    {
+        Notification::where('user_id', auth()->id())
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'All notifications marked as read',
+            'unread_count' => 0,
         ]);
     }
 

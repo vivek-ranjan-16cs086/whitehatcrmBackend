@@ -33,6 +33,10 @@ class PipelineHealthService
 
         $activeLeads = (clone $activeQuery)->count();
 
+        $unassigned = (clone $activeQuery)
+            ->whereNull('assigned_to')
+            ->count();
+
         $withFollowUp = (clone $activeQuery)
             ->whereNotNull('follow_up_date')
             ->count();
@@ -43,7 +47,7 @@ class PipelineHealthService
 
         $overdue = (clone $activeQuery)
             ->whereNotNull('follow_up_date')
-            ->where('follow_up_date', '<', $now)
+            ->whereDate('follow_up_date', '<', $now->toDateString())
             ->count();
 
         $noFollowUp = (clone $activeQuery)
@@ -84,6 +88,7 @@ class PipelineHealthService
             'pipeline_health' => $pipelineHealth,
             'at_risk_leads' => $noFollowUp,
             'breakdown' => [
+                'unassigned_leads' => $unassigned,
                 'overdue_followups' => $overdue,
                 'no_followup' => $noFollowUp,
                 'stale_leads' => $stale,

@@ -71,6 +71,7 @@ class DashboardController extends Controller
             'pipeline_health' => 0,
             'at_risk_leads' => 0,
             'breakdown' => [
+                'unassigned_leads' => 0,
                 'overdue_followups' => 0,
                 'no_followup' => 0,
                 'stale_leads' => 0,
@@ -85,6 +86,9 @@ class DashboardController extends Controller
         $pipelineHealth = $pipelineMetrics['pipeline_health'];
 
         $atRiskLeads = $pipelineMetrics['at_risk_leads'];
+
+        $unassignedLeads =
+            $pipelineMetrics['breakdown']['unassigned_leads'];
 
         $overdueFollowups =
             $pipelineMetrics['breakdown']['overdue_followups'];
@@ -112,6 +116,7 @@ class DashboardController extends Controller
 					'followUpLeads',
 					'bookedLeads',
 					'atRiskLeads',
+					'unassignedLeads',
 					'leadCounts',
 					'pipelineHealth',
 					'overdueFollowups',

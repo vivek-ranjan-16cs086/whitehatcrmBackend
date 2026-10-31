@@ -29,6 +29,57 @@
 
  {{-- ── added── --}}
  
+@if($canViewLeads)
+    <section class="action-required-section mb-4" aria-labelledby="actionRequiredHeading">
+        <div class="action-required-heading">
+            <div>
+                <span class="action-required-eyebrow">Stay ahead of lead leakage</span>
+                <h5 id="actionRequiredHeading" class="mb-0">Action required</h5>
+            </div>
+            <span class="action-required-live"><span></span> Live overview</span>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-xl-3 col-sm-6">
+                <a class="action-required-card action-required-purple"
+                   href="{{ route('lead-management.index', ['attention' => 'unassigned']) }}">
+                    <span class="action-required-icon"><i data-lucide="user-round-x"></i></span>
+                    <span class="action-required-label">Unassigned leads</span>
+                    <strong>{{ number_format($unassignedLeads) }}</strong>
+                    <span class="action-required-link">Review leads <i data-lucide="arrow-up-right"></i></span>
+                </a>
+            </div>
+            <div class="col-xl-3 col-sm-6">
+                <a class="action-required-card action-required-red"
+                   href="{{ route('lead-management.index', ['attention' => 'overdue']) }}">
+                    <span class="action-required-icon"><i data-lucide="calendar-clock"></i></span>
+                    <span class="action-required-label">Overdue follow-ups</span>
+                    <strong>{{ number_format($overdueFollowups) }}</strong>
+                    <span class="action-required-link">Review leads <i data-lucide="arrow-up-right"></i></span>
+                </a>
+            </div>
+            <div class="col-xl-3 col-sm-6">
+                <a class="action-required-card action-required-amber"
+                   href="{{ route('lead-management.index', ['attention' => 'no-follow-up']) }}">
+                    <span class="action-required-icon"><i data-lucide="calendar-plus"></i></span>
+                    <span class="action-required-label">No follow-up set</span>
+                    <strong>{{ number_format($noFollowup) }}</strong>
+                    <span class="action-required-link">Review leads <i data-lucide="arrow-up-right"></i></span>
+                </a>
+            </div>
+            <div class="col-xl-3 col-sm-6">
+                <a class="action-required-card action-required-blue"
+                   href="{{ route('lead-management.index', ['attention' => 'stale']) }}">
+                    <span class="action-required-icon"><i data-lucide="hourglass"></i></span>
+                    <span class="action-required-label">Stale leads · 7+ days</span>
+                    <strong>{{ number_format($staleLeads) }}</strong>
+                    <span class="action-required-link">Review leads <i data-lucide="arrow-up-right"></i></span>
+                </a>
+            </div>
+        </div>
+    </section>
+@endif
+
  
 @if($canViewLeads)
 
