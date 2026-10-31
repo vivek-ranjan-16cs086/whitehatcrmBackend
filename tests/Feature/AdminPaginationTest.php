@@ -8,9 +8,9 @@ use Tests\TestCase;
 
 class AdminPaginationTest extends TestCase
 {
-    public function test_numbered_pagination_shows_at_most_three_pages_and_icon_navigation(): void
+    public function test_pagination_shows_three_nearby_pages_with_boundary_links_and_icon_navigation(): void
     {
-        foreach ([1 => [1, 2, 3], 54 => [53, 54, 55], 107 => [105, 106, 107]] as $current => $expected) {
+        foreach ([1 => [1, 2, 3, 107], 54 => [1, 53, 54, 55, 107], 107 => [1, 105, 106, 107]] as $current => $expected) {
             $paginator = new LengthAwarePaginator([], 1070, 10, $current, ['path' => '/records']);
             $html = $paginator->links()->toHtml();
             preg_match_all('/class="page-link"[^>]*>\s*(\d+)\s*</', $html, $numbers);
@@ -18,6 +18,8 @@ class AdminPaginationTest extends TestCase
             $this->assertStringContainsString('aria-label="Previous page"', $html);
             $this->assertStringContainsString('aria-label="Next page"', $html);
             $this->assertSame(2, substr_count($html, '<svg'));
+            $this->assertStringContainsString('&hellip;', $html);
+            if ($current !== 107) $this->assertStringContainsString('/records?page=107', $html);
             $this->assertStringNotContainsString('>Previous<', $html);
             $this->assertStringNotContainsString('>Next<', $html);
         }

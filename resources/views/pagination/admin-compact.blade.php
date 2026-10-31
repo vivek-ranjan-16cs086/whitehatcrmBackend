@@ -15,6 +15,12 @@
                 $pageCount = min(3, $paginator->lastPage());
                 $firstPage = max(1, min($paginator->currentPage() - 1, $paginator->lastPage() - $pageCount + 1));
             @endphp
+            @if ($firstPage > 1)
+                <li class="page-item"><a class="page-link" href="{{ $paginator->url(1) }}" aria-label="Page 1">1</a></li>
+                @if ($firstPage > 2)
+                    <li class="page-item disabled"><span class="page-link" aria-hidden="true">&hellip;</span></li>
+                @endif
+            @endif
             @for ($page = $firstPage; $page < $firstPage + $pageCount; $page++)
                 <li class="page-item {{ $page === $paginator->currentPage() ? 'active' : '' }}">
                     @if ($page === $paginator->currentPage())
@@ -24,6 +30,12 @@
                     @endif
                 </li>
             @endfor
+            @if ($firstPage + $pageCount - 1 < $paginator->lastPage())
+                @if ($firstPage + $pageCount < $paginator->lastPage())
+                    <li class="page-item disabled"><span class="page-link" aria-hidden="true">&hellip;</span></li>
+                @endif
+                <li class="page-item"><a class="page-link" href="{{ $paginator->url($paginator->lastPage()) }}" aria-label="Page {{ $paginator->lastPage() }}">{{ $paginator->lastPage() }}</a></li>
+            @endif
         @endif
         <li class="page-item {{ $paginator->hasMorePages() ? '' : 'disabled' }}">
             @if ($paginator->hasMorePages())
