@@ -34,5 +34,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Contact::class, ContactPolicy::class);
 
         Paginator::useBootstrapFive();
+        Paginator::defaultView('pagination.admin-compact');
+        Paginator::defaultSimpleView('pagination.admin-compact');
     }
 }

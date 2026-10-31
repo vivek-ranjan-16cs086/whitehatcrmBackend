@@ -138,3 +138,50 @@ body.dashboard-page .action-required-link { color: #64748b; font-size: 10px; }
 /* Match the SVG drawing area to its card, without fixed-aspect side gaps. */
 .dashboard-page #pipelineChart { width: 100%; min-width: 0; overflow: hidden; }
 .dashboard-page #pipelineChart svg { display: block; width: 100%; min-width: 0; height: 285px; }
+
+/* Shared admin controls: every module uses the same visual rules. */
+:root { --admin-blue: #2563eb; --admin-control-radius: 3px; }
+html, body, body * { scrollbar-width: thin; scrollbar-color: #2563eb #f1f5f9; }
+/* Chromium/WebKit supports gradient thumbs; Firefox uses the blue fallback. */
+@supports selector(::-webkit-scrollbar) {
+    html, body, body * { scrollbar-width: auto; scrollbar-color: auto; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #93c5fd, #2563eb); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:horizontal { background: linear-gradient(90deg, #93c5fd, #2563eb); }
+    ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #60a5fa, #1d4ed8); }
+    ::-webkit-scrollbar-corner { background: #f1f5f9; }
+    body .sidebar::-webkit-scrollbar { width: 5px; }
+    body .sidebar::-webkit-scrollbar-track { background: #f1f5f9; }
+    body .sidebar::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #93c5fd, #2563eb); border-radius: 3px; }
+}
+body :is(.dataTables_wrapper .dataTables_filter input,.dt-container .dt-search input) {
+    box-sizing: border-box; width: 260px !important; max-width: 100% !important; min-width: 0 !important;
+    height: 40px !important; margin: 0 !important; padding: 8px 12px 8px 38px !important;
+    border: 1px solid #cbd5e1 !important; border-radius: 3px !important;
+    background-color: #fff !important; color: #344054; font-size: 14px !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m16 16 4 4'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important; background-position: 12px center !important; background-size: 17px !important;
+}
+body :is(.dataTables_wrapper .dataTables_filter input,.dt-container .dt-search input):focus {
+    border-color: #2563eb !important; box-shadow: 0 0 0 3px rgb(37 99 235 / 12%) !important; outline: 0;
+}
+body :is(.pagination,.dataTables_paginate,.dt-paging) { gap: 4px; }
+body .pagination { display: flex; flex-wrap: wrap; margin-bottom: 0; }
+body :is(.pagination .page-link,.dt-paging-button) {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 34px; min-height: 34px; padding: 6px 10px; margin: 0 !important;
+    border: 1px solid #e2e8f0; border-radius: 3px !important;
+    background: #fff; color: #2563eb; font-size: 13px; line-height: 1.25; box-shadow: none;
+}
+body .pagination .page-link svg { display: block; width: 16px; height: 16px; }
+body .pagination .page-item.active .page-link { background: #2563eb; border-color: #2563eb; color: #fff; }
+body .pagination .page-link:hover { background: #eff6ff; border-color: #bfdbfe; color: #2563eb; }
+body .pagination .page-item.disabled .page-link { background: #f8fafc; color: #94a3b8; border-color: #e2e8f0; cursor: default; }
+body .pagination .page-link:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+body :is(.select2-container .select2-selection--multiple,.select2-selection__choice,.input-group-text,.list-group-item,.dt-button-collection,.admin-swal-popup,.admin-swal-confirm,.admin-swal-cancel) { border-radius: 3px !important; }
+@media(max-width:575px) {
+    body :is(.dataTables_wrapper .dataTables_filter,.dt-container .dt-search) { width: 100%; }
+    body :is(.dataTables_wrapper .dataTables_filter label,.dt-container .dt-search label) { width: 100%; }
+    body :is(.dataTables_wrapper .dataTables_filter input,.dt-container .dt-search input) { width: 100% !important; }
+}

@@ -171,6 +171,7 @@
     <script src="{{url('admin/libraries/js/buttons.print.min.js')}}"></script>
     <script src="{{url('admin/libraries/js/buttons.colVis.min.js')}}"></script>
     <script src="{{url('admin/libraries/js/select2.min.js')}}"></script>
+    <script src="{{ url('admin/js/admin-ui.js') }}?v={{ filemtime(public_path('admin/js/admin-ui.js')) }}"></script>
     <script src="{{ url('admin/libraries/js/sweetalert2@11.js') }}?v={{ filemtime(public_path('admin/libraries/js/sweetalert2@11.js')) }}"></script>
 	
 
