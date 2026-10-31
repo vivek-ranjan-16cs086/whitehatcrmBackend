@@ -149,6 +149,67 @@ table.dataTable tbody td:last-child {
     white-space: nowrap;
 }
 
+.leads-management-page .lead-controls-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    width: 100%;
+}
+
+.leads-management-page .lead-controls-left {
+    flex: 0 0 auto;
+}
+
+.leads-management-page .lead-controls-right {
+    margin-left: auto;
+    max-width: 100%;
+}
+
+.leads-management-page .lead-controls-right .lead-filter-bar {
+    padding: 0;
+    border: 0;
+    gap: 8px;
+}
+
+.leads-management-page .lead-controls-right .lead-date-inputs .form-control {
+    width: 130px;
+}
+
+.leads-management-page .lead-controls-right .lead-source-filter .form-select {
+    width: 150px;
+}
+
+.leads-management-page .lead-list-secondary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+}
+
+.leads-management-page .lead-list-secondary .lead-status-filters {
+    margin-left: 0;
+}
+
+.leads-management-page #leadMoreFilters {
+    width: 100%;
+}
+
+@media (max-width: 767px) {
+    .leads-management-page .lead-controls-right {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .leads-management-page .leads-card > .card-header {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+}
+
 .lead-page-empty {
     color: #98a2b3;
 }

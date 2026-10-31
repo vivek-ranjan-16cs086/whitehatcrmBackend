@@ -10,8 +10,6 @@
 		<div class="card-header d-flex justify-content-between align-items-center">
 			<h6 class="mb-0 fw-bold">All Leads</h6>
 			<div class="d-flex gap-2 flex-wrap">
-                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#leadMoreFilters" aria-expanded="false" aria-controls="leadMoreFilters"><i class="bi bi-plus"></i> More filters</button>
-                <button type="button" id="resetLeadFilters" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-counterclockwise"></i> Reset filters</button>
 				@can('create.lead')
 					<button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#importLeadsModal">
 						<i class="bi bi-upload"></i> Import CSV
@@ -41,14 +39,18 @@
 					@endforeach
 				</select>
 			</div>
-			<div id="leadFilterTabs" class="lead-status-filters" role="group" aria-label="Lead status filters">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#leadMoreFilters" aria-expanded="false" aria-controls="leadMoreFilters"><i class="bi bi-plus"></i> More filters</button>
+                <button type="button" id="resetLeadFilters" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-counterclockwise"></i> Reset filters</button>
+
+		</div>
+
+        <div class="lead-list-secondary">			<div id="leadFilterTabs" class="lead-status-filters" role="group" aria-label="Lead status filters">
 				<button type="button" class="btn btn-sm btn-primary lead-filter-btn" data-view="total">All</button>
 				<button type="button" class="btn btn-sm btn-outline-secondary lead-filter-btn" data-view="active">Active Leads</button>
 				<button type="button" class="btn btn-sm btn-outline-secondary lead-filter-btn" data-view="follow-ups">Follow Ups</button>
 				<button type="button" class="btn btn-sm btn-outline-secondary lead-filter-btn" data-view="expired-follow-ups">Expired Leads</button>
 				<button type="button" class="btn btn-sm btn-outline-secondary lead-filter-btn" data-view="booked">Booked Leads</button>
-			</div>
-		</div>
+			</div><div id="leadSearchSlot"></div></div>
 
         <div class="collapse" id="leadMoreFilters">
             <div class="row g-2 px-3 py-2 border-bottom">
@@ -601,11 +603,20 @@ d.open_lead_id = pendingLeadId;
 				}
 			],
 
-			dom: 'Bfrtip',
+			dom: '<"lead-controls-row"<"lead-controls-left"B><"lead-controls-right">>frtip',
+            initComplete: function () {
+                const wrapper = $(this.api().table().container());
+                wrapper.find('.lead-controls-right').append($('.lead-filter-bar'));
+                const buttons = wrapper.find('.dt-buttons');
+                buttons.find('.buttons-colvis').insertAfter(buttons.find('.buttons-page-length'));
+                $('#leadSearchSlot').empty().append(wrapper.find('.dataTables_filter'));
+                $('.lead-list-secondary').insertAfter(wrapper.find('.lead-controls-row'));
+                $('#leadMoreFilters').insertAfter(wrapper.find('.lead-controls-row'));
+            },
 
 			lengthMenu: [
 				[20, 25, 50, 100],
-				['10 rows', '25 rows', '50 rows', '100 rows']
+				['20 rows', '25 rows', '50 rows', '100 rows']
 			],
 
 			buttons: [
