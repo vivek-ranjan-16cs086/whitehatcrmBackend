@@ -134,25 +134,3 @@ body.dashboard-page .action-required-link { color: #64748b; font-size: 10px; }
 @media(min-width:1400px) { .dashboard-intro .card-body { padding: 32px; } .dashboard-metric { padding: 24px; } }
 @media(max-width:1199px) { .dashboard-top-grid { grid-template-columns: 1fr; } .dashboard-intro { min-height: 270px; } .dashboard-building { right: 0; width: 30%; } .dashboard-analytics-grid { grid-template-columns: minmax(0,1fr); } .dashboard-distribution .card-body { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center; } .dashboard-donut { width: 100%; margin-bottom: 0; } .dashboard-distribution .chart-note { grid-column: 1/-1; } }
 @media(max-width:575px) { .dashboard-lead-metrics { gap: 10px; } .dashboard-metric { padding: 14px; } .dashboard-metric-heading { font-size: 11px; gap: 6px; } .dashboard-metric-arrow { display: none; } .dashboard-team-summary { gap: 22px; } .dashboard-intro p { max-width: 90%; } .dashboard-building { opacity: .25; width: 45%; } .dashboard-page .card-body,.dashboard-page .action-required-section { padding: 16px; } .dashboard-page .card-header { padding: 18px 16px 0; } .dashboard-trend-panel .card-header { align-items: start; flex-direction: column; } .dashboard-distribution .card-body { grid-template-columns: 1fr; } .dashboard-health-summary { flex-wrap: wrap; gap: 10px; } .dashboard-health-summary .progress { flex-basis: 100%; order: 3; } .dashboard-page .chart-controls label { width: auto; flex: 1; min-width: 90px; } }
-
-/* Market-style chart fills its card within the shared analytics row. */
-.dashboard-trend-panel { min-width: 0; }
-.dashboard-page .stock-chart-frame { position: relative; overflow: hidden; width: 100%; cursor: crosshair; touch-action: pan-y; outline-offset: 3px; }
-.dashboard-page .stock-chart-frame.is-panning { cursor: grabbing; }
-.dashboard-page .stock-chart-frame svg { display: block; width: 100%; min-width: 0; height: 420px; }
-.stock-chart-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 24px 0 12px; }
-.stock-chart-head strong { display: block; color: #172033; font-size: 30px; letter-spacing: -.04em; line-height: 1.2; }
-#chartHeadlineDetail { display: block; margin-top: 8px; color: #8490a2; font-size: 11px; }
-.stock-chart-actions { display: flex; gap: 8px; }
-.stock-tooltip { position: absolute; pointer-events: none; z-index: 2; background: #172033; color: white; padding: 9px 12px; border-radius: 3px; font-size: 11px; box-shadow: 0 4px 16px rgb(15 23 42 / 12%); white-space: nowrap; }
-.stock-tooltip[hidden] { display: none; }
-.stock-navigator { height: 56px; margin: 4px 66px 0 12px; border: 1px solid #edf1f5; border-radius: 3px; }
-.stock-navigator svg { width: 100%; height: 100%; display: block; }
-.stock-range-controls { display: flex; gap: 24px; margin: 10px 66px 14px 12px; }
-.stock-range-controls label { flex: 1; color: #8490a2; font-size: 10px; }
-.stock-range-controls input { display: block; width: 100%; accent-color: #64748b; cursor: ew-resize; }
-.chart-average-toggle input { accent-color: #64748b; vertical-align: middle; }
-#stockChartWorkspace:fullscreen { background: #fff; padding: 32px; overflow: auto; }
-#stockChartWorkspace:fullscreen .stock-chart-frame svg { height: min(65vh,700px); }
-@media(min-width:1200px) { .dashboard-distribution .card-body { display: block; } .dashboard-distribution .dashboard-donut { width: 100%; max-width: 230px; margin: 0 auto 24px; } }
-@media(max-width:575px) { .stock-chart-head { align-items: start; flex-direction: column; } .stock-chart-head strong { font-size: 25px; } .stock-range-controls { margin-right: 20px; gap: 12px; } #stockChartWorkspace:fullscreen { padding: 12px; } }
