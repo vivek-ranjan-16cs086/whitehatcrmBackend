@@ -194,8 +194,28 @@ table.dataTable tbody td:last-child {
     margin-left: 0;
 }
 
-.leads-management-page #leadMoreFilters {
-    width: 100%;
+.lead-filter-popover {
+    position: fixed;
+    z-index: 1050;
+    overflow: auto;
+    background: #fff;
+    border: 1px solid #dce2ec;
+    border-radius: 3px;
+    box-shadow: 0 8px 28px rgb(16 24 40 / 16%);
+}
+
+.lead-filter-popover[hidden] {
+    display: none !important;
+}
+
+.leads-management-page .lead-reset-button {
+    color: #b42318 !important;
+    background: #fef3f2 !important;
+    border-color: #fecdca !important;
+}
+
+.leads-management-page .lead-reset-button:hover {
+    background: #fee4e2 !important;
 }
 
 @media (max-width: 767px) {

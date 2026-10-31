@@ -103,6 +103,9 @@ $leadSources = Lead::query()
         'pageTitle' => $titles[$view],
 		'leadSources' => $leadSources,
         'manualLeadSources' => self::MANUAL_LEAD_SOURCES,
+        'filterUsers' => User::query()->when(!$request->user()->hasRole('super-admin', 'web') && !$request->user()->canViewAllLeads(), fn ($q) => $q->whereKey($request->user()->id))->orderBy('name')->get(['id', 'name']),
+        'leadFilterColumns' => Schema::getColumnListing('leads'),
+        'advancedFilterFields' => array_values(array_intersect(array_diff(self::EDITABLE_LEAD_FIELDS, ['status', 'project_id', 'assigned_to', 'sub_response_id', 'source_website', 'inventory', 'visit_status', 'follow_up_date', 'visit_date', 'source_submitted_at', 'budget_min', 'budget_max']), Schema::getColumnListing('leads'))),
 		'projects' => Project::query()->orderBy('name')->get(['id', 'name']),
 		'subResponses' => SubResponse::query()->orderBy('name')->get(['id', 'name']),
     ]);
@@ -314,6 +317,8 @@ $leadSources = Lead::query()
             'filter_project' => 'nullable|integer|min:1',
             'filter_inventory' => 'nullable|string|max:255',
             'filter_visit' => 'nullable|string|max:255',
+            'filters' => 'nullable|array|max:60',
+            'filters.*' => 'nullable|string|max:255',
 		]);
 
 		$user = $request->user();
@@ -387,6 +392,22 @@ $leadSources = Lead::query()
 			}
 		}
         if ($openLeadId === null) {
+            $available = array_flip(Schema::getColumnListing('leads'));
+            foreach ($request->input('filters', []) as $field => $value) {
+                if ($value === null || $value === '') continue;
+                if (in_array($field, ['assigned_to', 'sub_response_id'], true)) {
+                    if ($field === 'assigned_to' && $value === 'unassigned') $query->whereNull('leads.assigned_to');
+                    else { validator([$field => $value], [$field => 'integer|min:1'])->validate(); $query->where('leads.'.$field, $value); }
+                } elseif (preg_match('/^(follow_up_date|visit_date|source_submitted_at|updated_at)_(from|to)$/', $field, $matches) && isset($available[$matches[1]])) {
+                    validator([$field => $value], [$field => 'date_format:Y-m-d'])->validate();
+                    $query->whereDate('leads.'.$matches[1], $matches[2] === 'from' ? '>=' : '<=', $value);
+                } elseif (in_array($field, ['budget_min', 'budget_max'], true) && isset($available[$field])) {
+                    validator([$field => $value], [$field => 'numeric|min:0'])->validate();
+                    $query->where('leads.'.$field, $field === 'budget_min' ? '>=' : '<=', $value);
+                } elseif (in_array($field, self::EDITABLE_LEAD_FIELDS, true) && isset($available[$field])) {
+                    $query->where('leads.'.$field, 'like', '%'.$value.'%');
+                }
+            }
             foreach (['filter_status' => 'status', 'filter_project' => 'project_id'] as $key => $column) {
                 if ($request->filled($key)) $query->where('leads.'.$column, $request->input($key));
             }

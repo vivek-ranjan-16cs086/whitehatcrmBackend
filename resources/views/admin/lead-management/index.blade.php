@@ -20,10 +20,10 @@
 				@endcan
 			</div>
 		</div>
-		
+
 		<div class="lead-filter-bar">
 			<div class="lead-date-filter">
-				<label class="form-label" for="leadDateFrom">Date range</label>
+
 				<div class="lead-date-inputs">
 					<input type="date" id="leadDateFrom" class="form-control" aria-label="From date">
 					<span aria-hidden="true">to</span>
@@ -31,16 +31,16 @@
 				</div>
 			</div>
 			<div class="lead-source-filter">
-				<label class="form-label" for="leadSourceFilter">Source</label>
-				<select id="leadSourceFilter" class="form-select">
+
+				<select id="leadSourceFilter" class="form-select" aria-label="Source">
 					<option value="">All Sources</option>
 					@foreach($leadSources as $source)
 						<option value="{{ $source }}">{{ $source }}</option>
 					@endforeach
 				</select>
 			</div>
-                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#leadMoreFilters" aria-expanded="false" aria-controls="leadMoreFilters"><i class="bi bi-plus"></i> More filters</button>
-                <button type="button" id="resetLeadFilters" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-counterclockwise"></i> Reset filters</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="leadMoreFiltersToggle" aria-expanded="false" aria-controls="leadMoreFilters"><i class="bi bi-plus"></i> More filters</button>
+                <button type="button" id="resetLeadFilters" class="btn btn-sm lead-reset-button"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
 
 		</div>
 
@@ -52,12 +52,31 @@
 				<button type="button" class="btn btn-sm btn-outline-secondary lead-filter-btn" data-view="booked">Booked Leads</button>
 			</div><div id="leadSearchSlot"></div></div>
 
-        <div class="collapse" id="leadMoreFilters">
-            <div class="row g-2 px-3 py-2 border-bottom">
-                <div class="col-sm-6 col-lg-3"><label class="form-label small" for="leadStatusFilter">Status</label><select id="leadStatusFilter" class="form-select form-select-sm lead-extra-filter"><option value="">All statuses</option>@foreach(['not_available', 'active', 'in_process', 'booked', 'deactive', 'follow_up', 'follow_up_expired', 'follow_up_complete', 'visit'] as $status)<option value="{{ $status }}">{{ ucwords(str_replace('_', ' ', $status)) }}</option>@endforeach</select></div>
-                <div class="col-sm-6 col-lg-3"><label class="form-label small" for="leadProjectFilter">Project</label><select id="leadProjectFilter" class="form-select form-select-sm lead-extra-filter"><option value="">All projects</option>@foreach($projects as $project)<option value="{{ $project->id }}">{{ $project->name }}</option>@endforeach</select></div>
-                <div class="col-sm-6 col-lg-3"><label class="form-label small" for="leadInventoryFilter">Inventory contains</label><input id="leadInventoryFilter" class="form-control form-control-sm lead-extra-filter" maxlength="255" placeholder="e.g. 3 BHK"></div>
-                <div class="col-sm-6 col-lg-3"><label class="form-label small" for="leadVisitFilter">Visit status contains</label><input id="leadVisitFilter" class="form-control form-control-sm lead-extra-filter" maxlength="255" placeholder="e.g. scheduled"></div>
+        <div id="leadMoreFilters" class="lead-filter-popover" role="dialog" aria-label="More lead filters" hidden>
+            <div class="d-flex justify-content-between align-items-center px-3 pt-3"><strong class="small">More filters</strong><button type="button" id="closeLeadMoreFilters" class="btn-close" aria-label="Close filters"></button></div>
+            <div class="row g-2 p-3">
+                <div class="col-sm-6"><label class="form-label small" for="leadStatusFilter">Status</label><select id="leadStatusFilter" class="form-select form-select-sm lead-extra-filter"><option value="">All statuses</option>@foreach(['not_available', 'active', 'in_process', 'booked', 'deactive', 'follow_up', 'follow_up_expired', 'follow_up_complete', 'visit'] as $status)<option value="{{ $status }}">{{ ucwords(str_replace('_', ' ', $status)) }}</option>@endforeach</select></div>
+                <div class="col-sm-6"><label class="form-label small" for="leadProjectFilter">Project</label><select id="leadProjectFilter" class="form-select form-select-sm lead-extra-filter"><option value="">All projects</option>@foreach($projects as $project)<option value="{{ $project->id }}">{{ $project->name }}</option>@endforeach</select></div>
+                <div class="col-sm-6"><label class="form-label small" for="leadInventoryFilter">Inventory contains</label><input id="leadInventoryFilter" class="form-control form-control-sm lead-extra-filter" maxlength="255" placeholder="e.g. 3 BHK"></div>
+                <div class="col-sm-6"><label class="form-label small" for="leadVisitFilter">Visit status contains</label><input id="leadVisitFilter" class="form-control form-control-sm lead-extra-filter" maxlength="255" placeholder="e.g. scheduled"></div>
+
+                <div class="col-sm-6"><label class="form-label small" for="filterAssigned">Assigned to</label><select id="filterAssigned" data-lead-filter="assigned_to" class="form-select form-select-sm lead-extra-filter"><option value="">Anyone</option><option value="unassigned">Unassigned</option>@foreach($filterUsers as $filterUser)<option value="{{ $filterUser->id }}">{{ $filterUser->name }}</option>@endforeach</select></div>
+                <div class="col-sm-6"><label class="form-label small" for="filterResponse">Response</label><select id="filterResponse" data-lead-filter="sub_response_id" class="form-select form-select-sm lead-extra-filter"><option value="">All responses</option>@foreach($subResponses as $response)<option value="{{ $response->id }}">{{ $response->name }}</option>@endforeach</select></div>
+                @foreach($advancedFilterFields as $field)
+                <div class="col-sm-6"><label class="form-label small" for="lead-filter-{{ $field }}">{{ ucwords(str_replace('_', ' ', $field)) }} contains</label><input id="lead-filter-{{ $field }}" data-lead-filter="{{ $field }}" class="form-control form-control-sm lead-extra-filter" maxlength="255"></div>
+                @endforeach
+                @foreach(['follow_up_date' => 'Follow-up', 'visit_date' => 'Visit', 'source_submitted_at' => 'Source submitted', 'updated_at' => 'Last updated'] as $field => $label)
+                @if(in_array($field, $leadFilterColumns, true))
+                @foreach(['from', 'to'] as $bound)
+                <div class="col-sm-6"><label class="form-label small" for="lead-filter-{{ $field }}-{{ $bound }}">{{ $label }} {{ $bound }}</label><input type="date" id="lead-filter-{{ $field }}-{{ $bound }}" data-lead-filter="{{ $field }}_{{ $bound }}" class="form-control form-control-sm lead-extra-filter"></div>
+                @endforeach
+                @endif
+                @endforeach
+                @foreach(['budget_min' => 'Minimum budget at least', 'budget_max' => 'Maximum budget at most'] as $field => $label)
+                @if(in_array($field, $leadFilterColumns, true))
+                <div class="col-sm-6"><label class="form-label small" for="lead-filter-{{ $field }}">{{ $label }}</label><input type="number" min="0" step="0.01" id="lead-filter-{{ $field }}" data-lead-filter="{{ $field }}" class="form-control form-control-sm lead-extra-filter"></div>
+                @endif
+                @endforeach
             </div>
         </div>
 
@@ -81,8 +100,8 @@
 							<th>Visit Status</th>
 							<th>Action</th>
 						</tr>
-					</thead>    
-					<tbody></tbody>			
+					</thead>
+					<tbody></tbody>
 				</table>
 			</div>
 		</div>
@@ -497,9 +516,9 @@ if (pendingLeadId && !/^\d+$/.test(pendingLeadId)) {
 			processing: true,
 			serverSide: true,
 			destroy: true,
-			
+
 			//added
-			
+
 ajax: {
     url: '{{ route("lead-management.ajax-list") }}',
     type: "GET",
@@ -512,6 +531,8 @@ ajax: {
 	d.date_from = $('#leadDateFrom').val();
 d.date_to = $('#leadDateTo').val();
 d.source = $('#leadSourceFilter').val();
+d.filters = {};
+$('[data-lead-filter]').each(function () { if (this.value) d.filters[this.dataset.leadFilter] = this.value; });
 d.filter_status = $('#leadStatusFilter').val();
 d.filter_project = $('#leadProjectFilter').val();
 d.filter_inventory = $('#leadInventoryFilter').val();
@@ -521,7 +542,7 @@ d.open_lead_id = pendingLeadId;
 },
 //...
 
-			
+
 
 			columns: [
 
@@ -611,7 +632,7 @@ d.open_lead_id = pendingLeadId;
                 buttons.find('.buttons-colvis').insertAfter(buttons.find('.buttons-page-length'));
                 $('#leadSearchSlot').empty().append(wrapper.find('.dataTables_filter'));
                 $('.lead-list-secondary').insertAfter(wrapper.find('.lead-controls-row'));
-                $('#leadMoreFilters').insertAfter(wrapper.find('.lead-controls-row'));
+                $('#leadMoreFilters').appendTo(document.body);
             },
 
 			lengthMenu: [
@@ -694,7 +715,7 @@ d.open_lead_id = pendingLeadId;
 			}
 		});
 	}
-	//added	
+	//added
 function updateLeadFilterButtons(view) {
     $('.lead-filter-btn').each(function () {
         const active = this.dataset.view === view;
@@ -740,6 +761,24 @@ $(document).on('click', '.lead-filter-btn', function () {
 });
 
 
+function closeLeadFilterPanel() {
+    $('#leadMoreFilters').prop('hidden', true);
+    $('#leadMoreFiltersToggle').attr('aria-expanded', 'false');
+}
+$(document).on('click', '#leadMoreFiltersToggle', function () {
+    const panel = document.getElementById('leadMoreFilters');
+    if (!panel.hidden) { closeLeadFilterPanel(); return; }
+    const rect = this.getBoundingClientRect();
+    panel.hidden = false;
+    const width = Math.min(560, window.innerWidth - 24);
+    Object.assign(panel.style, {width: width + 'px', left: Math.max(12, Math.min(rect.right - width, window.innerWidth - width - 12)) + 'px', top: Math.min(rect.bottom + 8, window.innerHeight - 160) + 'px', maxHeight: Math.max(140, window.innerHeight - rect.bottom - 24) + 'px'});
+    $(this).attr('aria-expanded', 'true');
+});
+$(document).on('click', '#closeLeadMoreFilters', function () { closeLeadFilterPanel(); $('#leadMoreFiltersToggle').trigger('focus'); });
+$(document).on('click', function (e) { if (!$(e.target).closest('#leadMoreFilters, #leadMoreFiltersToggle').length) closeLeadFilterPanel(); });
+$(document).on('keydown', function (e) { if (e.key === 'Escape' && !$('#leadMoreFilters').prop('hidden')) { closeLeadFilterPanel(); $('#leadMoreFiltersToggle').trigger('focus'); } });
+$(window).on('resize', closeLeadFilterPanel);
+
 let extraFilterTimer;
 $(document).on('input change', '.lead-extra-filter', function () {
     clearTimeout(extraFilterTimer);
@@ -753,6 +792,7 @@ $(document).on('input change', '.lead-extra-filter', function () {
 $(document).on('click', '#resetLeadFilters', function () {
     clearTimeout(extraFilterTimer);
     $('#leadDateFrom, #leadDateTo, #leadSourceFilter, .lead-extra-filter').val('');
+    closeLeadFilterPanel();
     const table = $('#leads-table').DataTable();
     table.search(''); table.columns().search('');
     window.setLeadView('total');
@@ -958,7 +998,7 @@ $(document).on(
 	$('#saveNewLead').click(function () {
 		let name = $('#add_name').val().trim();
 		let phone = $('#add_phone').val().trim();
-		
+
 		if (!name || !phone) {
 			Swal.fire({
 				icon: 'warning',
@@ -1025,7 +1065,7 @@ $(document).on(
 				}
 			}
 		});
-	});	
+	});
 
 	$('#importLeadsForm').on('submit', function (event) {
 		event.preventDefault();

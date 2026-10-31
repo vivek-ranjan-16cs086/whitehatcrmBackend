@@ -13,6 +13,25 @@ class LeadTableColumnsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_extended_filters_support_owner_text_dates_and_budget_without_exposing_other_leads(): void
+    {
+        \Illuminate\Support\Facades\Schema::table('leads', function ($table) {
+            $table->decimal('budget_min', 14, 2)->nullable();
+            $table->decimal('budget_max', 14, 2)->nullable();
+        });
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::create(['name' => 'super-admin', 'guard_name' => 'web']));
+        Lead::create(['name' => 'Matching buyer', 'assigned_to' => $admin->id, 'type' => 'hot', 'visit_date' => '2026-10-31', 'budget_min' => 100, 'budget_max' => 500]);
+        Lead::create(['name' => 'Other buyer', 'type' => 'cold', 'visit_date' => '2026-11-10', 'budget_min' => 50, 'budget_max' => 900]);
+        $this->actingAs($admin)->getJson(route('lead-management.ajax-list', [
+            'start' => 0, 'length' => 20, 'filters' => ['assigned_to' => (string) $admin->id, 'type' => 'hot', 'name' => 'Matching', 'visit_date_from' => '2026-10-30', 'visit_date_to' => '2026-10-31', 'budget_min' => '100', 'budget_max' => '500'],
+        ]))->assertOk()->assertJsonPath('recordsFiltered', 1)->assertJsonPath('data.0.edit_data.name', 'Matching buyer');
+        $this->getJson(route('lead-management.ajax-list', ['filters' => ['visit_date_from' => 'invalid']]))
+            ->assertUnprocessable();
+        $this->getJson(route('lead-management.ajax-list', ['start' => 0, 'length' => 20, 'filters' => ['assigned_to' => 'unassigned']]))
+            ->assertOk()->assertJsonPath('recordsFiltered', 1);
+    }
+
     public function test_more_filters_combine_and_clearing_them_restores_leads(): void
     {
         $admin = User::factory()->create();
