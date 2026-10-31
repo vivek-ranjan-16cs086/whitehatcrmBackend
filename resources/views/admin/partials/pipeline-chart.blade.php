@@ -8,7 +8,7 @@
 </form>
 <div class="chart-controls">
     <label>Status<select class="form-select" id="chartStatus"><option value="">All statuses</option>@foreach($leadCounts as $status => $count)<option value="{{ $status }}">{{ ucwords(str_replace('_', ' ', $status)) }}</option>@endforeach</select></label>
-    <label>Chart style<select class="form-select" id="chartType"><option value="area">Area</option><option value="line">Line</option><option value="bar">Bars</option></select></label>
+    <label>Chart style<select class="form-select" id="chartType"><option value="bar">Bars</option><option value="area">Area</option><option value="line">Line</option></select></label>
     <label>Group by<select class="form-select" id="chartGroup"><option value="day">Day</option><option value="week">Week</option><option value="month">Month</option></select></label>
     <button type="button" class="btn btn-outline-primary" id="chartZoomIn" aria-label="Zoom in">+</button>
     <button type="button" class="btn btn-outline-primary" id="chartZoomOut" aria-label="Zoom out">-</button>
@@ -47,11 +47,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if(type.value!=='bar') svg += `<polyline points="${points}" fill="none" stroke="#2563eb" stroke-width="3"/>`;
         visible.forEach(([day,count],i)=>{
             const title=`<title>${day}: ${count} leads</title>`;
-            svg += type.value==='bar' ? `<rect x="${x(i)-step*.32}" y="${y(count)}" width="${step*.64}" height="${245-y(count)}" rx="3" fill="#2563eb">${title}</rect>` : `<circle cx="${x(i)}" cy="${y(count)}" r="4" fill="#2563eb">${title}</circle>`;
+            svg += type.value==='bar' ? `<rect x="${x(i)-step*.32}" y="${y(count)}" width="${step*.64}" height="${245-y(count)}" rx="3" fill="${i === visible.length-1 ? '#2563eb' : '#e9eef3'}">${title}</rect>` : `<circle cx="${x(i)}" cy="${y(count)}" r="4" fill="#2563eb">${title}</circle>`;
             if(i%Math.max(1,Math.ceil(visible.length/6))===0) svg += `<text x="${x(i)}" y="270" text-anchor="middle" fill="#64748b" font-size="11">${day.slice(5)}</text>`;
         });
         document.getElementById('pipelineChart').innerHTML=svg+'</svg>';
-        document.getElementById('chartSummary').textContent=`${visible.reduce((sum,p)=>sum+p[1],0)} leads · ${visible[0][0]} to ${visible[visible.length-1][0]} · ${zoom}× zoom`;
+        document.getElementById('chartSummary').textContent=`${visible.reduce((sum,p)=>sum+p[1],0)} leads ï¿½ ${visible[0][0]} to ${visible[visible.length-1][0]} ï¿½ ${zoom}ï¿½ zoom`;
         document.getElementById('chartZoomIn').disabled=visible.length<=1;
         document.getElementById('chartZoomOut').disabled=zoom===1;
     }
