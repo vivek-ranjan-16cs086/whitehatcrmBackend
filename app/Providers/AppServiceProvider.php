@@ -23,6 +23,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        require base_path('routes/channels.php');
+
         // Super-admin bypasses ALL permission checks.
         // Never assign individual permissions to super-admin — this handles everything.
         Gate::before(function ($user, $ability) {

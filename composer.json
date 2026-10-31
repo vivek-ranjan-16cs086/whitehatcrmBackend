@@ -13,6 +13,7 @@
         "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "^3.1",
         "paragonie/sodium_compat": "^2.5",
+        "pusher/pusher-php-server": "^7.3",
         "spatie/laravel-permission": "*",
         "tymon/jwt-auth": "^2.3"
     },

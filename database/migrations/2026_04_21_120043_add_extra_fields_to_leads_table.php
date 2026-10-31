@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasColumn('leads', 'deactivate_reason')) {
+            return;
+        }
+
         Schema::table('leads', function (Blueprint $table) {
-				  
+
             // ENUM field
             $table->enum('deactivate_reason', [
                 'Plot or Villa',
@@ -22,7 +26,7 @@ return new class extends Migration
                 'Rent',
                 'Invalid Mobile Number',
                 'Others',
-                'Switch Off'
+                'Switch Off',
             ])->nullable()->after('project_id');
 
         });
@@ -34,7 +38,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('leads', function (Blueprint $table) {
-			
+
             $table->dropColumn('deactivate_reason');
         });
     }

@@ -1,4 +1,5 @@
 <?php
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -7,15 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('responses', function (Blueprint $table) {
+        if (! Schema::hasTable('responses')) {
+            Schema::create('responses', function (Blueprint $table) {
 
-            $table->id();
+                $table->id();
 
-            $table->string('name');
+                $table->string('name');
 
-            $table->timestamps();
+                $table->timestamps();
 
-        });
+            });
+        }
     }
 
     public function down(): void

@@ -125,3 +125,8 @@ Route::prefix('v1')->group(function () {
 	
 	Route::get('/maintenance-mode', [SettingController::class, 'maintenanceMode']);
 });
+
+// The same chat service is available to the React Native app via JWT.
+Route::middleware('auth:api')->prefix('v1/chat')->group(function () {
+    require __DIR__.'/chat.php';
+});

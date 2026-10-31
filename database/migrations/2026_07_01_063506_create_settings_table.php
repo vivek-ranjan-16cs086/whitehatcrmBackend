@@ -11,13 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-		Schema::create('settings', function (Blueprint $table) {
-			$table->id();
-			$table->boolean('maintenance_mode')->default(false);
-			$table->text('maintenance_message')->nullable();
-			$table->timestamps();
-		});
-	}
+        if (! Schema::hasTable('settings')) {
+            Schema::create('settings', function (Blueprint $table) {
+                $table->id();
+                $table->boolean('maintenance_mode')->default(false);
+                $table->text('maintenance_message')->nullable();
+                $table->timestamps();
+            });
+        }
+    }
 
     /**
      * Reverse the migrations.

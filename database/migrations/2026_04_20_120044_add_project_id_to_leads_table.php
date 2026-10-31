@@ -10,14 +10,18 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up()
-	{
-		Schema::table('leads', function (Blueprint $table) {
-			$table->foreignId('project_id')
-				  ->nullable()
-				  ->constrained()
-				  ->nullOnDelete();
-		});
-	}
+    {
+        if (Schema::hasColumn('leads', 'project_id')) {
+            return;
+        }
+
+        Schema::table('leads', function (Blueprint $table) {
+            $table->foreignId('project_id')
+                ->nullable()
+                ->constrained()
+                ->nullOnDelete();
+        });
+    }
 
     /**
      * Reverse the migrations.

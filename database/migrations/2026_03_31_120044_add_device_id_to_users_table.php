@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasColumn('users', 'device_id')) {
+            return;
+        }
+
         Schema::table('users', function (Blueprint $table) {
             $table->string('device_id')->nullable()->after('password');
         });

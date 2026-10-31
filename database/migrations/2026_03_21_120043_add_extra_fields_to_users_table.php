@@ -12,11 +12,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('phone')->nullable()->after('email');
-			$table->string('alternate_phone')->nullable()->after('phone');
-			$table->date('date_of_birth')->nullable()->after('alternate_phone'); 
-			$table->text('address')->nullable()->after('date_of_birth');
-			$table->string('profile_pic')->nullable()->after('address');
+            if (! Schema::hasColumn('users', 'phone')) {
+                $table->string('phone')->nullable()->after('email');
+            }
+            if (! Schema::hasColumn('users', 'alternate_phone')) {
+                $table->string('alternate_phone')->nullable()->after('phone');
+            }
+            if (! Schema::hasColumn('users', 'date_of_birth')) {
+                $table->date('date_of_birth')->nullable()->after('alternate_phone');
+            }
+            if (! Schema::hasColumn('users', 'address')) {
+                $table->text('address')->nullable()->after('date_of_birth');
+            }
+            if (! Schema::hasColumn('users', 'profile_pic')) {
+                $table->string('profile_pic')->nullable()->after('address');
+            }
         });
     }
 
@@ -27,12 +37,12 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn([
-				'phone',
-				'alternate_phone',
-				'date_of_birth',
-				'address',
-				'profile_pic'
-			]);
+                'phone',
+                'alternate_phone',
+                'date_of_birth',
+                'address',
+                'profile_pic',
+            ]);
         });
     }
 };

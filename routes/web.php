@@ -129,3 +129,9 @@ Route::get('/', function(){
 	return view('welcome');  
 });
 	
+
+// Team chat uses the existing authenticated web session.
+Route::middleware(['auth', 'no-cache'])->prefix('admin/chat')->group(function () {
+    Route::get('/', [\App\Http\Controllers\ChatController::class, 'page'])->name('admin.chat.index');
+    require __DIR__.'/chat.php';
+});

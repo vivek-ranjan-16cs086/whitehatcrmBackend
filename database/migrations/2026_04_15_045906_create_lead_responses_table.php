@@ -11,25 +11,27 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('lead_responses', function (Blueprint $table) {
-            $table->id();
+        if (! Schema::hasTable('lead_responses')) {
+            Schema::create('lead_responses', function (Blueprint $table) {
+                $table->id();
 
-            // Lead reference
-            $table->foreignId('lead_id')
-                  ->constrained()
-                  ->onDelete('cascade');
+                // Lead reference
+                $table->foreignId('lead_id')
+                    ->constrained()
+                    ->onDelete('cascade');
 
-            // User who added the note
-            $table->foreignId('user_id')
-                  ->constrained()
-                  ->onDelete('cascade');
+                // User who added the note
+                $table->foreignId('user_id')
+                    ->constrained()
+                    ->onDelete('cascade');
 
-            // Note content
-            $table->text('note');
-			$table->text('call_recording')->nullable();
+                // Note content
+                $table->text('note');
+                $table->text('call_recording')->nullable();
 
-            $table->timestamps();
-        });
+                $table->timestamps();
+            });
+        }
     }
 
     /**
@@ -37,6 +39,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('lead_notes');
+        Schema::dropIfExists('lead_responses');
     }
 };

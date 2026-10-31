@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('password_reset_tokens', function (Blueprint $table) {
+        if (! Schema::hasColumn('password_reset_tokens', 'otp')) {
             Schema::table('password_reset_tokens', function (Blueprint $table) {
-            $table->string('otp')->nullable();
-    });
-        });
+                $table->string('otp')->nullable();
+            });
+        }
     }
 
     /**

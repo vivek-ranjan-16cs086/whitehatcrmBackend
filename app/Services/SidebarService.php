@@ -110,6 +110,12 @@ class SidebarService
             ];
         }
 
+        $menus[] = [
+            'label' => 'Team Chat', 'icon' => 'messages-square',
+            'url' => route('admin.chat.index'), 'active' => request()->routeIs('admin.chat.*'),
+            'section' => 'Workspace', 'children' => [],
+        ];
+
         // Existing web routes only require authentication.
         $menus[] = [
             'label' => 'Target Management',

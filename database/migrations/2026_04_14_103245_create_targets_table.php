@@ -11,25 +11,27 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('targets', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('user_id');
-			$table->unsignedBigInteger('project_id');
+        if (! Schema::hasTable('targets')) {
+            Schema::create('targets', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('user_id');
+                $table->unsignedBigInteger('project_id');
 
-			$table->integer('booking_set')->default(0);
-			$table->integer('booking_done')->default(0);
-			$table->integer('site_visited')->default(0);
-			$table->integer('site_visited_done')->default(0);
+                $table->integer('booking_set')->default(0);
+                $table->integer('booking_done')->default(0);
+                $table->integer('site_visited')->default(0);
+                $table->integer('site_visited_done')->default(0);
 
-			$table->date('start_day');
-			$table->date('end_day');
-			$table->enum('status', ['active', 'pending', 'completed'])->default('active');
+                $table->date('start_day');
+                $table->date('end_day');
+                $table->enum('status', ['active', 'pending', 'completed'])->default('active');
 
-			$table->timestamps();
+                $table->timestamps();
 
-			$table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-			$table->foreign('project_id')->references('id')->on('projects')->onDelete('cascade'); 
-		});
+                $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+                $table->foreign('project_id')->references('id')->on('projects')->onDelete('cascade');
+            });
+        }
     }
 
     /**
