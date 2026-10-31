@@ -56,7 +56,6 @@
             </li>
         </ul>
 
-        <div class="sidebar-section-label">Management</div>
         <ul class="sidebar-nav">
             <li class="nav-item">
                 <a data-bs-toggle="collapse" href="#accessControlMenu" role="button"

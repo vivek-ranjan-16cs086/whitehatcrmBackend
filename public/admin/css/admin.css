@@ -186,21 +186,37 @@ body {
 
 .sidebar-nav {
     list-style: none;
-    padding: 0.3rem 0;
+    padding: 0.45rem 0;
     margin: 0;
+}
+
+.sidebar-nav-heading {
+    padding: 1.05rem 1.25rem 0.45rem;
+    color: #98a1b2;
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.11em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    list-style: none;
+}
+
+.sidebar-nav-heading:not(:first-child) {
+    margin-top: 0.35rem;
+    border-top: 1px solid #f0f2f6;
 }
 
 .sidebar-nav .nav-item a {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.68rem 1rem;
+    padding: 0.64rem 0.85rem;
     color: var(--sidebar-text);
     text-decoration: none;
     font-size: 0.875rem;
     font-weight: 500;
     border-radius: var(--border-radius);
-    margin: 0.16rem 0.65rem;
+    margin: 0.16rem 0.7rem;
     transition: all 0.2s ease;
     position: relative;
 }
@@ -215,6 +231,38 @@ body {
     background: #f0efff;
     font-weight: 600;
     box-shadow: inset 3px 0 0 #6c63e8;
+}
+
+.sidebar-nav .nav-item a > [data-lucide],
+.sidebar-nav .nav-item a > svg {
+    flex: 0 0 19px;
+    color: #858fa3;
+    stroke-width: 1.8;
+}
+
+.sidebar-nav .nav-item a.active > [data-lucide],
+.sidebar-nav .nav-item a.active > svg {
+    color: var(--accent);
+}
+
+.sidebar-notification-count {
+    display: none;
+    min-width: 21px;
+    height: 21px;
+    margin-left: auto;
+    padding: 0 6px;
+    align-items: center;
+    justify-content: center;
+    color: #5146d8;
+    background: #f0efff;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.sidebar-notification-count.show {
+    display: inline-flex;
 }
 
 .sidebar-nav .nav-item a.active::before {
@@ -298,7 +346,7 @@ body {
 /* Sidebar Footer */
 .sidebar-footer {
     margin-top: auto;
-    padding: 1rem 1.25rem;
+    padding: 0.85rem 0.9rem;
     border-top: 1px solid var(--sidebar-border);
     background: #ffffff;
 }
@@ -307,11 +355,16 @@ body {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    padding: 0.7rem;
+    background: #f8f9fc;
+    border: 1px solid #edf0f5;
+    border-radius: 12px;
 }
 
 .sidebar-footer .user-avatar {
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
+    border: 3px solid #e8e5ff;
     border-radius: 50%;
     background: var(--accent);
     color: #fff;

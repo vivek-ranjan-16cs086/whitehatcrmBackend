@@ -14,9 +14,59 @@ class SidebarService
                 'icon' => 'layout-dashboard',
                 'url' => route('dashboard'),
                 'active' => request()->routeIs('dashboard'),
+                'section' => 'Overview',
                 'children' => [],
             ],
         ];
+
+        if ($user->hasCrmPermission('view.lead')) {
+            $leadRoute = 'lead-management.index';
+
+            $menus[] = [
+                'label' => 'All Leads',
+                'icon' => 'users-round',
+                'url' => route($leadRoute),
+                'view' => 'total',
+                'active' => request()->routeIs('lead-management.*')
+                    && !request()->filled('attention'),
+                'section' => 'Lead operations',
+            ];
+
+            $menus[] = [
+                'label' => 'Follow-up Monitor',
+                'icon' => 'list-checks',
+                'url' => null,
+                'active' => request()->routeIs('lead-management.*')
+                    && request()->filled('attention'),
+                'section' => 'Lead operations',
+                'children' => [
+                    [
+                        'label' => 'Unassigned leads',
+                        'icon' => 'user-round-x',
+                        'url' => route($leadRoute, ['attention' => 'unassigned']),
+                        'attention' => 'unassigned',
+                    ],
+                    [
+                        'label' => 'Overdue follow-ups',
+                        'icon' => 'calendar-clock',
+                        'url' => route($leadRoute, ['attention' => 'overdue']),
+                        'attention' => 'overdue',
+                    ],
+                    [
+                        'label' => 'No follow-up set',
+                        'icon' => 'calendar-plus',
+                        'url' => route($leadRoute, ['attention' => 'no-follow-up']),
+                        'attention' => 'no-follow-up',
+                    ],
+                    [
+                        'label' => 'Stale leads · 7+ days',
+                        'icon' => 'hourglass',
+                        'url' => route($leadRoute, ['attention' => 'stale']),
+                        'attention' => 'stale',
+                    ],
+                ],
+            ];
+        }
 
         if ($user->hasRole('super-admin', 'web')) {
             $menus[] = [
@@ -26,6 +76,7 @@ class SidebarService
                 'active' => request()->routeIs('admin.users.*')
                     || request()->routeIs('admin.roles.*')
                     || request()->routeIs('admin.permissions.*'),
+                'section' => 'Administration',
                 'children' => [
                     [
                         'label' => 'Users',
@@ -48,53 +99,13 @@ class SidebarService
                 ],
             ];
         }
-
-
-if ($user->hasCrmPermission('view.lead')) {
-
-    $leadRoute = 'lead-management.index';
-
-    $menus[] = [
-        'label' => 'Lead Management',
-        'icon' => 'funnel',
-        'url' => null,
-        'active' => request()->routeIs('lead-management.*'),
-
-       
-'children' => [
-    [
-        'label' => 'Total Leads',
-        'icon' => 'users',
-        'url' => route($leadRoute),
-        'view' => 'total',
-        'active' => false,
-    ],
-    [
-        'label' => 'Performance & Ranking',
-        'icon' => 'chart-no-axes-column',
-        'url' => route($leadRoute),
-        'view' => 'performance',
-        'active' => false,
-    ],
-    [
-        'label' => 'Weekly Targets',
-        'icon' => 'calendar-check',
-        'url' => route($leadRoute),
-        'view' => 'weekly-targets',
-        'active' => false,
-    ],
-],
-
-    ];
-}
-
-
         if ($user->hasCrmPermission('edit.lead')) {
             $menus[] = [
                 'label' => 'Project Management',
-                'icon' => 'home',
+                'icon' => 'building-2',
                 'url' => route('admin.projects.index'),
                 'active' => request()->routeIs('admin.projects.*'),
+                'section' => 'Workspace',
                 'children' => [],
             ];
         }
@@ -105,15 +116,27 @@ if ($user->hasCrmPermission('view.lead')) {
             'icon' => 'target',
             'url' => route('admin.targets.index'),
             'active' => request()->routeIs('admin.targets.*'),
+            'section' => 'Workspace',
+            'children' => [],
+        ];
+
+        $menus[] = [
+            'label' => 'Notifications',
+            'icon' => 'bell',
+            'url' => route('admin.notifications.index'),
+            'active' => request()->routeIs('admin.notifications.*'),
+            'badge' => 'notifications',
+            'section' => 'Workspace',
             'children' => [],
         ];
 
         if ($user->hasRole('super-admin', 'web')) {
             $menus[] = [
                 'label' => 'Settings',
-                'icon' => 'dollar-sign',
+                'icon' => 'settings-2',
                 'url' => route('admin.settings.index'),
                 'active' => request()->routeIs('admin.settings.*'),
+                'section' => 'Administration',
                 'children' => [],
             ];
         }

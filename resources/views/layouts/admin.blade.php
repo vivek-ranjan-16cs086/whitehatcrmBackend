@@ -59,12 +59,6 @@
                 </li>
             </ul>
 
-            <div class="sidebar-section-label"
-                 id="managementLabel"
-                 style="display:none;">
-                Management
-            </div>
-
             <ul class="sidebar-nav" id="managementMenu"></ul>
 
         </div>
@@ -192,9 +186,8 @@
 
         const dashboardMenu = document.getElementById('dashboardMenu');
         const managementMenu = document.getElementById('managementMenu');
-        const managementLabel = document.getElementById('managementLabel');
 
-        if (!dashboardMenu || !managementMenu || !managementLabel) {
+        if (!dashboardMenu || !managementMenu) {
             console.error('Sidebar HTML elements not found');
             return;
         }
@@ -255,12 +248,21 @@ function isActive(menu) {
         return false;
     }
 
+    if (menu.label === 'All Leads') {
+        return !new URLSearchParams(window.location.search).has('attention');
+    }
+
     if (menu.view) {
         const selectedView =
             sessionStorage.getItem('selectedLeadView')
             || 'total';
 
         return menu.view === selectedView;
+    }
+
+    if (menu.attention) {
+        return new URLSearchParams(window.location.search).get('attention')
+            === menu.attention;
     }
 
     return true;
@@ -372,6 +374,10 @@ function isActive(menu) {
     link.dataset.leadView = menu.view;
 }
 
+if (menu.attention) {
+    link.dataset.attention = menu.attention;
+}
+
                 if (active) {
                     link.classList.add('active');
                     link.setAttribute('aria-current', 'page');
@@ -381,6 +387,13 @@ function isActive(menu) {
                 link.appendChild(
                     document.createTextNode(' ' + menu.label)
                 );
+
+                if (menu.badge === 'notifications') {
+                    const badge = document.createElement('span');
+                    badge.className = 'sidebar-notification-count';
+                    badge.setAttribute('aria-label', 'Unread notifications');
+                    link.appendChild(badge);
+                }
 
                 li.appendChild(link);
             }
@@ -424,6 +437,7 @@ function isActive(menu) {
             // Build menu elements before updating the DOM
             const dashboardItems = document.createDocumentFragment();
             const managementItems = document.createDocumentFragment();
+            let currentSection = null;
 
             result.data.menus.forEach(function(menu, index) {
 
@@ -434,8 +448,25 @@ function isActive(menu) {
                 }
 
                 if (menu.label === 'Dashboard') {
+                    if (menu.section) {
+                        const heading = document.createElement('li');
+                        heading.className = 'sidebar-section-label sidebar-nav-heading';
+                        heading.setAttribute('role', 'presentation');
+                        heading.textContent = menu.section;
+                        dashboardItems.appendChild(heading);
+                    }
+
                     dashboardItems.appendChild(menuItem);
                 } else {
+                    if (menu.section && menu.section !== currentSection) {
+                        const heading = document.createElement('li');
+                        heading.className = 'sidebar-section-label sidebar-nav-heading';
+                        heading.setAttribute('role', 'presentation');
+                        heading.textContent = menu.section;
+                        managementItems.appendChild(heading);
+                        currentSection = menu.section;
+                    }
+
                     managementItems.appendChild(menuItem);
                 }
             });
@@ -443,15 +474,13 @@ function isActive(menu) {
             dashboardMenu.replaceChildren(dashboardItems);
             managementMenu.replaceChildren(managementItems);
 
-            // Show Management heading only if menu items exist
-            managementLabel.style.display =
-                managementMenu.children.length > 0
-                    ? ''
-                    : 'none';
-
             // Refresh Lucide icons after adding sidebar HTML
             if (window.lucide) {
                 lucide.createIcons();
+            }
+
+            if (typeof fetchNotifications === 'function') {
+                fetchNotifications();
             }
 
             console.log('Dynamic sidebar loaded successfully');
@@ -463,14 +492,12 @@ function isActive(menu) {
             dashboardMenu.replaceChildren();
             managementMenu.replaceChildren();
 
-            managementLabel.style.display = 'none';
-
             const errorItem = document.createElement('li');
             errorItem.className = 'nav-item';
 
             const retryButton = document.createElement('button');
             retryButton.type = 'button';
-            retryButton.className = 'btn btn-link text-light';
+            retryButton.className = 'btn btn-link';
             retryButton.textContent = 'Retry loading sidebar';
 
             retryButton.addEventListener('click', loadDynamicSidebar);
@@ -857,6 +884,7 @@ function isDataTableRequest(settings) {
         function updateNotificationUI(response) {
             const $count = $('#notificationCount');
             const $unreadOnly = $('.unread-only-count');
+            const $sidebarCount = $('.sidebar-notification-count');
             
             if (typeof response.unread_count !== 'undefined') {
                 currentUnreadCount = parseInt(response.unread_count) || 0;
@@ -865,9 +893,11 @@ function isDataTableRequest(settings) {
             // Update counts
             if (currentUnreadCount > 0) {
                 $count.text(currentUnreadCount > 99 ? '99+' : currentUnreadCount).addClass('show');
+                $sidebarCount.text(currentUnreadCount > 99 ? '99+' : currentUnreadCount).addClass('show');
                 if ($unreadOnly.length) $unreadOnly.text(currentUnreadCount + ' New').show();
             } else {
                 $count.removeClass('show');
+                $sidebarCount.removeClass('show').text('');
                 if ($unreadOnly.length) $unreadOnly.hide();
             }
         }
