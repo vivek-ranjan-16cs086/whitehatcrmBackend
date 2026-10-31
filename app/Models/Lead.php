@@ -210,13 +210,13 @@ class Lead extends Model
 			return null;
 		}
 
-		if (self::isFacebookSourceWebsite($this->source_website)) {
-			return $pageKey;
-		}
-
 		// FE_GNW is the short form of Future Estate
 		if (stripos($pageKey, 'FE_GNW_') !== false) {
 			return 'Future Estate';
+		}
+
+		if (self::isFacebookSourceWebsite($this->source_website)) {
+			return $pageKey;
 		}
 
 		// Format remaining page names

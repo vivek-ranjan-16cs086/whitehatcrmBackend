@@ -40,13 +40,14 @@ class LeadSourcePageNameTest extends TestCase
         $this->assertSame('360 PropGuide', $pageName);
     }
 
-    public function test_facebook_form_page_name_is_not_reformatted(): void
+    public function test_fe_gnw_page_name_is_mapped_to_future_estate_and_key_is_preserved(): void
     {
         $lead = new Lead([
             'source_website' => 'facebook.com',
             'source_page_name' => 'FE_GNW_QualifiedBuyer_V2',
         ]);
 
-        $this->assertSame('FE_GNW_QualifiedBuyer_V2', $lead->page_name);
+        $this->assertSame('Future Estate', $lead->page_name);
+        $this->assertSame('FE_GNW_QualifiedBuyer_V2', $lead->page_key);
     }
 }
