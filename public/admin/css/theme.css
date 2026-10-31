@@ -31,5 +31,40 @@ body .select2-container--default .select2-results__option--highlighted[aria-sele
 .chart-frame { overflow-x:auto; border:1px solid #e2e8f0; border-radius:3px; background:#fff; }
 .chart-frame svg { display:block; width:100%; min-width:480px; height:300px; }
 .chart-note { color:#64748b; font-size:12px; margin:10px 0; }
+/* Dashboard: neutral surfaces, with blue reserved for actionable emphasis. */
+body.dashboard-page { background: #f6f7f9; }
+.dashboard-page .dashboard-welcome-card {
+    background: #fff; color: #172033; border: 1px solid #e2e8f0;
+    box-shadow: none;
+}
+.dashboard-page .dashboard-welcome-card::after { display: none; }
+.dashboard-page .dashboard-welcome-card .text-muted { color: #64748b !important; }
+body.dashboard-page .stat-card {
+    background: #fff !important; border-color: #e2e8f0 !important;
+    color: #172033 !important; --stat-accent: #64748b; --stat-tint: #f1f5f9;
+}
+.dashboard-page .stat-card::before { display: none; }
+.dashboard-page .stat-card .stat-icon,
+.dashboard-page .stat-card .stat-label :is(i,svg) { border-radius: 3px; }
+.dashboard-page .action-required-section {
+    background: #fff; border-color: #e2e8f0; border-radius: 3px; box-shadow: none;
+}
+body.dashboard-page :is(.action-required-card,.risk-breakdown-item) {
+    background: #fff; color: #344054; border-color: #e2e8f0;
+}
+body.dashboard-page :is(.action-required-card strong,.action-required-icon,.action-required-live,.action-required-eyebrow) { color: #64748b; }
+body.dashboard-page .action-required-card strong { color: #172033; }
+body.dashboard-page .action-required-icon { background: #f1f5f9; }
+.dashboard-page .action-required-live span { box-shadow: none; }
+body.dashboard-page :is(.role-badge,.badge.bg-success) {
+    background: #f1f5f9 !important; color: #475569 !important;
+    border-color: #e2e8f0;
+}
+body.dashboard-page :is(.btn-outline-primary,.btn-outline-success,.btn-outline-info,.btn-outline-secondary) {
+    color: #475569; border-color: #cbd5e1; background: #fff;
+}
+body.dashboard-page :is(.btn-outline-primary,.btn-outline-success,.btn-outline-info,.btn-outline-secondary):hover {
+    color: #2563eb; border-color: #2563eb; background: #f8fafc;
+}
 @media(max-width:991px) { .dashboard-count-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:575px) { .dashboard-count-grid { grid-template-columns:1fr; } .chart-controls label { width:100%; } }
