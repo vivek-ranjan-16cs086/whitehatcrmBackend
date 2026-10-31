@@ -38,19 +38,29 @@ document.addEventListener('DOMContentLoaded', () => {
         rows.filter(row => !status.value || row.status === status.value).forEach(row => counts.set(bucket(row.day),(counts.get(bucket(row.day)) || 0)+Number(row.total)));
         const all = Array.from(counts.entries());
         visible = all.slice(-Math.max(1,Math.ceil(all.length/zoom)));
-        const max = Math.max(1,...visible.map(point => point[1])), step = 640 / visible.length;
-        const x = i => 55+step*(i+.5), y = count => 245-count/max*210;
-        let svg = '<svg viewBox="0 0 730 300" role="img" aria-label="Lead creation trend"><title>Lead creation trend</title>';
-        for(let i=0;i<=4;i++) { const yy=245-i*52.5; svg += `<path d="M55 ${yy} H695" stroke="#e2e8f0"/><text x="45" y="${yy+4}" text-anchor="end" fill="#64748b" font-size="11">${Math.round(max*i/4)}</text>`; }
+        const frame = document.getElementById('pipelineChart');
+        const width = Math.max(260, frame.clientWidth), height = 285;
+        const left = 62, right = width - 18, top = 18, bottom = 230;
+        const axisMax = Math.max(4, Math.ceil(Math.max(...visible.map(point => point[1])) / 4) * 4);
+        const step = (right - left) / visible.length;
+        const x = i => left + step * (i + .5), y = count => bottom - count / axisMax * (bottom - top);
+        const period = {day: 'day', week: 'week', month: 'month'}[group.value];
+        let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="Lead count vertically and lead creation date horizontally, grouped by ${period}"><title>Lead count by creation date</title>`;
+        for (let i = 0; i <= 4; i++) {
+            const value = axisMax * i / 4, yy = y(value);
+            svg += `<path d="M${left} ${yy} H${right}" stroke="#e2e8f0"/><text x="${left-9}" y="${yy+4}" text-anchor="end" fill="#64748b" font-size="11">${value}</text>`;
+        }
+        svg += `<text x="14" y="${(top+bottom)/2}" transform="rotate(-90 14 ${(top+bottom)/2})" text-anchor="middle" fill="#64748b" font-size="11">Number of leads</text><text x="${(left+right)/2}" y="278" text-anchor="middle" fill="#64748b" font-size="11">Lead creation date (by ${period})</text>`;
         const points = visible.map((point,i)=>`${x(i)},${y(point[1])}`).join(' ');
-        if(type.value==='area') svg += `<polygon points="${x(0)},245 ${points} ${x(visible.length-1)},245" fill="#2563eb" fill-opacity=".12"/>`;
-        if(type.value!=='bar') svg += `<polyline points="${points}" fill="none" stroke="#2563eb" stroke-width="3"/>`;
+        if(type.value==='area') svg += `<polygon points="${x(0)},${bottom} ${points} ${x(visible.length-1)},${bottom}" fill="#2563eb" fill-opacity=".12"/>`;
+        if(type.value!=='bar') svg += `<polyline points="${points}" fill="none" stroke="#2563eb" stroke-width="2.5"/>`;
+        const labelEvery = Math.max(1, Math.ceil(visible.length / Math.max(2, Math.floor((right-left)/75))));
         visible.forEach(([day,count],i)=>{
             const title=`<title>${day}: ${count} leads</title>`;
-            svg += type.value==='bar' ? `<rect x="${x(i)-step*.32}" y="${y(count)}" width="${step*.64}" height="${245-y(count)}" rx="3" fill="${i === visible.length-1 ? '#2563eb' : '#e9eef3'}">${title}</rect>` : `<circle cx="${x(i)}" cy="${y(count)}" r="4" fill="#2563eb">${title}</circle>`;
-            if(i%Math.max(1,Math.ceil(visible.length/6))===0) svg += `<text x="${x(i)}" y="270" text-anchor="middle" fill="#64748b" font-size="11">${day.slice(5)}</text>`;
+            svg += type.value==='bar' ? `<rect x="${x(i)-step*.32}" y="${y(count)}" width="${step*.64}" height="${bottom-y(count)}" rx="3" fill="${i === visible.length-1 ? '#2563eb' : '#e9eef3'}">${title}</rect>` : `<circle cx="${x(i)}" cy="${y(count)}" r="3" fill="#2563eb">${title}</circle>`;
+            if(i%labelEvery===0) svg += `<text x="${x(i)}" y="250" text-anchor="middle" fill="#64748b" font-size="11">${day.slice(5)}</text>`;
         });
-        document.getElementById('pipelineChart').innerHTML=svg+'</svg>';
+        frame.innerHTML=svg+'</svg>';
         document.getElementById('chartSummary').textContent=`${visible.reduce((sum,p)=>sum+p[1],0)} leads | ${visible[0][0]} to ${visible[visible.length-1][0]} | ${zoom}x zoom`;
         document.getElementById('chartZoomIn').disabled=visible.length<=1;
         document.getElementById('chartZoomOut').disabled=zoom===1;
@@ -68,5 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const link=document.createElement('a');link.href=url;link.download='lead-trend.csv';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     };
     draw();
+    new ResizeObserver(draw).observe(document.getElementById('pipelineChart'));
 });
 </script>
