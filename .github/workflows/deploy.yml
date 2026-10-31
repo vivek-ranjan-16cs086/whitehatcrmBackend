@@ -6,15 +6,6 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      force_composer:
-        description: Force Composer install on the server even if composer files are unchanged
-        required: false
-        default: "false"
-        type: choice
-        options:
-          - "false"
-          - "true"
 
 permissions:
   contents: read
@@ -37,7 +28,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.2"
-          extensions: mbstring, xml, ctype, json, bcmath, gd, fileinfo, zip, pcntl, pdo_sqlite
+          extensions: mbstring, xml, ctype, json, bcmath, gd, fileinfo, zip, pcntl, pdo_sqlite, curl, sodium
           coverage: none
           tools: composer:v2
 
@@ -85,27 +76,6 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Detect Composer changes
-        id: changes
-        env:
-          FORCE_COMPOSER: ${{ github.event.inputs.force_composer || 'false' }}
-        run: |
-          if [ "$FORCE_COMPOSER" = "true" ]; then
-            echo "composer=true" >> "$GITHUB_OUTPUT"
-            echo "Forcing Composer install on the server."
-          elif git rev-parse HEAD~1 >/dev/null 2>&1; then
-            if git diff --name-only HEAD~1 HEAD | grep -E '^(composer\.lock|composer\.json)$' >/dev/null; then
-              echo "composer=true" >> "$GITHUB_OUTPUT"
-              echo "Composer files changed; dependencies will be installed on the server."
-            else
-              echo "composer=false" >> "$GITHUB_OUTPUT"
-              echo "Composer files are unchanged; server Composer install will be skipped."
-            fi
-          else
-            echo "composer=true" >> "$GITHUB_OUTPUT"
-            echo "No parent commit found; installing Composer dependencies on the server."
-          fi
-
       - name: Check FTP credentials
         id: ftp
         env:
@@ -122,26 +92,6 @@ jobs:
           server="${server#ftps://}"
           server="${server%%/*}"
           echo "server=$server" >> "$GITHUB_OUTPUT"
-
-      - name: Check SSH credentials
-        id: ssh
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST || secrets.HOST || vars.SSH_HOST }}
-          SSH_KEY: ${{ secrets.SSHKEY || secrets.SSH_KEY || secrets.SSH_PRIVATE_KEY }}
-          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD || vars.SSH_PASSWORD || secrets.FTP_PASSWORD }}
-        run: |
-          if [ -n "$SSH_HOST" ] && { [ -n "$SSH_KEY" ] || [ -n "$SSH_PASSWORD" ]; }; then
-            echo "configured=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::SSH is not configured; server-side Composer install and Laravel cache clearing are unavailable."
-          fi
-
-      - name: Require SSH when Composer dependencies change
-        if: steps.changes.outputs.composer == 'true' && steps.ssh.outputs.configured != 'true'
-        run: |
-          echo "::error::Composer files changed (or force_composer is true), but SSH is not configured. Set SSH_HOST and SSHKEY or SSH_PASSWORD."
-          exit 1
 
       - name: Restore FTP sync state
         uses: actions/cache/restore@v4
@@ -209,35 +159,26 @@ jobs:
           path: .ftp-deploy-sync-state.json
           key: ftp-sync-zitrackapi-${{ github.ref_name }}-${{ github.run_id }}
 
-      - name: Install PHP packages and clear Laravel caches
-        if: steps.ssh.outputs.configured == 'true'
-        uses: appleboy/ssh-action@v1.2.2
-        env:
-          RUN_COMPOSER: ${{ steps.changes.outputs.composer }}
-        with:
-          host: ${{ secrets.SSH_HOST || secrets.HOST || secrets.FTP_HOST || secrets.FTP_SERVER }}
-          username: ${{ secrets.SSH_USERNAME || secrets.USER || secrets.FTP_USERNAME }}
-          key: ${{ secrets.SSHKEY || secrets.SSH_KEY || secrets.SSH_PRIVATE_KEY }}
-          password: ${{ secrets.SSH_PASSWORD || secrets.FTP_PASSWORD }}
-          port: ${{ secrets.SSH_PORT || vars.SSH_PORT || 65002 }}
-          command_timeout: 15m
-          script_stop: true
-          envs: RUN_COMPOSER
-          script: |
-            set -e
-            if [ -d "$HOME/public_html/zitrackapi" ]; then
-              cd "$HOME/public_html/zitrackapi"
-            else
-              echo "Could not find the Laravel public_html/zitrackapi directory."
-              exit 1
-            fi
+      - name: Show manual server commands
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          ## Files uploaded ? run the server commands manually
 
-            echo "Deploy directory: $(pwd)"
-            if [ "$RUN_COMPOSER" = "true" ]; then
-              composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
-            fi
+          No SSH connection is made by this workflow. In your Hostinger SSH
+          terminal, open the Laravel directory containing `artisan`, then run:
 
-            php artisan optimize:clear
-            if [ ! -e public/storage ]; then
-              php artisan storage:link
-            fi
+          ```bash
+          set -e
+          test -f artisan || { echo "Open the Laravel project directory first"; exit 1; }
+          composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+          php artisan config:clear
+          php artisan migrate --force
+          php artisan optimize:clear
+          php artisan config:cache
+          php artisan view:cache
+          php artisan migrate:status
+          ```
+
+          Back up the production database before running migrations.
+          File upload is complete; server activation remains manual.
+          SUMMARY
