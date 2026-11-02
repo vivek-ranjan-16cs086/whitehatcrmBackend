@@ -15,6 +15,48 @@ class ApiLeadAuthorizationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_source_and_visit_filters_work_individually_together_and_on_both_routes(): void
+    {
+        // The production field predates the repository's baseline migration.
+        \Illuminate\Support\Facades\Schema::table('leads', function ($table) {
+            $table->string('lead_source')->nullable();
+        });
+        $user = $this->userWithLeadViewPermission();
+        $match = Lead::create(['name' => 'Matching', 'assigned_to' => $user->id, 'lead_source' => 'Facebook', 'visit_status' => 'scheduled']);
+        Lead::create(['name' => 'Other visit', 'assigned_to' => $user->id, 'lead_source' => 'Facebook', 'visit_status' => 'not_scheduled']);
+        Lead::create(['name' => 'Other source', 'assigned_to' => $user->id, 'lead_source' => 'Referral', 'visit_status' => 'scheduled']);
+        Lead::create(['name' => 'Private match', 'assigned_to' => User::factory()->create()->id, 'lead_source' => 'Facebook', 'visit_status' => 'scheduled']);
+
+        $this->actingAs($user, 'api');
+        foreach (['/api/v1/leads', '/api/v1/get-leads'] as $route) {
+            foreach ([
+                ['lead_source' => 'Facebook'],
+                ['visit_status' => 'scheduled'],
+            ] as $filters) {
+                $this->getJson($route.'?'.http_build_query($filters))
+                    ->assertOk()->assertJsonPath('data.total_leads', 2)->assertJsonCount(2, 'data.leads');
+            }
+            $this->getJson($route.'?'.http_build_query(['lead_source' => 'Facebook', 'visit_status' => 'scheduled', 'status' => 'active', 'type' => 'hot']))
+                ->assertOk()->assertJsonPath('data.total_leads', 1)
+                ->assertJsonPath('data.leads.0.id', $match->id)->assertJsonCount(1, 'data.leads');
+            $this->getJson($route.'?lead_source=&visit_status=')
+                ->assertOk()->assertJsonPath('data.total_leads', 3);
+            $this->getJson($route.'?lead_source=Unknown')
+                ->assertOk()->assertJsonPath('data.total_leads', 0)->assertJsonCount(0, 'data.leads');
+        }
+    }
+
+    public function test_source_and_visit_filters_reject_non_string_and_oversized_values(): void
+    {
+        $this->actingAs($this->userWithLeadViewPermission(), 'api');
+        foreach (['lead_source', 'visit_status'] as $field) {
+            foreach ([['scheduled'], str_repeat('x', 256)] as $value) {
+                $this->getJson('/api/v1/leads?'.http_build_query([$field => $value]))
+                    ->assertUnprocessable()->assertJsonValidationErrors($field);
+            }
+        }
+    }
+
     public function test_guest_cannot_list_leads_from_either_api_route(): void
     {
         $this->getJson('/api/v1/leads')->assertUnauthorized();

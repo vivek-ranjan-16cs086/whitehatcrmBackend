@@ -35,6 +35,11 @@ class LeadController extends BaseController
 	//get leads 
     public function getLeads(Request $request): JsonResponse
 	{
+		$request->validate([
+			'lead_source' => 'nullable|string|max:255',
+			'visit_status' => 'nullable|string|max:255',
+		]);
+
 		try {
 			$user_id = $request->user_id;
 			$user = $request->user('api');
@@ -47,6 +52,12 @@ class LeadController extends BaseController
 			$startDate = $request->get('start_date');   
             $endDate = $request->get('end_date'); 
 			$query = $this->leadService->getLeads($request)->with('project');
+
+			foreach (['lead_source', 'visit_status'] as $field) {
+				if ($request->filled($field)) {
+					$query->where($field, $request->input($field));
+				}
+			}
 
 			// Type filter
 			if (!empty($type)) {
