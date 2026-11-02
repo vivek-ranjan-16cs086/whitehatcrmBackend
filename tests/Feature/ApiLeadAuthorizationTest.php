@@ -17,7 +17,7 @@ class ApiLeadAuthorizationTest extends TestCase
 
     public function test_source_and_visit_filters_work_individually_together_and_on_both_routes(): void
     {
-        // The production field predates the repository's baseline migration.
+        // The existing model field is absent from the baseline test schema.
         \Illuminate\Support\Facades\Schema::table('leads', function ($table) {
             $table->string('lead_source')->nullable();
         });
@@ -43,6 +43,29 @@ class ApiLeadAuthorizationTest extends TestCase
                 ->assertOk()->assertJsonPath('data.total_leads', 3);
             $this->getJson($route.'?lead_source=Unknown')
                 ->assertOk()->assertJsonPath('data.total_leads', 0)->assertJsonCount(0, 'data.leads');
+        }
+    }
+
+    public function test_source_filter_includes_website_leads_without_bypassing_other_filters_or_visibility(): void
+    {
+        \Illuminate\Support\Facades\Schema::table('leads', function ($table) {
+            $table->string('lead_source')->nullable();
+        });
+        $user = $this->userWithLeadViewPermission();
+        $websiteLead = Lead::create(['name' => 'Website lead', 'assigned_to' => $user->id, 'source_website' => 'whitehat.realty', 'visit_status' => 'scheduled']);
+        Lead::create(['name' => 'Manual lead', 'assigned_to' => $user->id, 'lead_source' => 'Whitehat', 'visit_status' => 'scheduled']);
+        Lead::create(['name' => 'Other visit', 'assigned_to' => $user->id, 'source_website' => 'whitehat.realty', 'visit_status' => 'not_scheduled']);
+        Lead::create(['name' => 'Private website lead', 'assigned_to' => User::factory()->create()->id, 'source_website' => 'whitehat.realty', 'visit_status' => 'scheduled']);
+        Lead::create(['name' => 'Unrelated lead', 'assigned_to' => $user->id, 'source_website' => 'facebook.com', 'visit_status' => 'scheduled']);
+
+        $this->actingAs($user, 'api');
+        foreach (['/api/v1/leads', '/api/v1/get-leads'] as $route) {
+            foreach (['Whitehat', 'whitehat', ' Whitehat '] as $source) {
+                $this->getJson($route.'?'.http_build_query(['lead_source' => $source, 'visit_status' => 'scheduled']))
+                    ->assertOk()->assertJsonPath('data.total_leads', 2)->assertJsonCount(2, 'data.leads');
+            }
+            $this->getJson($route.'?lead_source=whitehat.realty&visit_status=scheduled')
+                ->assertOk()->assertJsonPath('data.total_leads', 1)->assertJsonPath('data.leads.0.id', $websiteLead->id);
         }
     }
 
