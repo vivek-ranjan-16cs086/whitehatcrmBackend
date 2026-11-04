@@ -42,9 +42,11 @@ class UserController extends Controller
 			$totalFiltered = $query->count();
 
 			// COLUMN MAP
-			$columns = ['id', 'name', 'email', 'role', 'created_at'];
+			$columns = $request->routeIs('admin.employees.*')
+                ? ['id', 'name', 'username', null, 'email', 'phone', null, null]
+                : ['id', 'name', 'email', 'role', 'created_at'];
 
-			if (isset($columns[$columnIndex]) && in_array($columns[$columnIndex], ['id', 'name', 'email', 'created_at'], true)) {
+			if (isset($columns[$columnIndex]) && in_array($columns[$columnIndex], ['id', 'name', 'username', 'phone', 'email', 'created_at'], true)) {
 				$query->reorder()->orderBy($columns[$columnIndex], $columnSortOrder);
 			} else {
 				$query->reorder()->latest();
@@ -67,6 +69,9 @@ class UserController extends Controller
 					'name'	   => $user->name,
 					'username' => $user->username,
 					'email'    => $user->email,
+                    'phone' => $user->phone,
+                    'project' => $user->project?->name,
+                    'image' => $user->profile_pic ? \Illuminate\Support\Facades\Storage::disk('public')->url($user->profile_pic) : null,
 					'role'     => $roleName,
 					'created_at' => date('d M Y', strtotime($user->created_at)),
 					'action'   => view('admin.users.partials.actions', compact('user'))->render(),
@@ -88,7 +93,9 @@ class UserController extends Controller
 
 		$roles = Role::orderBy('name')->get();
 
-		return view('admin.users.index', compact('roles'));
+		$employeeManagement = $request->routeIs('admin.employees.*');
+        $projects = \App\Models\Project::orderBy('name')->get(['id', 'name']);
+        return view('admin.users.index', compact('roles', 'employeeManagement', 'projects'));
 	}
 
 	public function create()
@@ -103,6 +110,8 @@ class UserController extends Controller
         }
         $request->validate([
             'name'                  => 'required|string|max:255',
+            'phone' => 'nullable|string|max:30',
+            'project_id' => 'nullable|exists:projects,id',
             'username' => ['required', 'string', 'min:3', 'max:255', 'regex:/^[a-z0-9._-]+$/', Rule::unique('users', 'username')],
             'email'                 => 'required|email|unique:users,email',
             'password'              => 'required|min:8|confirmed',
@@ -111,6 +120,7 @@ class UserController extends Controller
 
         $user = User::create([
             'name'     => $request->name,
+            ...($request->routeIs('admin.employees.*') ? $request->only('phone', 'project_id') : []),
             'username' => $request->username,
             'email'    => $request->email,
             'password' => Hash::make($request->password),
@@ -126,7 +136,7 @@ class UserController extends Controller
             ]);
         }
 
-        return redirect()->route('admin.users.index')
+        return redirect()->route($request->routeIs('admin.employees.*') ? 'admin.employees.index' : 'admin.users.index')
             ->with('success', "User {$user->name} created successfully.");
     }
 
@@ -149,6 +159,8 @@ class UserController extends Controller
         }
         $request->validate([
             'name'     => 'required|string|max:255',
+            'phone' => 'nullable|string|max:30',
+            'project_id' => 'nullable|exists:projects,id',
             'username' => ['sometimes', 'required', 'string', 'max:255',
                 ...($request->input('username') === $user->username ? [] : ['min:3', 'regex:/^[a-z0-9._-]+$/']),
                 Rule::unique('users', 'username')->ignore($user)],
@@ -159,6 +171,7 @@ class UserController extends Controller
 
         $user->update([
             'name'  => $request->name,
+            ...($request->routeIs('admin.employees.*') ? $request->only('phone', 'project_id') : []),
             'email' => $request->email,
             ...($request->has('username') ? ['username' => $request->username] : []),
         ]);
@@ -176,7 +189,7 @@ class UserController extends Controller
             ]);
         }
 
-        return redirect()->route('admin.users.index')
+        return redirect()->route($request->routeIs('admin.employees.*') ? 'admin.employees.index' : 'admin.users.index')
             ->with('success', "User {$user->name} updated successfully.");
     }
 

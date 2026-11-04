@@ -21,6 +21,7 @@ class User extends Authenticatable implements JWTSubject
      */
     protected $fillable = [
         'name',
+        'project_id',
 		'username',
         'email',
         'password',
@@ -77,6 +78,11 @@ class User extends Authenticatable implements JWTSubject
         return [];
     }
 	
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
+    }
+
 	public function getRoleIdAttribute()
 	{
 		return $this->roles->first()?->id;

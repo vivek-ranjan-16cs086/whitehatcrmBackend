@@ -117,6 +117,7 @@ Route::get('/admin/sidebar/menu', function (
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'super-admin','no-cache'])->group(function () {
     Route::get('users/check-username', [UserController::class, 'checkUsername'])->name('users.checkUsername');
     Route::resource('users', Admin\UserController::class);
+    Route::resource('employees', Admin\UserController::class)->only(['index', 'store', 'update'])->parameters(['employees' => 'user']);
 	Route::get('users/delete/{user}', [UserController::class, 'destroy']);
     Route::resource('roles', Admin\RoleController::class);
 	Route::get('roles/delete/{role}', [RoleController::class, 'destroy']);

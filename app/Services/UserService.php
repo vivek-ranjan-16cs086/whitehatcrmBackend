@@ -9,7 +9,7 @@ class UserService
     public function getUsers($request)
     {
         $query = User::query()
-            ->with('roles:id,name'); // lighter eager loading
+            ->with(['roles:id,name', 'project:id,name']); // lighter eager loading
 
         // ⭐ Filter by role (Spatie)
         if ($request->filled('role_id')) {
@@ -26,7 +26,11 @@ class UserService
 
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'LIKE', "%{$search}%")
-                  ->orWhere('email', 'LIKE', "%{$search}%");
+                  ->orWhere('email', 'LIKE', "%{$search}%")
+                  ->orWhere('username', 'LIKE', "%{$search}%")
+                  ->orWhere('phone', 'LIKE', "%{$search}%")
+                  ->orWhereHas('project', fn ($project) => $project->where('name', 'LIKE', "%{$search}%"))
+                  ->orWhereHas('roles', fn ($role) => $role->where('name', 'LIKE', "%{$search}%"));
             });
         }
 

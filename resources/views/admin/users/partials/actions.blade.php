@@ -6,6 +6,8 @@
         'name' => $user->name,
         'username' => $user->username,
         'email' => $user->email,
+        'phone' => $user->phone,
+        'project_id' => $user->project_id,
         'role' => $user->roles->first()?->name,
     ]) }}">
     <i class="bi bi-pencil-square"></i>

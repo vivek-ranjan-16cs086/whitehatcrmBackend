@@ -1,8 +1,12 @@
 @extends('layouts.admin')
 
-@section('title', 'Users')
-@section('page-title', 'Users')
-@section('page-subtitle', 'Manage system user accounts')
+@php
+    $employeeManagement = $employeeManagement ?? false;
+    $userRoute = $employeeManagement ? 'admin.employees' : 'admin.users';
+@endphp
+@section('title', $employeeManagement ? 'User Management' : 'Users')
+@section('page-title', $employeeManagement ? 'User Management' : 'Users')
+@section('page-subtitle', $employeeManagement ? 'Manage employees and project assignments' : 'Manage system user accounts')
 
 @section('content')
 
@@ -12,15 +16,21 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <h6 class="mb-0 fw-bold">
                 <i class="bi bi-people-fill me-2 text-primary"></i>
-                All Users
+                {{ $employeeManagement ? 'Employees' : 'All Users' }}
             </h6>
 
+            <div class="d-flex align-items-center gap-2">
+            @if($employeeManagement)
+                <input id="employeeSearch" type="search" class="form-control form-control-sm" placeholder="Search employees" aria-label="Search employees">
+                <button type="button" class="btn btn-outline-secondary btn-sm" title="Refresh employees" aria-label="Refresh employees" onclick="$('#users-table').DataTable().ajax.reload(null, false)"><i class="bi bi-arrow-clockwise"></i></button>
+            @endif
             <button type="button"
                     class="btn btn-primary btn-sm"
                     onclick="openUserModal()">
                 <i class="bi bi-plus-lg me-1"></i>
-                New User
+                {{ $employeeManagement ? 'Add Employee' : 'New User' }}
             </button>
+            </div>
         </div>
 
         <div class="card-body">
@@ -29,12 +39,16 @@
 
                 <thead>
                     <tr>
+                        @if($employeeManagement)
+                        <th>Image</th><th>Name</th><th>Username</th><th>Project</th><th>Email</th><th>Mobile</th><th>Roles</th><th>Actions</th>
+                        @else
                         <th>S.No</th>
                         <th>User</th>
                         <th>Email</th>
                         <th>Role</th>
                         <th>Created</th>
                         <th>Actions</th>
+                        @endif
                     </tr>
                 </thead>
 
@@ -175,6 +189,23 @@
                     </div>
 
 
+                    @if($employeeManagement)
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6">
+                            <label for="phone" class="form-label fw-semibold">Mobile</label>
+                            <input type="tel" name="phone" id="phone" maxlength="30" class="form-control">
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="project_id" class="form-label fw-semibold">Project</label>
+                            <select name="project_id" id="project_id" class="form-select">
+                                <option value="">No project assigned</option>
+                                @foreach($projects as $project)
+                                    <option value="{{ $project->id }}">{{ $project->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    @endif
                     {{-- =================================================
                          PASSWORD
                     ================================================== --}}
@@ -327,6 +358,9 @@
     $(document).ready(function () {
 
         loadAjaxList();
+        $('#employeeSearch').on('input', function () {
+            $('#users-table').DataTable().search(this.value).draw();
+        });
 
     });
 
@@ -341,6 +375,8 @@
             user.email,
             user.role
         );
+        $('#phone').val(user.phone || '');
+        $('#project_id').val(user.project_id || '');
 
     });
 
@@ -805,9 +841,9 @@ if (!isEditMode && password.length < 8) {
 
         const url = isEditMode
 
-            ? `{{ url('admin/users') }}/${editUserId}`
+            ? `{{ url($employeeManagement ? 'admin/employees' : 'admin/users') }}/${editUserId}`
 
-            : '{{ route("admin.users.store") }}';
+            : '{{ route($userRoute . ".store") }}';
 
 
         const method = 'POST';
@@ -939,7 +975,7 @@ complete: function() {
 
             ajax: {
 
-                url: '{{ route("admin.users.index") }}',
+                url: '{{ route($userRoute . ".index") }}',
 
                 type: 'GET'
 
@@ -947,6 +983,23 @@ complete: function() {
 
 
             columns: [
+                @if($employeeManagement)
+                {data: 'image', orderable: false, searchable: false, render: function(data, type, row) {
+                    if (type !== 'display') return data || '';
+                    const avatar = document.createElement(data ? 'img' : 'span');
+                    avatar.className = 'avatar-circle';
+                    if (data) { avatar.src = data; avatar.alt = row.name || 'Employee'; avatar.style.objectFit = 'cover'; }
+                    else avatar.textContent = (row.name || '?').charAt(0).toUpperCase();
+                    return avatar.outerHTML;
+                }},
+                {data: 'name', render: $.fn.dataTable.render.text()},
+                {data: 'username', defaultContent: '', render: $.fn.dataTable.render.text()},
+                {data: 'project', defaultContent: '-', orderable: false, render: $.fn.dataTable.render.text()},
+                {data: 'email', render: $.fn.dataTable.render.text()},
+                {data: 'phone', defaultContent: '-', render: $.fn.dataTable.render.text()},
+                {data: 'role', orderable: false, render: $.fn.dataTable.render.text()},
+                {data: 'action', orderable: false, searchable: false}
+                @else
 
                 {
                     data: 'serialNo',
@@ -1034,6 +1087,7 @@ complete: function() {
                     searchable: false
                 }
 
+                @endif
             ],
 
 
@@ -1041,7 +1095,7 @@ complete: function() {
 
             lengthMenu: [10, 15, 25, 50],
 
-            order: [[4, 'desc']],
+            order: [[{{ $employeeManagement ? 1 : 4 }}, '{{ $employeeManagement ? 'asc' : 'desc' }}']],
 
 
             dom: 'Bfrtip',

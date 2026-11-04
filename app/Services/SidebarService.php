@@ -19,6 +19,15 @@ class SidebarService
             ],
         ];
 
+        if ($user->hasRole('super-admin', 'web')) {
+            $menus[] = [
+                'label' => 'User Management', 'icon' => 'contact-round',
+                'url' => route('admin.employees.index'),
+                'active' => request()->routeIs('admin.employees.*'),
+                'section' => 'Overview', 'children' => [],
+            ];
+        }
+
         if ($user->hasCrmPermission('view.lead')) {
             $leadRoute = 'lead-management.index';
 
@@ -68,37 +77,6 @@ class SidebarService
             ];
         }
 
-        if ($user->hasRole('super-admin', 'web')) {
-            $menus[] = [
-                'label' => 'Access Control',
-                'icon' => 'shield',
-                'url' => null,
-                'active' => request()->routeIs('admin.users.*')
-                    || request()->routeIs('admin.roles.*')
-                    || request()->routeIs('admin.permissions.*'),
-                'section' => 'Administration',
-                'children' => [
-                    [
-                        'label' => 'Users',
-                        'icon' => 'users',
-                        'url' => route('admin.users.index'),
-                        'active' => request()->routeIs('admin.users.*'),
-                    ],
-                    [
-                        'label' => 'Roles',
-                        'icon' => 'user-check',
-                        'url' => route('admin.roles.index'),
-                        'active' => request()->routeIs('admin.roles.*'),
-                    ],
-                    [
-                        'label' => 'Permissions',
-                        'icon' => 'key',
-                        'url' => route('admin.permissions.index'),
-                        'active' => request()->routeIs('admin.permissions.*'),
-                    ],
-                ],
-            ];
-        }
         if ($user->hasCrmPermission('edit.lead')) {
             $menus[] = [
                 'label' => 'Project Management',
@@ -144,6 +122,38 @@ class SidebarService
                 'active' => request()->routeIs('admin.settings.*'),
                 'section' => 'Administration',
                 'children' => [],
+            ];
+        }
+
+        if ($user->hasRole('super-admin', 'web')) {
+            $menus[] = [
+                'label' => 'Access Control',
+                'icon' => 'shield',
+                'url' => null,
+                'active' => request()->routeIs('admin.users.*')
+                    || request()->routeIs('admin.roles.*')
+                    || request()->routeIs('admin.permissions.*'),
+                'section' => 'Administration',
+                'children' => [
+                    [
+                        'label' => 'Users',
+                        'icon' => 'users',
+                        'url' => route('admin.users.index'),
+                        'active' => request()->routeIs('admin.users.*'),
+                    ],
+                    [
+                        'label' => 'Roles',
+                        'icon' => 'user-check',
+                        'url' => route('admin.roles.index'),
+                        'active' => request()->routeIs('admin.roles.*'),
+                    ],
+                    [
+                        'label' => 'Permissions',
+                        'icon' => 'key',
+                        'url' => route('admin.permissions.index'),
+                        'active' => request()->routeIs('admin.permissions.*'),
+                    ],
+                ],
             ];
         }
 
