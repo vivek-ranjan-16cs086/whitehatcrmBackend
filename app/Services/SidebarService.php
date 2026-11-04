@@ -43,7 +43,7 @@ class SidebarService
                 'url' => route($leadRoute),
                 'view' => 'total',
                 'active' => request()->routeIs('lead-management.*')
-                    && !request()->filled('attention'),
+                    && (!request()->filled('attention') || request('attention') === 'unassigned'),
                 'section' => 'Lead operations',
             ];
 
@@ -52,15 +52,9 @@ class SidebarService
                 'icon' => 'list-checks',
                 'url' => null,
                 'active' => request()->routeIs('lead-management.*')
-                    && request()->filled('attention'),
+                    && in_array(request('attention'), ['overdue', 'no-follow-up', 'stale'], true),
                 'section' => 'Lead operations',
                 'children' => [
-                    [
-                        'label' => 'Unassigned leads',
-                        'icon' => 'user-round-x',
-                        'url' => route($leadRoute, ['attention' => 'unassigned']),
-                        'attention' => 'unassigned',
-                    ],
                     [
                         'label' => 'Overdue follow-ups',
                         'icon' => 'calendar-clock',

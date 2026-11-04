@@ -389,7 +389,7 @@ $leadSources = Lead::query()
 		if ($openLeadId !== null) {
 			$query->where('leads.id', $openLeadId);
 		} elseif ($attention !== null) {
-			$query->whereIn('leads.status', $activeStatuses);
+            if ($attention !== 'unassigned') $query->whereIn('leads.status', $activeStatuses);
 
 			match ($attention) {
 				'unassigned' => $query->whereNull('leads.assigned_to'),

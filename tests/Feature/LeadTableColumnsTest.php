@@ -13,6 +13,21 @@ class LeadTableColumnsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_unassigned_button_filters_all_unassigned_leads(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::create(['name' => 'super-admin', 'guard_name' => 'web']));
+        Lead::create(['name' => 'Unassigned active', 'status' => 'active']);
+        Lead::create(['name' => 'Unassigned booked', 'status' => 'booked']);
+        Lead::create(['name' => 'Assigned', 'assigned_to' => $admin->id]);
+        $this->actingAs($admin)->get(route('lead-management.index'))->assertOk()
+            ->assertSee('id="unassignedLeadsButton"', false);
+        $this->getJson(route('lead-management.ajax-list', ['start' => 0, 'length' => 20, 'attention' => 'unassigned']))
+            ->assertOk()->assertJsonPath('recordsFiltered', 2);
+        $this->getJson(route('admin.sidebar.menu', ['attention' => 'unassigned']))
+            ->assertOk()->assertJsonMissing(['label' => 'Unassigned leads']);
+    }
+
     public function test_filter_fields_match_the_form_and_ignore_other_columns(): void
     {
         $admin = User::factory()->create();

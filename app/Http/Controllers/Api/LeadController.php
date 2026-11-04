@@ -657,16 +657,7 @@ class LeadController extends BaseController
 	
 	public function getDeactivateList()
 	{
-		$options = [
-			'Plot or Villa',
-			'Budget',
-			'Location',
-			'Ready To Move',
-			'Rent',
-			'Invalid Mobile Number',
-			'Others',
-			'Switch Off'
-		];
+        $options = app(\App\Services\DeactivationReasonService::class)->values();
 
 		$formattedOptions = array_map(function ($option) {
 			return [

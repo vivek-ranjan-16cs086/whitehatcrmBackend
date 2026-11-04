@@ -26,7 +26,7 @@ class SidebarNavigationTest extends TestCase
             ->assertOk()
             ->assertJsonFragment(['label' => 'Dashboard', 'section' => 'Overview'])
             ->assertJsonFragment(['label' => 'All Leads', 'section' => 'Lead operations'])
-            ->assertJsonFragment(['label' => 'Unassigned leads'])
+            ->assertJsonMissing(['label' => 'Unassigned leads'])
             ->assertJsonFragment(['label' => 'Overdue follow-ups'])
             ->assertJsonFragment(['label' => 'No follow-up set'])
             ->assertJsonFragment(['label' => 'Stale leads · 7+ days'])

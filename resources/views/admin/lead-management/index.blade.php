@@ -45,6 +45,7 @@
 
         <div class="lead-list-secondary">			<div id="leadFilterTabs" class="lead-status-filters" role="group" aria-label="Lead status filters">
 				<button type="button" class="btn btn-sm btn-primary lead-filter-btn" data-view="total">All</button>
+                <button type="button" id="unassignedLeadsButton" class="btn btn-sm btn-outline-secondary lead-filter-btn" data-view="total" data-attention="unassigned">Unassigned</button>
 				<button type="button" class="btn btn-sm btn-outline-secondary lead-filter-btn" data-view="active">Active Leads</button>
 				<button type="button" class="btn btn-sm btn-outline-secondary lead-filter-btn" data-view="follow-ups">Follow Ups</button>
 				<button type="button" class="btn btn-sm btn-outline-secondary lead-filter-btn" data-view="expired-follow-ups">Expired Leads</button>
@@ -498,7 +499,9 @@ d.open_lead_id = pendingLeadId;
 	//added
 function updateLeadFilterButtons(view) {
     $('.lead-filter-btn').each(function () {
-        const active = this.dataset.view === view;
+        const active = this.dataset.attention
+            ? this.dataset.attention === pendingAttention
+            : !pendingAttention && this.dataset.view === view;
 
         $(this)
             .toggleClass('btn-primary', active)
@@ -507,7 +510,7 @@ function updateLeadFilterButtons(view) {
     });
 }
 
-window.setLeadView = function (view) {
+window.setLeadView = function (view, attention = null) {
 
     if (!Object.prototype.hasOwnProperty.call(
         leadViewTitles, view
@@ -517,11 +520,12 @@ window.setLeadView = function (view) {
     }
 
     currentLeadView = view;
-    pendingAttention = null;
+    pendingAttention = attention === 'unassigned' ? attention : null;
 
     sessionStorage.setItem('selectedLeadView', view);
     const destination = new URL(window.location.href);
-    destination.searchParams.delete('attention');
+    if (pendingAttention) destination.searchParams.set('attention', pendingAttention);
+    else destination.searchParams.delete('attention');
     history.replaceState(history.state, '', destination.pathname + destination.search + destination.hash);
 
     updateLeadFilterButtons(view);
@@ -537,7 +541,7 @@ window.setLeadView = function (view) {
 $(document).on('click', '.lead-filter-btn', function () {
     const view = this.dataset.view;
 
-    window.setLeadView(view);
+    window.setLeadView(view, this.dataset.attention || null);
 });
 
 

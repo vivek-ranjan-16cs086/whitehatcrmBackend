@@ -12,8 +12,8 @@ class LeadOptionsService
     public function all(): array
     {
         $columns = array_flip(Schema::getColumnListing('leads'));
-        $options = [];
-        foreach (['status', 'type', 'visit_status', 'deactivate_reason', 'lead_source', 'inventory'] as $field) {
+        $options = ['deactivate_reason' => app(DeactivationReasonService::class)->values()];
+        foreach (['status', 'type', 'visit_status', 'lead_source', 'inventory'] as $field) {
             $values = collect();
             if (isset($columns[$field])) {
                 $values = $values->merge(Lead::query()->whereNotNull($field)
@@ -32,8 +32,8 @@ class LeadOptionsService
     public function filtersFor(User $user): array
     {
         $columns = array_flip(Schema::getColumnListing('leads'));
-        $options = [];
-        foreach (['status', 'type', 'visit_status', 'deactivate_reason', 'lead_source', 'inventory', 'source_website'] as $field) {
+        $options = ['deactivate_reason' => app(DeactivationReasonService::class)->values()];
+        foreach (['status', 'type', 'visit_status', 'lead_source', 'inventory', 'source_website'] as $field) {
             $query = Lead::query();
             if (!$user->canViewAllLeads()) {
                 $query->where('assigned_to', $user->id);

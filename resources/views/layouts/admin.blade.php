@@ -257,7 +257,8 @@ function isActive(menu) {
     }
 
     if (menu.label === 'All Leads') {
-        return !new URLSearchParams(window.location.search).has('attention');
+        const attention = new URLSearchParams(window.location.search).get('attention');
+        return !attention || attention === 'unassigned';
     }
 
     if (menu.view) {
