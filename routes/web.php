@@ -55,6 +55,7 @@ Route::get('/admin/sidebar/menu', function (
 	
 	//Lead Management
 	Route::prefix('lead-managment')->group(function () {
+        Route::get('assignees', [LeadController::class, 'assignees'])->middleware('permission:create.lead|edit.lead,web')->name('lead-management.assignees');
 		//GET method 
 		Route::middleware('permission:view.lead,web')->group(function () {
 			Route::GET('/', [LeadController::class, 'index'])->name('lead-management.index');

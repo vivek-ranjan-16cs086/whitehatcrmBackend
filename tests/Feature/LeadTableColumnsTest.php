@@ -15,10 +15,6 @@ class LeadTableColumnsTest extends TestCase
 
     public function test_extended_filters_support_owner_text_dates_and_budget_without_exposing_other_leads(): void
     {
-        \Illuminate\Support\Facades\Schema::table('leads', function ($table) {
-            $table->decimal('budget_min', 14, 2)->nullable();
-            $table->decimal('budget_max', 14, 2)->nullable();
-        });
         $admin = User::factory()->create();
         $admin->assignRole(Role::create(['name' => 'super-admin', 'guard_name' => 'web']));
         Lead::create(['name' => 'Matching buyer', 'assigned_to' => $admin->id, 'type' => 'hot', 'visit_date' => '2026-10-31', 'budget_min' => 100, 'budget_max' => 500]);

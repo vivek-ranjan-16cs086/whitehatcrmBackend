@@ -17,10 +17,6 @@ class ApiLeadAuthorizationTest extends TestCase
 
     public function test_source_and_visit_filters_work_individually_together_and_on_both_routes(): void
     {
-        // The existing model field is absent from the baseline test schema.
-        \Illuminate\Support\Facades\Schema::table('leads', function ($table) {
-            $table->string('lead_source')->nullable();
-        });
         $user = $this->userWithLeadViewPermission();
         $match = Lead::create(['name' => 'Matching', 'assigned_to' => $user->id, 'lead_source' => 'Facebook', 'visit_status' => 'scheduled']);
         Lead::create(['name' => 'Other visit', 'assigned_to' => $user->id, 'lead_source' => 'Facebook', 'visit_status' => 'not_scheduled']);
@@ -48,9 +44,6 @@ class ApiLeadAuthorizationTest extends TestCase
 
     public function test_source_filter_includes_website_leads_without_bypassing_other_filters_or_visibility(): void
     {
-        \Illuminate\Support\Facades\Schema::table('leads', function ($table) {
-            $table->string('lead_source')->nullable();
-        });
         $user = $this->userWithLeadViewPermission();
         $websiteLead = Lead::create(['name' => 'Website lead', 'assigned_to' => $user->id, 'source_website' => 'whitehat.realty', 'visit_status' => 'scheduled']);
         Lead::create(['name' => 'Manual lead', 'assigned_to' => $user->id, 'lead_source' => 'Whitehat', 'visit_status' => 'scheduled']);

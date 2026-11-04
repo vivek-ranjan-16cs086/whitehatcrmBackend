@@ -152,7 +152,7 @@
 		</div>
 	@endcan
 <div class="modal fade" id="addLeadModal">
-		<div class="modal-dialog modal-lg modal-dialog-centered">
+		<div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
 			<div class="modal-content">
 
 				<div class="modal-header">
@@ -182,16 +182,9 @@
 
 							<div class="col-md-6">
 								<label class="form-label">Status</label>
-								<select id="add_status" class="form-select">
-									<option value="not_available">Not Available</option>
-									<option value="active">Active</option>
-									<option value="in_process">In Process</option>
-									<option value="booked">Booked</option>
-									<option value="deactive">Deactive</option>
-									<option value="follow_up">Follow Up</option>
-									<option value="follow_up_expired">Expired</option>
-									<option value="follow_up_complete">Completed</option>
-								</select>
+								<select id="add_status" class="form-select">@foreach($leadOptions['status'] as $value)
+<option value="{{ $value }}">{{ ucwords(str_replace(['_', '-'], ' ', $value)) }}</option>
+@endforeach</select>
 							</div>
 
 							<div class="col-md-6">
@@ -210,20 +203,24 @@
 							</div>
 
 							<div class="col-md-6">
-								<label class="form-label">Follow Up</label>
-								<input type="date" id="add_followup" class="form-control">
+								<label class="form-label">Follow-up date and time</label>
+								<input type="datetime-local" id="add_followup" class="form-control">
 							</div>
                             <div class="col-md-6">
-								<label class="form-label">Type</label>
-								 <option value="cold" selected>Cold</option>
-    <option value="warm">Warm</option>
-    <option value="hot">Hot</option>
-							</div>
+								<label class="form-label" for="add_type">Lead type</label><select id="add_type" class="form-select">@foreach($leadOptions['type'] as $value)
+<option value="{{ $value }}">{{ ucwords(str_replace(['_', '-'], ' ', $value)) }}</option>
+@endforeach</select></div>
 							<div class="col-md-12">
 								<label class="form-label">Message</label>
 								<textarea id="add_message" class="form-control" rows="3"></textarea>
 							</div>
-
+<div class="col-md-6"><label for="add_visit_status" class="form-label">Visit status</label><select id="add_visit_status" class="form-select"><option value="">Select visit status</option>@foreach($leadOptions['visit_status'] as $value)
+<option value="{{ $value }}">{{ ucwords(str_replace(['_', '-'], ' ', $value)) }}</option>
+@endforeach</select></div><div class="col-md-6"><label for="add_visit_date" class="form-label">Visit date</label><input type="date" id="add_visit_date" class="form-control"></div><div class="col-md-6"><label for="add_lead_source" class="form-label">Lead source</label><select id="add_lead_source" class="form-select"><option value="">Select lead source</option>@foreach($leadOptions['lead_source'] as $value)
+<option value="{{ $value }}">{{ ucwords(str_replace(['_', '-'], ' ', $value)) }}</option>
+@endforeach</select></div><div class="col-md-6"><label for="add_inventory" class="form-label">Inventory</label><select id="add_inventory" class="form-select"><option value="">Select inventory</option>@foreach($leadOptions['inventory'] as $value)
+<option value="{{ $value }}">{{ ucwords(str_replace(['_', '-'], ' ', $value)) }}</option>
+@endforeach</select></div><div class="col-md-6"><label for="add_project_id" class="form-label">Project</label><select id="add_project_id" class="form-select"><option value="">No project</option>@foreach($projects as $project)<option value="{{ $project->id }}">{{ $project->name }}</option>@endforeach</select></div><div class="col-md-6"><label for="add_budget_min" class="form-label">Minimum budget</label><input type="number" id="add_budget_min" min="0" step="0.01" class="form-control"></div><div class="col-md-6"><label for="add_budget_max" class="form-label">Maximum budget</label><input type="number" id="add_budget_max" min="0" step="0.01" class="form-control"></div><div class="col-12"><label for="add_notes" class="form-label">Notes</label><textarea id="add_notes" class="form-control" rows="3"></textarea></div>
 						</div>
 
 					</form>
@@ -253,46 +250,38 @@
 						<input type="hidden" name="id" id="edit_id">
 
 						<div class="row g-3">
-							<div class="col-12"><h6 class="mb-0 text-primary">Lead details</h6></div>
+							<div class="col-12"><h6 class="mb-0 text-primary">Original lead details (read-only)</h6></div>
 							<div class="col-md-6">
 								<label class="form-label" for="edit_name">Name</label>
-								<input type="text" name="name" id="edit_name" class="form-control" required>
+								<input type="text" name="name" id="edit_name" class="form-control" required readonly>
 							</div>
 							<div class="col-md-6">
 								<label class="form-label" for="edit_phone">Phone</label>
-								<input type="text" name="phone" id="edit_phone" class="form-control">
+								<input type="text" name="phone" id="edit_phone" class="form-control" readonly>
 							</div>
 							<div class="col-md-6">
 								<label class="form-label" for="edit_email">Email</label>
-								<input type="email" name="email" id="edit_email" class="form-control">
+								<input type="email" name="email" id="edit_email" class="form-control" readonly>
 							</div>
 							<div class="col-md-6">
 								<label class="form-label" for="edit_external_id">External ID</label>
-								<input type="number" name="external_id" id="edit_external_id" class="form-control">
+								<input type="number" name="external_id" id="edit_external_id" class="form-control" readonly>
 							</div>
 							<div class="col-md-6">
 								<label class="form-label" for="edit_status">Status</label>
-								<select name="status" id="edit_status" class="form-select">
-									<option value="not_available">Not Available</option>
-									<option value="active">Active</option>
-									<option value="booked">Booked</option>
-									<option value="deactive">Deactive</option>
-									<option value="follow_up">Follow Up</option>
-									<option value="follow_up_expired">Expired</option>
-									<option value="follow_up_complete">Completed</option>
-								</select>
+								<select name="status" id="edit_status" class="form-select">@foreach($leadOptions['status'] as $value)
+<option value="{{ $value }}">{{ ucwords(str_replace(['_', '-'], ' ', $value)) }}</option>
+@endforeach</select>
 							</div>
 							<div class="col-md-6">
 								<label class="form-label" for="edit_type">Lead type</label>
-								<select name="type" id="edit_type" class="form-select">
-									<option value="hot">Hot</option>
-									<option value="warm">Warm</option>
-									<option value="cold">Cold</option>
-								</select>
+								<select name="type" id="edit_type" class="form-select">@foreach($leadOptions['type'] as $value)
+<option value="{{ $value }}">{{ ucwords(str_replace(['_', '-'], ' ', $value)) }}</option>
+@endforeach</select>
 							</div>
 							<div class="col-md-6">
 								<label class="form-label" for="edit_source_website">Source</label>
-								<select name="source_website" id="edit_source_website" class="form-select" required>
+								<select name="source_website" id="edit_source_website" class="form-select" disabled>
 									@foreach($manualLeadSources as $label => $value)
 										<option value="{{ $value }}">{{ $label }}</option>
 									@endforeach
@@ -300,11 +289,11 @@
 							</div>
 							<div class="col-md-6">
 								<label class="form-label" for="edit_source_page_name">Source page name</label>
-								<input type="text" name="source_page_name" id="edit_source_page_name" class="form-control">
+								<input type="text" name="source_page_name" id="edit_source_page_name" class="form-control" readonly>
 							</div>
 							<div class="col-md-12">
 								<label class="form-label" for="edit_message">Message</label>
-								<textarea name="message" id="edit_message" class="form-control" rows="3"></textarea>
+								<textarea name="message" id="edit_message" class="form-control" rows="3" readonly></textarea>
 							</div>
 
 							<div class="col-12 mt-4"><h6 class="mb-0 text-primary">Assignment and follow-up</h6></div>
@@ -313,16 +302,14 @@
 								<select name="assigned_to" id="edit_assigned" class="form-select"></select>
 							</div>
 							<div class="col-md-6">
-								<label class="form-label" for="edit_follow_up_date">Follow-up date</label>
-								<input type="date" name="follow_up_date" id="edit_follow_up_date" class="form-control">
+								<label class="form-label" for="edit_follow_up_date">Follow-up date and time</label>
+								<input type="datetime-local" name="follow_up_date" id="edit_follow_up_date" class="form-control">
 							</div>
 							<div class="col-md-6">
 								<label class="form-label" for="edit_visit_status">Visit status</label>
-								<select name="visit_status" id="edit_visit_status" class="form-select">
-									<option value="not_scheduled">Not scheduled</option>
-									<option value="scheduled">Scheduled</option>
-									<option value="completed">Completed</option>
-								</select>
+								<select name="visit_status" id="edit_visit_status" class="form-select">@foreach($leadOptions['visit_status'] as $value)
+<option value="{{ $value }}">{{ ucwords(str_replace(['_', '-'], ' ', $value)) }}</option>
+@endforeach</select>
 							</div>
 							<div class="col-md-6">
 								<label class="form-label" for="edit_visit_date">Visit date</label>
@@ -357,7 +344,9 @@
 							</div>
 							<div class="col-md-6">
 								<label class="form-label" for="edit_lead_source">Lead source</label>
-								<input type="text" name="lead_source" id="edit_lead_source" class="form-control">
+								<select name="lead_source" id="edit_lead_source" class="form-select"><option value="">None</option>@foreach($leadOptions['lead_source'] as $value)
+<option value="{{ $value }}">{{ ucwords(str_replace(['_', '-'], ' ', $value)) }}</option>
+@endforeach</select>
 							</div>
 							<div class="col-md-12">
 								<label class="form-label" for="edit_notes">Notes</label>
@@ -367,7 +356,9 @@
 							<div class="col-12 mt-4"><h6 class="mb-0 text-primary">Property requirements</h6></div>
 							<div class="col-md-6">
 								<label class="form-label" for="edit_inventory">Inventory</label>
-								<input type="text" name="inventory" id="edit_inventory" class="form-control">
+								<select name="inventory" id="edit_inventory" class="form-select"><option value="">None</option>@foreach($leadOptions['inventory'] as $value)
+<option value="{{ $value }}">{{ ucwords(str_replace(['_', '-'], ' ', $value)) }}</option>
+@endforeach</select>
 							</div>
 							<div class="col-md-6">
 								<label class="form-label" for="edit_budget_min">Minimum budget</label>
@@ -396,12 +387,12 @@
 							] as $field => $label)
 								<div class="col-md-6">
 									<label class="form-label" for="edit_{{ $field }}">{{ $label }}</label>
-									<input type="text" name="{{ $field }}" id="edit_{{ $field }}" class="form-control">
+									<input type="text" name="{{ $field }}" id="edit_{{ $field }}" class="form-control" readonly>
 								</div>
 							@endforeach
 							<div class="col-md-6">
 								<label class="form-label" for="edit_source_submitted_at">Source submitted at</label>
-								<input type="datetime-local" name="source_submitted_at" id="edit_source_submitted_at" class="form-control">
+								<input type="datetime-local" name="source_submitted_at" id="edit_source_submitted_at" class="form-control" readonly>
 							</div>
 
 							<div class="col-12 mt-4"><h6 class="mb-0 text-primary">Buyer qualification</h6></div>
@@ -838,10 +829,14 @@ $(document).on(
 		$('#edit_id').val($(this).data('id'));
 		fields.forEach(function (field) {
 			let value = lead[field] ?? '';
-			if (field === 'source_submitted_at' && value) {
+			if (['source_submitted_at', 'follow_up_date'].includes(field) && value) {
 				value = String(value).replace(' ', 'T').substring(0, 16);
 			}
-			$('#edit_' + field).val(value);
+            const input = $('#edit_' + field);
+            if (value && input.is('select') && !input.find('option').toArray().some(option => option.value === String(value))) {
+                input.append(new Option(value, value));
+            }
+            input.val(value);
 		});
 
 		const sourceSelect = $('#edit_source_website');
@@ -905,40 +900,23 @@ $(document).on(
 
 		$('#edit_assigned').select2({
 			dropdownParent: $('#editLeadModal'), // important for modal
-			placeholder: 'Search Sales Person',
+			placeholder: 'Search users',
 			allowClear: true,
 			 width: '100%',
 
 			ajax: {
-				url: '{{route("admin.users.index")}}',
+				url: '{{ route("lead-management.assignees") }}',
 				dataType: 'json',
 				delay: 250,
 
 				data: function (params) {
 					return {
-						'search[value]': params.term,   // search keyword
-						page: params.page || 1,
-						role_id: 4
+						q: params.term,   // search keyword
+						page: params.page || 1
 					};
 				},
 
-				processResults: function (data, params) {
-					params.page = params.page || 1;
-
-					let results = data.data.map(function (item) {
-						return {
-							id: item.id,
-							text: item.name
-						};
-					});
-
-					return {
-						results: results,
-						pagination: {
-							// ⭐ THIS IS THE FIX
-							more: (params.page < data.last_page) && results.length > 0
-						}
-					};
+				processResults: function (data) { return data;
 				}
 			}
 		});
@@ -954,31 +932,20 @@ $(document).on(
 	function initAddSalesPersonSelect() {
 		$('#add_assigned').select2({
 			dropdownParent: $('#addLeadModal'), // important for modal
-			placeholder: 'Search Sales Person',
+			placeholder: 'Search users',
 			allowClear: true,
 			width: '100%',
 			ajax: {
-				url: '{{route("admin.users.index")}}',
+				url: '{{ route("lead-management.assignees") }}',
 				dataType: 'json',
 				delay: 250,
 				data: function (params) {
 					return {
-						'search[value]': params.term,
-						page: params.page || 1,
-						role_id: 4
+						q: params.term,
+						page: params.page || 1
 					};
 				},
-				processResults: function (data, params) {
-					params.page = params.page || 1;
-					let results = data.data.map(function (item) {
-						return { id: item.id, text: item.name };
-					});
-					return {
-						results: results,
-						pagination: {
-							more: (params.page < data.last_page) && results.length > 0
-						}
-					};
+				processResults: function (data) { return data;
 				}
 			}
 		});
@@ -996,6 +963,7 @@ $(document).on(
 
 	// Handle Save New Lead
 	$('#saveNewLead').click(function () {
+        if (!$('#addLeadForm')[0].reportValidity()) return;
 		let name = $('#add_name').val().trim();
 		let phone = $('#add_phone').val().trim();
 
@@ -1022,7 +990,15 @@ $(document).on(
 				assigned_to: $('#add_assigned').val() ? $('#add_assigned').val() : null,
 				follow_up_date: $('#add_followup').val(),
 				type: $('#add_type').val(),
-				message: $('#add_message').val(),
+                message: $('#add_message').val(),
+                visit_status: $('#add_visit_status').val(),
+                visit_date: $('#add_visit_date').val(),
+                lead_source: $('#add_lead_source').val(),
+                inventory: $('#add_inventory').val(),
+                project_id: $('#add_project_id').val(),
+                budget_min: $('#add_budget_min').val(),
+                budget_max: $('#add_budget_max').val(),
+                notes: $('#add_notes').val(),
 				_token: '{{ csrf_token() }}'
 			},
 			success: function (res) {

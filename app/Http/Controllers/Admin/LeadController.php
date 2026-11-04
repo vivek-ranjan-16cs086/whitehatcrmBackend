@@ -62,6 +62,40 @@ class LeadController extends Controller
 		'source_submitted_at',
 	];
 
+    private const READ_ONLY_LEAD_FIELDS = [
+        'name', 'phone', 'email', 'message', 'external_id', 'source_website',
+        'source_page_id', 'source_page_name', 'source_form_id', 'source_form_name',
+        'campaign_id', 'campaign_name', 'adset_id', 'adset_name', 'ad_id', 'ad_name', 'source_submitted_at',
+    ];
+
+    private function leadOptions(): array
+    {
+        $options = config('lead-options');
+        foreach ($options as $field => $defaults) {
+            $options[$field] = collect($defaults)->merge(Lead::query()
+                ->whereNotNull($field)->where($field, '!=', '')->distinct()->pluck($field))
+                ->unique()->values()->all();
+        }
+        if (Schema::hasColumn('projects', 'inventory')) {
+            $options['inventory'] = collect($options['inventory'])->merge(Project::query()
+                ->whereNotNull('inventory')->where('inventory', '!=', '')->distinct()->pluck('inventory'))->unique()->values()->all();
+        }
+        return $options;
+    }
+
+    public function assignees(Request $request)
+    {
+        $query = User::query()->orderBy('name')->orderBy('id');
+        if ($request->filled('q')) {
+            $query->where('name', 'like', '%' . $request->string('q') . '%');
+        }
+        $users = $query->paginate(20, ['id', 'name']);
+        return response()->json([
+            'results' => $users->map(fn ($user) => ['id' => $user->id, 'text' => $user->name]),
+            'pagination' => ['more' => $users->hasMorePages()],
+        ]);
+    }
+
 	protected $leadService;
 	protected $notificationService;
 
@@ -102,7 +136,8 @@ $leadSources = Lead::query()
         'selectedView' => $view,
         'pageTitle' => $titles[$view],
 		'leadSources' => $leadSources,
-        'manualLeadSources' => self::MANUAL_LEAD_SOURCES,
+        'manualLeadSources' => collect(self::MANUAL_LEAD_SOURCES)->merge($leadSources->mapWithKeys(fn ($source) => [$source => $source]))->unique()->all(),
+        'leadOptions' => $this->leadOptions(),
         'filterUsers' => User::query()->when(!$request->user()->hasRole('super-admin', 'web') && !$request->user()->canViewAllLeads(), fn ($q) => $q->whereKey($request->user()->id))->orderBy('name')->get(['id', 'name']),
         'leadFilterColumns' => Schema::getColumnListing('leads'),
         'advancedFilterFields' => array_values(array_intersect(array_diff(self::EDITABLE_LEAD_FIELDS, ['status', 'project_id', 'assigned_to', 'sub_response_id', 'source_website', 'inventory', 'visit_status', 'follow_up_date', 'visit_date', 'source_submitted_at', 'budget_min', 'budget_max']), Schema::getColumnListing('leads'))),
@@ -752,7 +787,12 @@ $leadSources = Lead::query()
 				'funding_method' => 'nullable|string|max:255',
 				'source_submitted_at' => 'nullable|date',
 			];
-			$rules = array_intersect_key($fieldRules, $availableColumns);
+			$fieldRules = array_diff_key($fieldRules, array_flip(self::READ_ONLY_LEAD_FIELDS));
+            $options = $this->leadOptions();
+            foreach (['status', 'type', 'visit_status', 'lead_source', 'inventory'] as $field) {
+                $fieldRules[$field] = ['nullable', 'string', Rule::in($options[$field])];
+            }
+            $rules = array_intersect_key($fieldRules, $availableColumns);
 			$validated = $request->validate([
 				'id' => 'required|integer|exists:leads,id',
 				...$rules,
@@ -836,17 +876,25 @@ $leadSources = Lead::query()
 	public function store(Request $request, NotificationService $notificationService)
 	{
 		try { 
-			$validated = $request->validate([ 
+			$options = $this->leadOptions();
+            $validated = $request->validate([
 				'name'           => 'required|string|max:255',
 				'phone'          => 'required|string|max:20',
 				'email'          => 'nullable|email|max:255',
 				'message'        => 'nullable|string',
-				'source_website' => ['required', 'string', 'max:255', Rule::in(array_values(self::MANUAL_LEAD_SOURCES))],
-				'status'         => 'nullable|string|max:50',
-				'type'           => 'nullable|string|max:50',
-				'assigned_to'    => 'nullable',
+				'source_website' => ['required', 'string', 'max:255', Rule::in(array_unique([...array_values(self::MANUAL_LEAD_SOURCES), ...Lead::query()->whereNotNull('source_website')->distinct()->pluck('source_website')->all()]))],
+				'status' => ['nullable', Rule::in($options['status'])],
+				'type' => ['nullable', Rule::in($options['type'])],
+				'assigned_to' => 'nullable|integer|exists:users,id',
 				'follow_up_date' => 'nullable|date',
-				'notes'          => 'nullable|string',
+				'notes' => 'nullable|string',
+                'visit_status' => ['nullable', Rule::in($options['visit_status'])],
+                'visit_date' => 'nullable|date',
+                'lead_source' => ['nullable', Rule::in($options['lead_source'])],
+                'inventory' => ['nullable', Rule::in($options['inventory'])],
+                'project_id' => 'nullable|integer|exists:projects,id',
+                'budget_min' => 'nullable|numeric|min:0',
+                'budget_max' => 'nullable|numeric|min:0|gte:budget_min',
 			]);
 
 			$assignedUserId = $validated['assigned_to'] ?? null;
@@ -860,7 +908,7 @@ $leadSources = Lead::query()
 			$lead->email = $validated['email'] ?? null;
 			$lead->message = $validated['message'] ?? null;
 			$lead->source_website = $validated['source_website'] ?? 'Manual';
-			$lead->status = $validated['status'] ?? 'new';
+			$lead->status = $validated['status'] ?? 'active';
 			// $lead->type = $validated['type'] ?? 'hot';
 			//added
 			
@@ -870,7 +918,8 @@ $lead->type = !empty($validated['type']) ? $validated['type'] : 'cold';
 			$lead->follow_up_date = $validated['follow_up_date'] ?? null;
 			$lead->notes = $validated['notes'] ?? null;
 
-			$lead->save();
+			$lead->fill(collect($validated)->only(['visit_status', 'visit_date', 'lead_source', 'inventory', 'project_id', 'budget_min', 'budget_max'])->all());
+            $lead->save();
 
 			// If assignment changed → send notification
 			if (!empty($assignedUserId)) {

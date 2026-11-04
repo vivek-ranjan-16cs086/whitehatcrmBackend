@@ -80,7 +80,7 @@ class AdminManualLeadSourceTest extends TestCase
         }
     }
 
-    public function test_admin_can_update_lead_details_and_change_source_from_the_dropdown_values(): void
+    public function test_admin_can_update_workflow_while_original_submission_details_are_preserved(): void
     {
         $this->mock(NotificationService::class);
         $user = $this->userWithCreateLeadPermission();
@@ -118,12 +118,12 @@ class AdminManualLeadSourceTest extends TestCase
 
         $this->assertDatabaseHas('leads', [
             'id' => $lead->id,
-            'name' => 'Lead after edit',
-            'phone' => '0987654321',
-            'email' => 'updated@example.com',
-            'message' => 'Updated message',
-            'source_website' => 'whitehat.realty',
-            'source_page_name' => 'Whitehat Campaign Page',
+            'name' => 'Lead before edit',
+            'phone' => '1234567890',
+            'email' => null,
+            'message' => null,
+            'source_website' => 'facebook.com',
+            'source_page_name' => null,
             'status' => 'follow_up',
             'type' => 'warm',
             'project_id' => $project->id,
