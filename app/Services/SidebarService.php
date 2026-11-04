@@ -136,17 +136,10 @@ class SidebarService
                 'label' => 'Access Control',
                 'icon' => 'shield',
                 'url' => null,
-                'active' => request()->routeIs('admin.users.*')
-                    || request()->routeIs('admin.roles.*')
+                'active' => request()->routeIs('admin.roles.*')
                     || request()->routeIs('admin.permissions.*'),
                 'section' => 'Administration',
                 'children' => [
-                    [
-                        'label' => 'Users',
-                        'icon' => 'users',
-                        'url' => route('admin.users.index'),
-                        'active' => request()->routeIs('admin.users.*'),
-                    ],
                     [
                         'label' => 'Roles',
                         'icon' => 'user-check',

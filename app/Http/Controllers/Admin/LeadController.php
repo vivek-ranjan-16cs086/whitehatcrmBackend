@@ -62,6 +62,12 @@ class LeadController extends Controller
 		'source_submitted_at',
 	];
 
+    private const FORM_LEAD_FIELDS = [
+        'name', 'phone', 'email', 'message', 'status', 'type', 'source_website',
+        'source_page_name', 'assigned_to', 'project_id', 'visit_status', 'visit_date',
+        'follow_up_date', 'lead_source', 'inventory', 'budget_min', 'budget_max', 'notes', 'deactivate_reason',
+    ];
+
     private const READ_ONLY_LEAD_FIELDS = [
         'name', 'phone', 'email', 'message', 'external_id', 'source_website', 'project_id',
         'source_page_id', 'source_page_name', 'source_form_id', 'source_form_name',
@@ -130,7 +136,10 @@ $leadSources = Lead::query()
         'leadOptions' => $this->leadOptions(),
         'filterUsers' => User::query()->when(!$request->user()->hasRole('super-admin', 'web') && !$request->user()->canViewAllLeads(), fn ($q) => $q->whereKey($request->user()->id))->orderBy('name')->get(['id', 'name']),
         'leadFilterColumns' => Schema::getColumnListing('leads'),
-        'advancedFilterFields' => array_values(array_intersect(array_diff(self::EDITABLE_LEAD_FIELDS, ['status', 'project_id', 'assigned_to', 'sub_response_id', 'source_website', 'inventory', 'visit_status', 'follow_up_date', 'visit_date', 'source_submitted_at', 'budget_min', 'budget_max']), Schema::getColumnListing('leads'))),
+        'advancedFilterFields' => array_values(array_intersect(
+            array_keys(array_filter(\App\Support\LeadFormFields::FIELDS, fn ($field) => in_array($field[1], ['text', 'tel', 'email', 'textarea'], true))),
+            Schema::getColumnListing('leads')
+        )),
 		'projects' => Project::query()->orderBy('name')->get(['id', 'name']),
 		'subResponses' => SubResponse::query()->orderBy('name')->get(['id', 'name']),
     ]);
@@ -420,16 +429,18 @@ $leadSources = Lead::query()
             $available = array_flip(Schema::getColumnListing('leads'));
             foreach ($request->input('filters', []) as $field => $value) {
                 if ($value === null || $value === '') continue;
-                if (in_array($field, ['assigned_to', 'sub_response_id'], true)) {
+                if (in_array($field, ['assigned_to', 'project_id'], true)) {
                     if ($field === 'assigned_to' && $value === 'unassigned') $query->whereNull('leads.assigned_to');
                     else { validator([$field => $value], [$field => 'integer|min:1'])->validate(); $query->where('leads.'.$field, $value); }
-                } elseif (preg_match('/^(follow_up_date|visit_date|source_submitted_at|updated_at)_(from|to)$/', $field, $matches) && isset($available[$matches[1]])) {
+                } elseif (preg_match('/^(follow_up_date|visit_date)_(from|to)$/', $field, $matches) && isset($available[$matches[1]])) {
                     validator([$field => $value], [$field => 'date_format:Y-m-d'])->validate();
                     $query->whereDate('leads.'.$matches[1], $matches[2] === 'from' ? '>=' : '<=', $value);
                 } elseif (in_array($field, ['budget_min', 'budget_max'], true) && isset($available[$field])) {
                     validator([$field => $value], [$field => 'numeric|min:0'])->validate();
                     $query->where('leads.'.$field, $field === 'budget_min' ? '>=' : '<=', $value);
-                } elseif (in_array($field, self::EDITABLE_LEAD_FIELDS, true) && isset($available[$field])) {
+                } elseif (in_array($field, ['status', 'type', 'visit_status', 'lead_source', 'inventory', 'deactivate_reason', 'source_website'], true) && isset($available[$field])) {
+                    $query->where('leads.'.$field, $value);
+                } elseif (in_array($field, self::FORM_LEAD_FIELDS, true) && isset($available[$field])) {
                     $query->where('leads.'.$field, 'like', '%'.$value.'%');
                 }
             }
@@ -437,7 +448,7 @@ $leadSources = Lead::query()
                 if ($request->filled($key)) $query->where('leads.'.$column, $request->input($key));
             }
             foreach (['filter_inventory' => 'inventory', 'filter_visit' => 'visit_status'] as $key => $column) {
-                if ($request->filled($key)) $query->where('leads.'.$column, 'like', '%'.$request->input($key).'%');
+                if ($request->filled($key)) $query->where('leads.'.$column, $request->input($key));
             }
         }
 

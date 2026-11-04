@@ -19,9 +19,12 @@ class EmployeeManagementTest extends TestCase
         $this->actingAs($admin);
         $menus = $this->getJson(route('admin.sidebar.menu'))->assertOk()->json('data.menus');
         $this->assertSame('Access Control', end($menus)['label']);
+        $this->assertSame(['Roles', 'Permissions'], array_column(end($menus)['children'], 'label'));
         $directory = collect($menus)->firstWhere('label', 'User Management');
         $this->assertSame(route('admin.employees.index'), $directory['url']);
-        $this->get(route('admin.employees.index'))->assertOk()->assertSee('Employees')->assertSee('Mobile')->assertSee('Project');
+        $this->get(route('admin.employees.index'))->assertOk()->assertSee('Employees')->assertSee('Mobile')->assertSee('Project')
+            ->assertSee('id="employeeSearch"', false)->assertDontSee('class="search-input"', false)
+            ->assertSee("dom: 'Brtip'", false)->assertSee('text-nowrap flex-shrink-0', false);
         $this->get(route('admin.users.index'))->assertOk()->assertSee('All Users')->assertDontSee('id="employeeSearch"', false);
     }
 

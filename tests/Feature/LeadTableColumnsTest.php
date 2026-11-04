@@ -13,6 +13,43 @@ class LeadTableColumnsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_filter_fields_match_the_form_and_ignore_other_columns(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::create(['name' => 'super-admin', 'guard_name' => 'web']));
+        Lead::create(['name' => 'Database buyer', 'status' => 'database-status', 'type' => 'database-type']);
+        $html = $this->actingAs($admin)->get(route('lead-management.index'))->assertOk()->getContent();
+        $document = new \DOMDocument();
+        @$document->loadHTML($html);
+        $xpath = new \DOMXPath($document);
+        $formFields = [];
+        foreach ($xpath->query("//*[@id='addLeadForm']//*[@name]") as $input) {
+            $formFields[] = $input->getAttribute('name');
+        }
+        foreach ($xpath->query('//*[@data-lead-filter]') as $input) {
+            $field = preg_replace('/^((?:follow_up|visit)_date)_(from|to)$/', '$1', $input->getAttribute('data-lead-filter'));
+            $this->assertContains($field, $formFields);
+        }
+        $filterIds = ['status' => 'leadStatusFilter', 'source_website' => 'leadSourceFilter',
+            'project_id' => 'leadProjectFilter', 'assigned_to' => 'filterAssigned'];
+        foreach ($xpath->query("//*[@id='addLeadForm']//select[@name]") as $dropdown) {
+            $field = $dropdown->getAttribute('name');
+            $id = $filterIds[$field] ?? 'lead-filter-'.$field;
+            $this->assertSame(1, $xpath->query("//select[@id='{$id}']")->length, $field.' must have a dropdown filter');
+            $this->assertSame(0, $xpath->query("//input[@data-lead-filter='{$field}']")->length, $field.' must not have a text filter');
+        }
+        $statusValues = [];
+        foreach ($xpath->query("//*[@id='leadStatusFilter']/option[@value!='']") as $option) {
+            $statusValues[] = $option->getAttribute('value');
+        }
+        $this->assertSame(['database-status'], $statusValues);
+        $this->assertSame(0, $xpath->query("//*[@id='filterResponse']")->length);
+        $this->getJson(route('lead-management.ajax-list', [
+            'start' => 0, 'length' => 20,
+            'filters' => ['external_id' => '999', 'updated_at_from' => '2099-01-01', 'sub_response_id' => 999],
+        ]))->assertOk()->assertJsonPath('recordsFiltered', 1);
+    }
+
     public function test_extended_filters_support_owner_text_dates_and_budget_without_exposing_other_leads(): void
     {
         $admin = User::factory()->create();
@@ -38,7 +75,7 @@ class LeadTableColumnsTest extends TestCase
         Lead::create(['name' => 'Other lead', 'status' => 'booked', 'inventory' => '2 BHK']);
         $this->actingAs($admin)->getJson(route('lead-management.ajax-list', [
             'start' => 0, 'length' => 20, 'filter_status' => 'active',
-            'filter_project' => $project->id, 'filter_inventory' => '3 BHK', 'filter_visit' => 'scheduled',
+            'filter_project' => $project->id, 'filter_inventory' => 'Premium 3 BHK', 'filter_visit' => 'scheduled',
         ]))->assertOk()->assertJsonPath('recordsFiltered', 1)->assertJsonPath('data.0.edit_data.name', 'Matching lead');
         $this->getJson(route('lead-management.ajax-list', ['start' => 0, 'length' => 20]))
             ->assertOk()->assertJsonPath('recordsFiltered', 2);

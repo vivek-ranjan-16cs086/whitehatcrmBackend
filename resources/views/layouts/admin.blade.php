@@ -94,10 +94,12 @@
 
         <div class="topbar-right">
             <!-- Search Bar -->
+            @unless(request()->routeIs('admin.employees.*'))
             <div class="search-container">
                 <i data-lucide="search" class="search-icon"></i>
                 <input type="text" class="search-input" placeholder="Search...">
             </div>
+            @endunless
 
             <a href="{{ route('admin.chat.index') }}" id="messageIndicator" class="notification-btn message-indicator position-relative text-decoration-none" aria-label="Messages" title="Messages">
                 <i data-lucide="messages-square"></i>

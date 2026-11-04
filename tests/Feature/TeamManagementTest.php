@@ -54,6 +54,7 @@ class TeamManagementTest extends TestCase
     public function test_deactivation_requires_a_valid_reason_and_saves_it_for_reopening(): void
     {
         $this->admin();
+        Lead::create(['name' => 'Active option', 'status' => 'active']);
         $lead = Lead::create(['name' => 'Buyer', 'status' => 'deactive']);
         $lead->forceFill(['deactivate_reason' => 'Budget'])->save();
         $payload = ['id' => $lead->id, 'status' => 'deactive'];

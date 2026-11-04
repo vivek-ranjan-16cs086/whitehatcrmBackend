@@ -6,6 +6,8 @@
     --bs-border-radius: 3px; --bs-border-radius-sm: 3px; --bs-border-radius-lg: 3px;
     --bs-border-radius-xl: 3px; --bs-border-radius-2xl: 3px; --bs-border-radius-pill: 3px;
 }
+.employee-toolbar #employeeSearch { width: 240px; max-width: 100%; }
+.employee-toolbar > .btn { flex-shrink: 0; white-space: nowrap; }
 body :is(.btn,button,input,select,textarea,.card,.stat-card,.badge,.role-badge,.dropdown-menu,.dropdown-item,.nav-link,.page-link,.modal-content,.alert,.search-container,.select2-container .select2-selection,.select2-dropdown,.select2-results__option,.action-required-card,.action-required-icon,.risk-breakdown-item,.rounded,.rounded-pill) { border-radius: 3px !important; }
 body :is(.btn-primary,.btn-success,.btn-info,.btn-warning,.btn-danger,.stat-card,.progress-bar,.notification-badge) { background: #2563eb !important; border-color: #2563eb !important; color: #fff !important; }
 body :is(.btn-outline-primary,.btn-outline-success,.btn-outline-info,.btn-outline-warning,.btn-outline-danger,.btn-outline-secondary) { color: #2563eb; border-color: #2563eb; background: #fff; }

@@ -6,7 +6,6 @@ use App\Models\Lead;
 use App\Services\LeadOptionsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class LeadOptionsDatabaseTest extends TestCase
@@ -35,17 +34,11 @@ class LeadOptionsDatabaseTest extends TestCase
         $this->assertSame(['Changed source'], $service->all()['lead_source']);
     }
 
-    public function test_unused_choices_come_from_database_enum_metadata(): void
+    public function test_unused_enum_choices_are_not_offered_as_saved_values(): void
     {
-        $columns = Schema::getColumns('leads');
-        foreach ($columns as &$column) {
-            if ($column['name'] === 'deactivate_reason') {
-                $column['type'] = "enum('Unused reason','Another reason')";
-            }
-        }
-        unset($column);
-        Schema::shouldReceive('getColumns')->once()->with('leads')->andReturn($columns);
-        Schema::shouldReceive('hasColumn')->once()->with('projects', 'inventory')->andReturn(false);
-        $this->assertSame(['Another reason', 'Unused reason'], app(LeadOptionsService::class)->all()['deactivate_reason']);
+        $options = app(LeadOptionsService::class)->all();
+        $this->assertSame([], $options['deactivate_reason']);
+        $this->assertSame([], $options['status']);
+        $this->assertSame([], $options['type']);
     }
 }

@@ -19,13 +19,13 @@
                 {{ $employeeManagement ? 'Employees' : 'All Users' }}
             </h6>
 
-            <div class="d-flex align-items-center gap-2">
+            <div class="d-flex flex-wrap justify-content-end align-items-center gap-2 employee-toolbar">
             @if($employeeManagement)
                 <input id="employeeSearch" type="search" class="form-control form-control-sm" placeholder="Search employees" aria-label="Search employees">
                 <button type="button" class="btn btn-outline-secondary btn-sm" title="Refresh employees" aria-label="Refresh employees" onclick="$('#users-table').DataTable().ajax.reload(null, false)"><i class="bi bi-arrow-clockwise"></i></button>
             @endif
             <button type="button"
-                    class="btn btn-primary btn-sm"
+                    class="btn btn-primary btn-sm text-nowrap flex-shrink-0"
                     onclick="openUserModal()">
                 <i class="bi bi-plus-lg me-1"></i>
                 {{ $employeeManagement ? 'Add Employee' : 'New User' }}
@@ -1098,7 +1098,7 @@ complete: function() {
             order: [[{{ $employeeManagement ? 1 : 4 }}, '{{ $employeeManagement ? 'asc' : 'desc' }}']],
 
 
-            dom: 'Bfrtip',
+            dom: '{{ $employeeManagement ? "Brtip" : "Bfrtip" }}',
 
 
             buttons: [

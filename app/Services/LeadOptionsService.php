@@ -10,19 +10,11 @@ class LeadOptionsService
 {
     public function all(): array
     {
-        $columns = collect(Schema::getColumns('leads'))->keyBy('name');
+        $columns = array_flip(Schema::getColumnListing('leads'));
         $options = [];
         foreach (['status', 'type', 'visit_status', 'deactivate_reason', 'lead_source', 'inventory'] as $field) {
-            $column = $columns->get($field);
             $values = collect();
-            if ($column) {
-                // MySQL exposes all allowed enum values, including unused choices.
-                if (preg_match('/^enum\((.*)\)$/is', $column['type'], $matches)) {
-                    $values = collect(str_getcsv($matches[1], ',', "'", '\\'));
-                }
-                if (is_string($column['default']) && $column['default'] !== '') {
-                    $values->push(trim($column['default'], "'"));
-                }
+            if (isset($columns[$field])) {
                 $values = $values->merge(Lead::withTrashed()->whereNotNull($field)
                     ->where($field, '!=', '')->distinct()->pluck($field));
             }
