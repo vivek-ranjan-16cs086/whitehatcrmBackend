@@ -12,9 +12,11 @@ return new class extends Migration
             if (!Schema::hasColumn('leads', 'lead_source')) $table->string('lead_source')->nullable();
             if (!Schema::hasColumn('leads', 'budget_min')) $table->decimal('budget_min', 15, 2)->nullable();
             if (!Schema::hasColumn('leads', 'budget_max')) $table->decimal('budget_max', 15, 2)->nullable();
-            $table->string('status', 50)->default('active')->change();
-            $table->string('type', 50)->default('hot')->change();
-            $table->string('visit_status', 50)->default('not_scheduled')->change();
+            // Hosting databases can contain nulls and longer legacy workflow values.
+            // Widen these fields without making existing data invalid.
+            $table->string('status', 255)->nullable()->default('active')->change();
+            $table->string('type', 255)->nullable()->default('hot')->change();
+            $table->string('visit_status', 255)->nullable()->default('not_scheduled')->change();
             $table->dateTime('follow_up_date')->nullable()->change();
         });
     }
