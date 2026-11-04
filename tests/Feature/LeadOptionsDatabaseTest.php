@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Lead;
+use App\Models\User;
 use App\Services\LeadOptionsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +12,19 @@ use Tests\TestCase;
 class LeadOptionsDatabaseTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_filter_sources_are_exact_saved_values_from_visible_non_deleted_leads(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        Lead::create(['name' => 'Visible', 'assigned_to' => $user->id, 'lead_source' => 'Exact CASE Source', 'source_website' => 'actual.example']);
+        Lead::create(['name' => 'Private', 'assigned_to' => $other->id, 'lead_source' => 'Private source']);
+        $deleted = Lead::create(['name' => 'Deleted', 'assigned_to' => $user->id, 'lead_source' => 'Deleted source']);
+        $deleted->delete();
+        $options = app(LeadOptionsService::class)->filtersFor($user);
+        $this->assertSame(['Exact CASE Source'], $options['lead_source']);
+        $this->assertSame(['actual.example'], $options['source_website']);
+    }
 
     public function test_options_follow_database_values_without_static_fallbacks(): void
     {
@@ -31,7 +45,7 @@ class LeadOptionsDatabaseTest extends TestCase
         DB::table('leads')->update(['lead_source' => 'Changed source']);
         $this->assertSame(['Changed source'], $service->all()['lead_source']);
         Lead::firstOrFail()->delete();
-        $this->assertSame(['Changed source'], $service->all()['lead_source']);
+        $this->assertSame([], $service->all()['lead_source']);
     }
 
     public function test_unused_enum_choices_are_not_offered_as_saved_values(): void

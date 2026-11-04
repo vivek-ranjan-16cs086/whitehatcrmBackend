@@ -22,6 +22,13 @@
 		</div>
 
 		<div class="lead-filter-bar">
+            <div class="lead-date-filter">
+                <div class="lead-date-inputs">
+                    <input type="date" id="leadDateFrom" class="form-control" aria-label="From date">
+                    <span aria-hidden="true">to</span>
+                    <input type="date" id="leadDateTo" class="form-control" aria-label="To date">
+                </div>
+            </div>
 			<div class="lead-source-filter">
 
 				<select id="leadSourceFilter" class="form-select" aria-label="Source">
@@ -47,11 +54,11 @@
         <div id="leadMoreFilters" class="lead-filter-popover" role="dialog" aria-label="More lead filters" hidden>
             <div class="d-flex justify-content-between align-items-center px-3 pt-3"><strong class="small">More filters</strong><button type="button" id="closeLeadMoreFilters" class="btn-close" aria-label="Close filters"></button></div>
             <div class="row g-2 p-3">
-                <div class="col-sm-6"><label class="form-label small" for="leadStatusFilter">Status</label><select id="leadStatusFilter" class="form-select form-select-sm lead-extra-filter"><option value="">All statuses</option>@foreach($leadOptions['status'] as $status)<option value="{{ $status }}">{{ ucwords(str_replace('_', ' ', $status)) }}</option>@endforeach</select></div>
+                <div class="col-sm-6"><label class="form-label small" for="leadStatusFilter">Status</label><select id="leadStatusFilter" class="form-select form-select-sm lead-extra-filter"><option value="">All statuses</option>@foreach($filterOptions['status'] as $status)<option value="{{ $status }}">{{ ucwords(str_replace('_', ' ', $status)) }}</option>@endforeach</select></div>
                 <div class="col-sm-6"><label class="form-label small" for="leadProjectFilter">Project</label><select id="leadProjectFilter" class="form-select form-select-sm lead-extra-filter"><option value="">All projects</option>@foreach($projects as $project)<option value="{{ $project->id }}">{{ $project->name }}</option>@endforeach</select></div>
                 @foreach(\App\Support\LeadFormFields::FIELDS as $field => [$label, $kind])
                 @if($kind === 'select' && !in_array($field, ['status', 'project_id', 'assigned_to', 'source_website'], true))
-                <div class="col-sm-6"><label class="form-label small" for="lead-filter-{{ $field }}">{{ $label }}</label><select id="lead-filter-{{ $field }}" data-lead-filter="{{ $field }}" class="form-select form-select-sm lead-extra-filter"><option value="">All</option>@foreach($leadOptions[$field] as $value)<option value="{{ $value }}">{{ ucwords(str_replace(['_', '-'], ' ', $value)) }}</option>@endforeach</select></div>
+                <div class="col-sm-6"><label class="form-label small" for="lead-filter-{{ $field }}">{{ $label }}</label><select id="lead-filter-{{ $field }}" data-lead-filter="{{ $field }}" class="form-select form-select-sm lead-extra-filter"><option value="">All</option>@foreach($filterOptions[$field] as $value)<option value="{{ $value }}">{{ $value }}</option>@endforeach</select></div>
                 @endif
                 @endforeach
                 <div class="col-sm-6"><label class="form-label small" for="filterAssigned">Assigned to</label><select id="filterAssigned" data-lead-filter="assigned_to" class="form-select form-select-sm lead-extra-filter"><option value="">Anyone</option><option value="unassigned">Unassigned</option>@foreach($filterUsers as $filterUser)<option value="{{ $filterUser->id }}">{{ $filterUser->name }}</option>@endforeach</select></div>
@@ -303,6 +310,8 @@ ajax: {
     d.view = currentLeadView;
     d.attention = pendingAttention;
 	 // New filters
+d.date_from = $('#leadDateFrom').val();
+d.date_to = $('#leadDateTo').val();
 d.source = $('#leadSourceFilter').val();
 d.filters = {};
 $('[data-lead-filter]').each(function () { if (this.value) d.filters[this.dataset.leadFilter] = this.value; });
@@ -562,18 +571,21 @@ $(document).on('input change', '.lead-extra-filter', function () {
 });
 $(document).on('click', '#resetLeadFilters', function () {
     clearTimeout(extraFilterTimer);
-    $('#leadSourceFilter, .lead-extra-filter').val('');
+    $('#leadDateFrom, #leadDateTo, #leadSourceFilter, .lead-extra-filter').val('');
     closeLeadFilterPanel();
     const table = $('#leads-table').DataTable();
     table.search(''); table.columns().search('');
     window.setLeadView('total');
 });
 
-// Reload leads when Source changes
+// Reload leads when the date range or source changes
 $(document).on(
     'change',
-    '#leadSourceFilter',
+    '#leadDateFrom, #leadDateTo, #leadSourceFilter',
     function () {
+        const from = $('#leadDateFrom').val();
+        const to = $('#leadDateTo').val();
+        if (from && to && from > to) return;
 
         if ($.fn.DataTable.isDataTable('#leads-table')) {
             $('#leads-table')

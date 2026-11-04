@@ -128,10 +128,12 @@ $leadSources = Lead::query()
     ->orderBy('source_website')
     ->pluck('source_website');
 
+    $filterOptions = app(\App\Services\LeadOptionsService::class)->filtersFor($request->user());
     return view('admin.lead-management.index', [
         'selectedView' => $view,
         'pageTitle' => $titles[$view],
-		'leadSources' => $leadSources,
+		'leadSources' => $filterOptions['source_website'],
+        'filterOptions' => $filterOptions,
         'manualLeadSources' => collect(self::MANUAL_LEAD_SOURCES)->merge($leadSources->mapWithKeys(fn ($source) => [$source => $source]))->unique()->all(),
         'leadOptions' => $this->leadOptions(),
         'filterUsers' => User::query()->when(!$request->user()->hasRole('super-admin', 'web') && !$request->user()->canViewAllLeads(), fn ($q) => $q->whereKey($request->user()->id))->orderBy('name')->get(['id', 'name']),

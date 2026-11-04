@@ -22,6 +22,8 @@ class LeadTableColumnsTest extends TestCase
         $document = new \DOMDocument();
         @$document->loadHTML($html);
         $xpath = new \DOMXPath($document);
+        $this->assertSame(1, $xpath->query("//input[@id='leadDateFrom' and @type='date']")->length);
+        $this->assertSame(1, $xpath->query("//input[@id='leadDateTo' and @type='date']")->length);
         $formFields = [];
         foreach ($xpath->query("//*[@id='addLeadForm']//*[@name]") as $input) {
             $formFields[] = $input->getAttribute('name');
@@ -38,6 +40,11 @@ class LeadTableColumnsTest extends TestCase
             $this->assertSame(1, $xpath->query("//select[@id='{$id}']")->length, $field.' must have a dropdown filter');
             $this->assertSame(0, $xpath->query("//input[@data-lead-filter='{$field}']")->length, $field.' must not have a text filter');
         }
+        foreach ($formFields as $field) {
+            if (in_array($field, ['status', 'project_id', 'source_website'], true)) continue;
+            if (in_array($field, ['visit_date', 'follow_up_date'], true)) $field .= '_from';
+            $this->assertSame(1, $xpath->query("//*[@data-lead-filter='{$field}']")->length, $field.' needs a filter');
+        }
         $statusValues = [];
         foreach ($xpath->query("//*[@id='leadStatusFilter']/option[@value!='']") as $option) {
             $statusValues[] = $option->getAttribute('value');
@@ -48,6 +55,19 @@ class LeadTableColumnsTest extends TestCase
             'start' => 0, 'length' => 20,
             'filters' => ['external_id' => '999', 'updated_at_from' => '2099-01-01', 'sub_response_id' => 999],
         ]))->assertOk()->assertJsonPath('recordsFiltered', 1);
+    }
+
+    public function test_top_date_range_limits_arrivals_and_can_be_cleared(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::create(['name' => 'super-admin', 'guard_name' => 'web']));
+        Lead::create(['name' => 'Inside range'])->forceFill(['created_at' => '2026-11-02 12:00:00'])->save();
+        Lead::create(['name' => 'Outside range'])->forceFill(['created_at' => '2026-10-01 12:00:00'])->save();
+        $this->actingAs($admin)->getJson(route('lead-management.ajax-list', [
+            'start' => 0, 'length' => 20, 'date_from' => '2026-11-01', 'date_to' => '2026-11-03',
+        ]))->assertOk()->assertJsonPath('recordsFiltered', 1)->assertJsonPath('data.0.edit_data.name', 'Inside range');
+        $this->getJson(route('lead-management.ajax-list', ['start' => 0, 'length' => 20]))
+            ->assertOk()->assertJsonPath('recordsFiltered', 2);
     }
 
     public function test_extended_filters_support_owner_text_dates_and_budget_without_exposing_other_leads(): void
