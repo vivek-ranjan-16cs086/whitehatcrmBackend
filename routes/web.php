@@ -120,6 +120,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super-admin','no-ca
     Route::resource('users', Admin\UserController::class);
     Route::resource('employees', Admin\UserController::class)->only(['index', 'store', 'update'])->parameters(['employees' => 'user']);
 	Route::get('users/delete/{user}', [UserController::class, 'destroy']);
+    Route::resource('teams', Admin\TeamController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('roles', Admin\RoleController::class);
 	Route::get('roles/delete/{role}', [RoleController::class, 'destroy']);
     Route::get('permissions', [Admin\PermissionController::class, 'index'])->name('permissions.index');

@@ -26,6 +26,12 @@ class SidebarService
                 'active' => request()->routeIs('admin.employees.*'),
                 'section' => 'Overview', 'children' => [],
             ];
+            $menus[] = [
+                'label' => 'Team Management', 'icon' => 'users-round',
+                'url' => route('admin.teams.index'),
+                'active' => request()->routeIs('admin.teams.*'),
+                'section' => 'Overview', 'children' => [],
+            ];
         }
 
         if ($user->hasCrmPermission('view.lead')) {

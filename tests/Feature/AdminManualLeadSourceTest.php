@@ -93,7 +93,8 @@ class AdminManualLeadSourceTest extends TestCase
             'name' => 'Lead before edit',
             'phone' => '1234567890',
             'source_website' => 'facebook.com',
-            'status' => 'active',
+            'status' => 'follow_up',
+            'type' => 'warm',
             'assigned_to' => $user->id,
         ]);
 

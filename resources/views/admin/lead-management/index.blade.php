@@ -246,6 +246,15 @@
 @push('scripts')
 <script src="{{ asset('admin/js/lead-details.js') }}?v={{ filemtime(public_path('admin/js/lead-details.js')) }}"></script>
 <script>
+    function toggleDeactivationReason(prefix) {
+        const visible = $('#' + prefix + 'status').val() === 'deactive';
+        $('#' + prefix + 'deactivate_reason_group').prop('hidden', !visible);
+        $('#' + prefix + 'deactivate_reason').prop('required', visible).prop('disabled', !visible);
+    }
+    $(document).on('change', '#add_status, #edit_status', function () {
+        toggleDeactivationReason(this.id.startsWith('edit_') ? 'edit_' : 'add_');
+    });
+
 
 //added
 const leadViewTitles = {
@@ -636,6 +645,7 @@ $(document).on(
 			lead.assigned_to ?? $(this).data('assigned'),
 			row?.assigned_user_name ?? $(this).data('assigned-name')
 		);
+        toggleDeactivationReason('edit_');
 		$('#editLeadModal').modal('show');
 	});
 
@@ -741,6 +751,7 @@ $(document).on(
 			$('#add_assigned').select2('destroy');
 		}
 		initAddSalesPersonSelect();
+        toggleDeactivationReason('add_');
 	});
 
 	// Handle Save New Lead
@@ -782,6 +793,7 @@ $(document).on(
                 budget_min: $('#add_budget_min').val(),
                 budget_max: $('#add_budget_max').val(),
                 notes: $('#add_notes').val(),
+                deactivate_reason: $('#add_deactivate_reason').val(),
 				_token: '{{ csrf_token() }}'
 			},
 			success: function (res) {

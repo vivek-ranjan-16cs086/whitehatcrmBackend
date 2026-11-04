@@ -70,17 +70,7 @@ class LeadController extends Controller
 
     private function leadOptions(): array
     {
-        $options = config('lead-options');
-        foreach ($options as $field => $defaults) {
-            $options[$field] = collect($defaults)->merge(Lead::query()
-                ->whereNotNull($field)->where($field, '!=', '')->distinct()->pluck($field))
-                ->unique()->values()->all();
-        }
-        if (Schema::hasColumn('projects', 'inventory')) {
-            $options['inventory'] = collect($options['inventory'])->merge(Project::query()
-                ->whereNotNull('inventory')->where('inventory', '!=', '')->distinct()->pluck('inventory'))->unique()->values()->all();
-        }
-        return $options;
+        return app(\App\Services\LeadOptionsService::class)->all();
     }
 
     public function assignees(Request $request)
@@ -727,16 +717,8 @@ $leadSources = Lead::query()
 				'email' => 'nullable|email|max:255',
 				'message' => 'nullable|string',
 				'external_id' => 'nullable|integer',
-				'status' => ['nullable', 'string', Rule::in([
-					'not_available',
-					'active',
-					'booked',
-					'deactive',
-					'follow_up',
-					'follow_up_expired',
-					'follow_up_complete',
-				])],
-				'type' => ['nullable', 'string', Rule::in(['hot', 'warm', 'cold'])],
+				'status' => 'nullable|string|max:255',
+				'type' => 'nullable|string|max:255',
 				'source_website' => [
 					'required',
 					'string',
@@ -749,24 +731,11 @@ $leadSources = Lead::query()
 				'assigned_to' => 'nullable|integer|exists:users,id',
 				'follow_up_date' => 'nullable|date',
 				'notes' => 'nullable|string',
-				'visit_status' => ['nullable', 'string', Rule::in([
-					'not_scheduled',
-					'scheduled',
-					'completed',
-				])],
+				'visit_status' => 'nullable|string|max:255',
 				'visit_date' => 'nullable|date',
 				'sub_response_id' => 'nullable|integer|exists:sub_responses,id',
 				'project_id' => 'nullable|integer|exists:projects,id',
-				'deactivate_reason' => ['nullable', 'string', Rule::in([
-					'Plot or Villa',
-					'Budget',
-					'Location',
-					'Ready To Move',
-					'Rent',
-					'Invalid Mobile Number',
-					'Others',
-					'Switch Off',
-				])],
+				'deactivate_reason' => 'nullable|string|max:255',
 				'lead_source' => 'nullable|string|max:255',
 				'inventory' => 'nullable|string|max:255',
 				'budget_min' => 'nullable|numeric|min:0',
@@ -789,9 +758,11 @@ $leadSources = Lead::query()
 			];
 			$fieldRules = array_diff_key($fieldRules, array_flip(self::READ_ONLY_LEAD_FIELDS));
             $options = $this->leadOptions();
-            foreach (['status', 'type', 'visit_status', 'lead_source', 'inventory'] as $field) {
+            foreach (['status', 'type', 'visit_status', 'lead_source', 'inventory', 'deactivate_reason'] as $field) {
                 $fieldRules[$field] = ['nullable', 'string', Rule::in($options[$field])];
             }
+            $isDeactive = ($request->input('status') ?? $lead->status) === 'deactive';
+            $fieldRules['deactivate_reason'] = [$isDeactive ? 'required' : 'nullable', 'string', Rule::in($options['deactivate_reason'])];
             $rules = array_intersect_key($fieldRules, $availableColumns);
 			$validated = $request->validate([
 				'id' => 'required|integer|exists:leads,id',
@@ -812,6 +783,7 @@ $leadSources = Lead::query()
 				}
 			}
 
+            if (!$isDeactive) $lead->deactivate_reason = null;
             $lead->assigned_to = $assignedUserId;
 
             DB::transaction(function () use ($lead, $oldAssignedUserId, $assignedUserId, $user) {
@@ -889,6 +861,7 @@ $leadSources = Lead::query()
 				'assigned_to' => 'nullable|integer|exists:users,id',
 				'follow_up_date' => 'nullable|date',
 				'notes' => 'nullable|string',
+                'deactivate_reason' => ['required_if:status,deactive', 'nullable', 'string', Rule::in($options['deactivate_reason'])],
                 'visit_status' => ['nullable', Rule::in($options['visit_status'])],
                 'visit_date' => 'nullable|date',
                 'lead_source' => ['nullable', Rule::in($options['lead_source'])],
@@ -911,6 +884,7 @@ $leadSources = Lead::query()
             $lead->source_page_name = $validated['source_page_name'] ?? null;
 			$lead->source_website = $validated['source_website'] ?? 'Manual';
 			$lead->status = $validated['status'] ?? 'active';
+            $lead->deactivate_reason = $lead->status === 'deactive' ? ($validated['deactivate_reason'] ?? null) : null;
 			// $lead->type = $validated['type'] ?? 'hot';
 			//added
 			

@@ -3,7 +3,7 @@
     $prefix = $editing ? 'edit_' : 'add_';
     $fields = [
         'name' => ['Name', 'text'], 'phone' => ['Mobile', 'tel'], 'email' => ['Email', 'email'],
-        'status' => ['Status', 'select'], 'type' => ['Lead type', 'select'],
+        'status' => ['Status', 'select'], 'deactivate_reason' => ['Deactivation reason', 'select'], 'type' => ['Lead type', 'select'],
         'source_website' => ['Source', 'select'], 'source_page_name' => ['Page', 'text'],
         'assigned_to' => ['Assigned To', 'select'], 'project_id' => ['Project', 'select'],
         'visit_status' => ['Visit status', 'select'], 'visit_date' => ['Visit date', 'date'],
@@ -29,7 +29,7 @@
             $id = $prefix . $suffix;
             $locked = $editing && in_array($field, $lockedFields, true);
         @endphp
-        <div class="{{ $kind === 'textarea' ? 'col-12' : 'col-md-6' }}">
+        <div @if($field === 'deactivate_reason') id="{{ $prefix }}deactivate_reason_group" hidden @endif class="{{ $kind === 'textarea' ? 'col-12' : 'col-md-6' }}">
             <label class="form-label" for="{{ $id }}">{{ $label }}</label>
             @if($kind === 'select')
                 <select name="{{ $field }}" id="{{ $id }}" class="form-select" @disabled($locked) @required(!$editing && $field === 'source_website')>
@@ -44,7 +44,7 @@
                             <option value="{{ $project->id }}">{{ $project->name }}</option>
                         @endforeach
                     @elseif($field !== 'assigned_to')
-                        @if(in_array($field, ['lead_source', 'inventory']))
+                        @if(in_array($field, ['lead_source', 'inventory', 'deactivate_reason']))
                             <option value="">None</option>
                         @endif
                         @foreach($leadOptions[$field] as $value)

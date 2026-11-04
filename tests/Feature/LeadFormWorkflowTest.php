@@ -49,6 +49,12 @@ class LeadFormWorkflowTest extends TestCase
             'lead_source' => 'Referral', 'inventory' => '3 BHK', 'project_id' => $project->id,
             'budget_min' => 100000, 'budget_max' => 200000, 'notes' => 'Buyer notes',
         ];
+        // Dropdown choices are supplied by existing database values.
+        \Illuminate\Support\Facades\DB::table('leads')->insert([
+            'name' => 'Existing options', 'status' => 'visit', 'type' => 'ready-to-buy',
+            'visit_status' => 're-visit-plan', 'lead_source' => 'Referral', 'inventory' => '3 BHK',
+        ]);
+        Lead::create(['name' => 'Existing visit', 'visit_status' => 'visited']);
         $id = $this->postJson(route('lead-managment.store'), $payload)->assertOk()->json('data.id');
         $lead = Lead::findOrFail($id);
         $this->assertSame('14:35', $lead->follow_up_date->format('H:i'));
@@ -79,7 +85,7 @@ class LeadFormWorkflowTest extends TestCase
     {
         $admin = User::factory()->create(['name' => 'Directory person']);
         $admin->assignRole(Role::create(['name' => 'super-admin', 'guard_name' => 'web']));
-        Lead::create(['name' => 'Existing', 'lead_source' => 'Existing source', 'inventory' => 'Penthouse']);
+        Lead::create(['name' => 'Existing', 'lead_source' => 'Existing source', 'inventory' => 'Penthouse', 'type' => 'ready-to-buy']);
         $this->actingAs($admin)->get(route('lead-management.index'))->assertOk()
             ->assertSee('Existing source')->assertSee('Penthouse')->assertSee('ready-to-buy')
             ->assertSee('id="add_type"', false)->assertSee('datetime-local');
