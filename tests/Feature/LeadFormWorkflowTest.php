@@ -13,6 +13,29 @@ class LeadFormWorkflowTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_add_and_edit_have_matching_fields_and_edit_locks_original_details(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::create(['name' => 'super-admin', 'guard_name' => 'web']));
+        $html = $this->actingAs($admin)->get(route('lead-management.index'))->assertOk()->getContent();
+        $document = new \DOMDocument();
+        @$document->loadHTML($html);
+        $xpath = new \DOMXPath($document);
+        $fields = [];
+        foreach (['addLeadForm', 'editLeadForm'] as $form) {
+            foreach ($xpath->query("//*[@id='{$form}']//*[@name and not(@type='hidden')]") as $input) {
+                $fields[$form][$input->getAttribute('name')] = $input;
+            }
+        }
+        $this->assertSame(array_keys($fields['addLeadForm']), array_keys($fields['editLeadForm']));
+        foreach (['name', 'phone', 'email', 'message', 'source_page_name'] as $field) {
+            $this->assertTrue($fields['editLeadForm'][$field]->hasAttribute('readonly'));
+            $this->assertFalse($fields['addLeadForm'][$field]->hasAttribute('readonly'));
+        }
+        $this->assertTrue($fields['editLeadForm']['project_id']->hasAttribute('disabled'));
+        $this->assertFalse($fields['editLeadForm']['assigned_to']->hasAttribute('disabled'));
+    }
+
     public function test_add_and_edit_save_all_workflow_fields_and_preserve_original_details(): void
     {
         $admin = User::factory()->create();
@@ -34,11 +57,15 @@ class LeadFormWorkflowTest extends TestCase
         $this->assertSame('100000.00', $lead->budget_min);
         $this->postJson(route('lead-managment.update'), [
             'id' => $id, 'name' => 'Tampered', 'phone' => '9999999999', 'source_website' => 'changed.example',
+            'project_id' => null, 'email' => 'tampered@example.com', 'message' => 'Tampered message',
             'source_page_name' => 'Tampered page', 'assigned_to' => $admin->id,
             'follow_up_date' => '2026-11-10T16:45', 'notes' => 'Updated notes', 'visit_status' => 'visited',
         ])->assertOk();
         $lead->refresh();
         $this->assertSame('Original buyer', $lead->name);
+        $this->assertEquals($project->id, $lead->project_id);
+        $this->assertNull($lead->email);
+        $this->assertNull($lead->message);
         $this->assertSame('1234567890', $lead->phone);
         $this->assertSame('facebook.com', $lead->source_website);
         $this->assertNull($lead->source_page_name);

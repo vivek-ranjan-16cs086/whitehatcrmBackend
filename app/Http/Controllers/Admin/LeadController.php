@@ -63,7 +63,7 @@ class LeadController extends Controller
 	];
 
     private const READ_ONLY_LEAD_FIELDS = [
-        'name', 'phone', 'email', 'message', 'external_id', 'source_website',
+        'name', 'phone', 'email', 'message', 'external_id', 'source_website', 'project_id',
         'source_page_id', 'source_page_name', 'source_form_id', 'source_form_name',
         'campaign_id', 'campaign_name', 'adset_id', 'adset_name', 'ad_id', 'ad_name', 'source_submitted_at',
     ];
@@ -882,6 +882,7 @@ $leadSources = Lead::query()
 				'phone'          => 'required|string|max:20',
 				'email'          => 'nullable|email|max:255',
 				'message'        => 'nullable|string',
+                'source_page_name' => 'nullable|string|max:255',
 				'source_website' => ['required', 'string', 'max:255', Rule::in(array_unique([...array_values(self::MANUAL_LEAD_SOURCES), ...Lead::query()->whereNotNull('source_website')->distinct()->pluck('source_website')->all()]))],
 				'status' => ['nullable', Rule::in($options['status'])],
 				'type' => ['nullable', Rule::in($options['type'])],
@@ -907,6 +908,7 @@ $leadSources = Lead::query()
 			$lead->phone = $validated['phone'];
 			$lead->email = $validated['email'] ?? null;
 			$lead->message = $validated['message'] ?? null;
+            $lead->source_page_name = $validated['source_page_name'] ?? null;
 			$lead->source_website = $validated['source_website'] ?? 'Manual';
 			$lead->status = $validated['status'] ?? 'active';
 			// $lead->type = $validated['type'] ?? 'hot';
@@ -918,7 +920,8 @@ $lead->type = !empty($validated['type']) ? $validated['type'] : 'cold';
 			$lead->follow_up_date = $validated['follow_up_date'] ?? null;
 			$lead->notes = $validated['notes'] ?? null;
 
-			$lead->fill(collect($validated)->only(['visit_status', 'visit_date', 'lead_source', 'inventory', 'project_id', 'budget_min', 'budget_max'])->all());
+            $lead->project_id = $validated['project_id'] ?? null;
+            $lead->fill(collect($validated)->only(['visit_status', 'visit_date', 'lead_source', 'inventory', 'budget_min', 'budget_max'])->all());
             $lead->save();
 
 			// If assignment changed → send notification

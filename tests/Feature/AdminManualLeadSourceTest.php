@@ -126,7 +126,7 @@ class AdminManualLeadSourceTest extends TestCase
             'source_page_name' => null,
             'status' => 'follow_up',
             'type' => 'warm',
-            'project_id' => $project->id,
+            'project_id' => null,
             'notes' => 'Updated note',
         ]);
     }
@@ -145,7 +145,7 @@ class AdminManualLeadSourceTest extends TestCase
             ->assertSee('leads-management-page')
             ->assertSee('id="viewLeadModal"', false)
             ->assertSee('id="edit_source_website"', false)
-            ->assertSee('name="source_form_name"', false)
+            ->assertSee('name="source_page_name"', false)
             ->assertSee('name="budget_max"', false)
             ->assertSee('download', false)
             ->assertSee('name="_token"', false);
