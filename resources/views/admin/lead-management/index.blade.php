@@ -86,7 +86,7 @@
 				<table id="leads-table" class="table leads-table">
 					<thead>
 						<tr>
-							<th>S.No</th>
+							<th><input type="checkbox" id="selectAllLeads" class="form-check-input" aria-label="Select all leads on this page" title="Select all leads on this page"></th>
 							<th>Name</th>
 							<th>Phone</th>
 							<th>Source</th>
@@ -105,6 +105,10 @@
 					<tbody></tbody>
 				</table>
 			</div>
+            <div class="d-flex align-items-center gap-2 mt-2">
+                <span id="leadSelectionCount" class="small text-muted" role="status" aria-live="polite">0 selected</span>
+                <button id="clearLeadSelection" type="button" class="btn btn-link btn-sm" hidden>Clear selection</button>
+            </div>
 		</div>
 	</div>
 	@can('create.lead')
@@ -403,6 +407,50 @@ $(document).on('change', '.lead-field-select', async function () {
     }
 });
 
+const selectedLeadIds = new Set();
+
+function renderLeadSelection(data, type, row) {
+    if (type !== 'display') return '';
+    return $('<input>', {
+        type: 'checkbox', class: 'form-check-input lead-row-select', value: String(row.lead_id),
+        'aria-label': 'Select lead ' + $('<div>').html(row.name || '').text()
+    }).attr('checked', selectedLeadIds.has(String(row.lead_id)) ? 'checked' : null).prop('outerHTML');
+}
+
+function syncLeadSelection() {
+    const checkboxes = $('#leads-table .lead-row-select');
+    checkboxes.each(function () {
+        this.checked = selectedLeadIds.has(this.value);
+        $(this).closest('tr').toggleClass('table-active', this.checked);
+    });
+    const checkedCount = checkboxes.filter(':checked').length;
+    $('#selectAllLeads').prop({
+        checked: checkboxes.length > 0 && checkedCount === checkboxes.length,
+        indeterminate: checkedCount > 0 && checkedCount < checkboxes.length,
+        disabled: checkboxes.length === 0
+    });
+    $('#leadSelectionCount').text(selectedLeadIds.size + ' selected');
+    $('#clearLeadSelection').prop('hidden', selectedLeadIds.size === 0);
+}
+
+$(document).on('change', '.lead-row-select', function () {
+    if (this.checked) selectedLeadIds.add(this.value);
+    else selectedLeadIds.delete(this.value);
+    syncLeadSelection();
+});
+$(document).on('change', '#selectAllLeads', function () {
+    const checked = this.checked;
+    $('#leads-table .lead-row-select').each(function () {
+        if (checked) selectedLeadIds.add(this.value);
+        else selectedLeadIds.delete(this.value);
+    });
+    syncLeadSelection();
+});
+$(document).on('click', '#clearLeadSelection', function () {
+    selectedLeadIds.clear();
+    syncLeadSelection();
+});
+
 let currentLeadView =
     sessionStorage.getItem('selectedLeadView') || 'total';
 
@@ -464,14 +512,7 @@ d.open_lead_id = pendingLeadId;
 
 			columns: [
 
-				{
-					data: null,
-					orderable: false,
-					searchable: false,
-					render: function (data, type, row, meta) {
-						return meta.row + meta.settings._iDisplayStart + 1;
-					}
-				},
+				{ data: null, orderable: false, searchable: false, render: renderLeadSelection },
 
 				{
                     data: 'name',
@@ -554,27 +595,27 @@ d.open_lead_id = pendingLeadId;
 						{
 							extend: 'copyHtml5',
 							title: 'Leads',
-							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10,11,12] }
+							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12], orthogonal: 'export' }
 						},
 						{
 							extend: 'excelHtml5',
 							title: 'Leads',
-							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10,11,12] }
+							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12], orthogonal: 'export' }
 						},
 						{
 							extend: 'csv',
 							title: 'Leads',
-							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10,11,12] }
+							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12], orthogonal: 'export' }
 						},
 						{
 							extend: 'pdfHtml5',
 							title: 'Leads',
-							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10,11,12] }
+							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12], orthogonal: 'export' }
 						},
 						{
 							extend: 'print',
 							title: 'Leads',
-							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10,11,12] }
+							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12], orthogonal: 'export' }
 						}
 					]
 				},
@@ -590,6 +631,7 @@ d.open_lead_id = pendingLeadId;
 			},
 
 			drawCallback: function () {
+                syncLeadSelection();
 				if (!pendingLeadId) {
 					return;
 				}
