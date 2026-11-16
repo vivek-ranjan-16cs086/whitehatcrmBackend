@@ -7,9 +7,7 @@
 <div class="leads-page">
 
 	<div class="card leads-card">
-		<div class="card-header d-flex justify-content-between align-items-center">
-			<h6 class="mb-0 fw-bold">All Leads</h6>
-			<div class="d-flex gap-2 flex-wrap">
+        <div id="leadToolbarActions" class="d-flex align-items-center gap-2 flex-wrap">
 				@can('create.lead')
 					<button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#importLeadsModal">
 						<i class="bi bi-upload"></i> Import CSV
@@ -18,8 +16,7 @@
 						<i class="bi bi-plus"></i> Add Lead
 					</button>
 				@endcan
-			</div>
-		</div>
+        </div>
 
         <div id="leadCalendarFilter" class="lead-calendar-toolbar">
             <input type="hidden" id="leadDateFrom">
@@ -27,7 +24,6 @@
             <button type="button" id="leadCalendarToggle" class="btn btn-outline-secondary btn-sm" aria-haspopup="dialog" aria-expanded="false" aria-controls="leadCalendarPanel">
                 <i class="bi bi-calendar3" aria-hidden="true"></i> <span id="leadCalendarLabel">All dates</span> <i class="bi bi-chevron-down" aria-hidden="true"></i>
             </button>
-            <button type="button" id="resetLeadFilters" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Reset</button>
         </div>
         <div id="leadCalendarPanel" class="lead-calendar-panel" role="dialog" aria-label="Filter leads by arrival date" hidden>
             <div class="lead-calendar-presets" aria-label="Quick date ranges">
@@ -631,6 +627,7 @@ d.open_lead_id = pendingLeadId;
             initComplete: function () {
                 const wrapper = $(this.api().table().container());
                 wrapper.find('.lead-controls-left').prepend($('#leadCalendarFilter'));
+                wrapper.find('.lead-controls-row').append($('#leadToolbarActions'));
                 $('#leadSearchSlot').empty().append(wrapper.find('.dataTables_filter'));
                 $('.lead-list-secondary').insertAfter(wrapper.find('.lead-controls-row'));
 
@@ -765,14 +762,6 @@ $(document).on('click', '.lead-filter-btn', function () {
 
 $(document).on('lead:date-range', function () {
     $('#leads-table').DataTable().ajax.reload(null, true);
-});
-$(document).on('click', '#resetLeadFilters', function () {
-    window.clearLeadDateRange(false);
-    Object.keys(leadHeaderFilters).forEach(field => delete leadHeaderFilters[field]);
-    $('.lead-column-filter').val('');
-    const table = $('#leads-table').DataTable();
-    table.search(''); table.columns().search('');
-    window.setLeadView('total');
 });
 //---
 	$(document).on('click', '.editBtn', function () {

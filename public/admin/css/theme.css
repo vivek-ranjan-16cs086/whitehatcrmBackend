@@ -359,8 +359,8 @@ body.leads-management-page .lead-controls-left,
 
 /* Database-driven column filters replace sorting from Source onward. */
 body.leads-management-page #leads-table_wrapper .lead-filter-heading { vertical-align: top; }
-body.leads-management-page .lead-filter-heading > span { display: block; margin-bottom: 7px; }
-body.leads-management-page .lead-column-filter { min-height: 30px; height: 30px; min-width: 125px; max-width: 100%; padding: 3px 26px 3px 8px; font-size: 12px; font-weight: 400; text-transform: none; letter-spacing: normal; color: #475467; border-color: #d7dce5; }
+body.leads-management-page .lead-filter-heading > span { display: block; margin-bottom: 3px; line-height: 12px; }
+body.leads-management-page .lead-column-filter { min-height: 27px; height: 27px; min-width: 125px; max-width: 100%; padding: 3px 26px 3px 8px; font-size: 12px; font-weight: 400; text-transform: none; letter-spacing: normal; color: #475467; border-color: #d7dce5; }
 body.leads-management-page .lead-column-filter:focus { border-color: #2563eb; }
 #leads-table_wrapper .dataTables_scrollBody thead .lead-column-filter { height: 0 !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; border: 0 !important; }
 #leads-table_wrapper .dataTables_scrollBody thead .lead-filter-heading > span { margin: 0 !important; }
@@ -374,4 +374,15 @@ body.leads-management-page #leads-table_wrapper .dt-buttons .btn:hover {
     color: #fff;
     background: #2563eb;
     border-color: #2563eb;
+}
+
+/* One action toolbar and compact filter headings. */
+body.leads-management-page .lead-controls-row { align-items: center; gap: 8px; }
+body.leads-management-page #leadToolbarActions { margin-left: auto; }
+body.leads-management-page #leads-table_wrapper .dataTables_scrollHead th { padding-top: 6px !important; padding-bottom: 6px !important; }
+body.leads-management-page #leads-table_wrapper .dataTables_scrollHead .lead-filter-heading { vertical-align: middle; }
+body.leads-management-page #leadToolbarActions .btn { min-height: 36px; }
+@media (max-width: 600px) {
+    body.leads-management-page #leadToolbarActions { margin-left: 0; }
+    body.leads-management-page .lead-column-filter { min-height: 32px; height: 32px; }
 }
