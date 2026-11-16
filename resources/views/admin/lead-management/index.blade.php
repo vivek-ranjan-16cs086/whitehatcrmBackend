@@ -82,14 +82,11 @@
         </div>
 
 		<div class="card-body">
-            <label for="selectAllLeads" class="d-inline-flex align-items-center gap-2 mb-3" style="cursor:pointer">
-                <span>Select All</span>
-                <input type="checkbox" id="selectAllLeads" class="form-check-input m-0" style="width:20px;height:20px;cursor:pointer" aria-label="Select all leads on this page" title="Select all leads on this page">
-            </label>
 			<div class="table-responsive">
 				<table id="leads-table" class="table leads-table">
 					<thead>
 						<tr>
+							<th class="lead-selection-cell"><input type="checkbox" id="selectAllLeads" class="form-check-input lead-select-checkbox" aria-label="Select all leads on this page" title="Select all leads on this page"></th>
 							<th>Name</th>
 							<th>Phone</th>
 							<th>Source</th>
@@ -415,8 +412,7 @@ const selectedLeadIds = new Set();
 function renderLeadSelection(data, type, row) {
     if (type !== 'display') return '';
     return $('<input>', {
-        type: 'checkbox', class: 'form-check-input lead-row-select m-0 flex-shrink-0', value: String(row.lead_id),
-        style: 'width:20px;height:20px;cursor:pointer',
+        type: 'checkbox', class: 'form-check-input lead-row-select lead-select-checkbox', value: String(row.lead_id),
         'aria-label': 'Select lead ' + $('<div>').html(row.name || '').text()
     }).attr('checked', selectedLeadIds.has(String(row.lead_id)) ? 'checked' : null).prop('outerHTML');
 }
@@ -487,6 +483,7 @@ if (pendingLeadId && !/^\d+$/.test(pendingLeadId)) {
 		$("#leads-table").DataTable({
 			processing: true,
 			serverSide: true,
+            order: [],
 			destroy: true,
 
 			//added
@@ -516,15 +513,15 @@ d.open_lead_id = pendingLeadId;
 
 			columns: [
 
+                { data: null, orderable: false, searchable: false, width: '36px', className: 'lead-selection-cell', render: renderLeadSelection },
+
 				{
                     data: 'name',
                     render: function (data, type, row) {
                         if (type !== 'display') return data;
                         const name = $('<div class="lead-name-text">').html(data || '-');
                         const arrival = $('<small class="lead-arrival-time text-muted">').text(row.arrived_at_ist || '');
-                        const details = $('<div>').append(name, arrival);
-                        return $('<div class="d-flex align-items-center gap-3">')
-                            .append(renderLeadSelection(null, 'display', row), details).prop('outerHTML');
+                        return $('<div>').append(name, arrival).html();
                     }
                 },
 
@@ -599,27 +596,27 @@ d.open_lead_id = pendingLeadId;
 						{
 							extend: 'copyHtml5',
 							title: 'Leads',
-							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10,11], orthogonal: 'export' }
+							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12], orthogonal: 'export' }
 						},
 						{
 							extend: 'excelHtml5',
 							title: 'Leads',
-							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10,11], orthogonal: 'export' }
+							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12], orthogonal: 'export' }
 						},
 						{
 							extend: 'csv',
 							title: 'Leads',
-							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10,11], orthogonal: 'export' }
+							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12], orthogonal: 'export' }
 						},
 						{
 							extend: 'pdfHtml5',
 							title: 'Leads',
-							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10,11], orthogonal: 'export' }
+							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12], orthogonal: 'export' }
 						},
 						{
 							extend: 'print',
 							title: 'Leads',
-							exportOptions: { columns: [0,1,2,3,4,5,6,7,8,9,10,11], orthogonal: 'export' }
+							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12], orthogonal: 'export' }
 						}
 					]
 				},

@@ -840,3 +840,37 @@ table.dataTable tbody tr:hover > * {
 }
 .lead-arrival-time { display: block; margin-top: 3px; font-size: 10px; line-height: 1.4; white-space: nowrap; }
 .lead-name-text { line-height: 1.4; }
+
+/* Compact WordPress-style selection column beside the lead name. */
+#leads-table th.lead-selection-cell,
+#leads-table td.lead-selection-cell {
+    box-sizing: border-box;
+    width: 36px !important;
+    min-width: 36px !important;
+    max-width: 36px !important;
+    padding: 10px 8px !important;
+    text-align: center;
+    vertical-align: middle;
+}
+
+#leads-table .lead-select-checkbox {
+    float: none;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    border: 1px solid #8c8f94;
+    border-radius: 2px;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+#leads-table .lead-select-checkbox:checked,
+#leads-table .lead-select-checkbox:indeterminate {
+    border-color: #2271b1;
+    background-color: #2271b1;
+}
+
+#leads-table .lead-select-checkbox:focus-visible {
+    outline: 2px solid #2271b1;
+    outline-offset: 2px;
+}
