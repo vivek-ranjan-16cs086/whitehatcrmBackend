@@ -275,39 +275,13 @@ body .topbar { background: #fff !important; }
 body .chat-contact-avatar { position: relative; display: inline-grid; place-items: center; width: 40px; height: 40px; flex: 0 0 40px; border-radius: 50% !important; overflow: hidden; background: #e9eef5; color: #475569; font-size: 16px; font-weight: 700; }
 .chat-contact-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 
-/* Keep the lead workspace neutral; reserve the accent for the main action. */
+/* Neutral lead-table surfaces with blue action controls. */
 body.leads-management-page {
     --table-head-bg: #f7f7f8;
     --table-row-alt: #fafafa;
     --table-row-hover: #f3f4f6;
     --sidebar-text-hover: #374151;
     --sidebar-text-active: #1f2937;
-}
-
-body.leads-management-page .leads-page :is(.btn-outline-primary, .btn-outline-secondary),
-body.leads-management-page #leads-table_wrapper .dt-buttons .btn {
-    color: #475467 !important;
-    background: #fff !important;
-    border-color: #d7dbe0 !important;
-    box-shadow: none;
-}
-
-body.leads-management-page .leads-page :is(.btn-outline-primary, .btn-outline-secondary):hover,
-body.leads-management-page #leads-table_wrapper .dt-buttons .btn:is(:hover, :focus, :active) {
-    color: #1f2937 !important;
-    background: #f3f4f6 !important;
-    border-color: #b9c0c9 !important;
-}
-
-body.leads-management-page .lead-filter-btn.btn-primary {
-    color: #fff !important;
-    background: #374151 !important;
-    border-color: #374151 !important;
-}
-
-body.leads-management-page .lead-filter-btn.btn-primary:hover {
-    background: #1f2937 !important;
-    border-color: #1f2937 !important;
 }
 
 body.leads-management-page .lead-page-badge {
@@ -356,8 +330,8 @@ body.leads-management-page .sidebar-nav .nav-item a.active :is(i, svg) {
 }
 
 body.leads-management-page #leads-table_wrapper .pagination .page-item.active .page-link {
-    background: #374151 !important;
-    border-color: #374151 !important;
+    background: #2563eb !important;
+    border-color: #2563eb !important;
     color: #fff !important;
 }
 
@@ -382,3 +356,22 @@ body.leads-management-page .lead-controls-left,
 .lead-calendar-grid button[aria-current="date"] { box-shadow: inset 0 0 0 1px #9ca3af; }
 .lead-calendar-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding-top: 10px; border-top: 1px solid #eee; font-size: 12px; }
 @media (max-width: 480px) { .lead-calendar-months { grid-template-columns: 1fr; gap: 12px; } }
+
+/* Database-driven column filters replace sorting from Source onward. */
+body.leads-management-page #leads-table_wrapper .lead-filter-heading { vertical-align: top; }
+body.leads-management-page .lead-filter-heading > span { display: block; margin-bottom: 7px; }
+body.leads-management-page .lead-column-filter { min-height: 30px; height: 30px; min-width: 125px; max-width: 100%; padding: 3px 26px 3px 8px; font-size: 12px; font-weight: 400; text-transform: none; letter-spacing: normal; color: #475467; border-color: #d7dce5; }
+body.leads-management-page .lead-column-filter:focus { border-color: #2563eb; }
+#leads-table_wrapper .dataTables_scrollBody thead .lead-column-filter { height: 0 !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; border: 0 !important; }
+#leads-table_wrapper .dataTables_scrollBody thead .lead-filter-heading > span { margin: 0 !important; }
+
+body.leads-management-page #leads-table_wrapper .dt-buttons .btn {
+    color: #2563eb;
+    border-color: #2563eb;
+    background: #fff;
+}
+body.leads-management-page #leads-table_wrapper .dt-buttons .btn:hover {
+    color: #fff;
+    background: #2563eb;
+    border-color: #2563eb;
+}

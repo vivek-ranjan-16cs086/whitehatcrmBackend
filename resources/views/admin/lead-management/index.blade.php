@@ -63,15 +63,78 @@
 							<th>Name</th>
 							<th>Phone</th>
 							<th>Message</th>
-							<th>Source</th>
-							<th>Page Name</th>
-							<th>Assigned To</th>
-							<th>Status</th>
-							<th>Visit</th>
-							<th>Visit Status</th>
-							<th>Inventory</th>
-							<th>Project</th>
-							<th>Type</th>
+							<th class="lead-filter-heading"><span>Source</span>
+                                <select class="form-select form-select-sm lead-column-filter" data-lead-column-filter="source_website" aria-label="Filter Source">
+                                    <option value="">All</option>
+                                    @foreach($headerFilters['source_website'] as $option)
+                                        <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
+                                    @endforeach
+                                </select>
+                            </th>
+							<th class="lead-filter-heading"><span>Page Name</span>
+                                <select class="form-select form-select-sm lead-column-filter" data-lead-column-filter="source_page_name" aria-label="Filter Page Name">
+                                    <option value="">All</option>
+                                    @foreach($headerFilters['source_page_name'] as $option)
+                                        <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
+                                    @endforeach
+                                </select>
+                            </th>
+							<th class="lead-filter-heading"><span>Assigned To</span>
+                                <select class="form-select form-select-sm lead-column-filter" data-lead-column-filter="assigned_to" aria-label="Filter Assigned To">
+                                    <option value="">All</option>
+                                    @foreach($headerFilters['assigned_to'] as $option)
+                                        <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
+                                    @endforeach
+                                </select>
+                            </th>
+							<th class="lead-filter-heading"><span>Status</span>
+                                <select class="form-select form-select-sm lead-column-filter" data-lead-column-filter="status" aria-label="Filter Status">
+                                    <option value="">All</option>
+                                    @foreach($headerFilters['status'] as $option)
+                                        <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
+                                    @endforeach
+                                </select>
+                            </th>
+							<th class="lead-filter-heading"><span>Visit</span>
+                                <select class="form-select form-select-sm lead-column-filter" data-lead-column-filter="visit_date" aria-label="Filter Visit">
+                                    <option value="">All</option>
+                                    @foreach($headerFilters['visit_date'] as $option)
+                                        <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
+                                    @endforeach
+                                </select>
+                            </th>
+							<th class="lead-filter-heading"><span>Visit Status</span>
+                                <select class="form-select form-select-sm lead-column-filter" data-lead-column-filter="visit_status" aria-label="Filter Visit Status">
+                                    <option value="">All</option>
+                                    @foreach($headerFilters['visit_status'] as $option)
+                                        <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
+                                    @endforeach
+                                </select>
+                            </th>
+							<th class="lead-filter-heading"><span>Inventory</span>
+                                <select class="form-select form-select-sm lead-column-filter" data-lead-column-filter="inventory" aria-label="Filter Inventory">
+                                    <option value="">All</option>
+                                    @foreach($headerFilters['inventory'] as $option)
+                                        <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
+                                    @endforeach
+                                </select>
+                            </th>
+							<th class="lead-filter-heading"><span>Project</span>
+                                <select class="form-select form-select-sm lead-column-filter" data-lead-column-filter="project_id" aria-label="Filter Project">
+                                    <option value="">All</option>
+                                    @foreach($headerFilters['project_id'] as $option)
+                                        <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
+                                    @endforeach
+                                </select>
+                            </th>
+							<th class="lead-filter-heading"><span>Type</span>
+                                <select class="form-select form-select-sm lead-column-filter" data-lead-column-filter="type" aria-label="Filter Type">
+                                    <option value="">All</option>
+                                    @foreach($headerFilters['type'] as $option)
+                                        <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
+                                    @endforeach
+                                </select>
+                            </th>
 							<th>Action</th>
 						</tr>
 					</thead>
@@ -425,6 +488,26 @@ $(document).on('click', '#clearLeadSelection', function () {
     syncLeadSelection();
 });
 
+function leadExportHeading(data, column, node) {
+    const label = $(node).find('span').first();
+    return label.length ? label.text() : $('<div>').html(data).text();
+}
+
+const leadHeaderFilters = {};
+$(document).on('click keydown', '.lead-column-filter', function (event) { event.stopPropagation(); });
+$(document).on('change', '.lead-column-filter', function () {
+    const field = this.dataset.leadColumnFilter;
+    if (this.value) leadHeaderFilters[field] = this.value;
+    else delete leadHeaderFilters[field];
+    $('.lead-column-filter').filter(function () { return this.dataset.leadColumnFilter === field; }).val(this.value);
+    if (field === 'status' && this.value) {
+        currentLeadView = 'total'; pendingAttention = null;
+        sessionStorage.setItem('selectedLeadView', 'total');
+        updateLeadFilterButtons('total');
+    }
+    $('#leads-table').DataTable().ajax.reload(null, true);
+});
+
 let currentLeadView =
     sessionStorage.getItem('selectedLeadView') || 'total';
 
@@ -459,6 +542,7 @@ if (pendingLeadId && !/^\d+$/.test(pendingLeadId)) {
 			serverSide: true,
             order: [],
             autoWidth: true,
+            columnDefs: [{ targets: [4,5,6,7,8,9,10,11,12,13], orderable: false }],
 			destroy: true,
 
 			//added
@@ -474,6 +558,7 @@ ajax: {
 	 // New filters
 d.date_from = $('#leadDateFrom').val();
 d.date_to = $('#leadDateTo').val();
+d.header_filters = {...leadHeaderFilters};
 
 
 d.open_lead_id = pendingLeadId;
@@ -563,7 +648,7 @@ d.open_lead_id = pendingLeadId;
 						{
 							extend: 'copyHtml5',
 							title: 'Leads',
-							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12], orthogonal: 'export' }
+							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12], orthogonal: 'export', format: { header: leadExportHeading } }
 						},
 						{
 							extend: 'excelHtml5',
@@ -648,6 +733,10 @@ window.setLeadView = function (view, attention = null) {
         return;
     }
 
+    if (view !== 'total') {
+        delete leadHeaderFilters.status;
+        $('.lead-column-filter[data-lead-column-filter="status"]').val('');
+    }
     currentLeadView = view;
     pendingAttention = attention === 'unassigned' ? attention : null;
 
@@ -679,6 +768,8 @@ $(document).on('lead:date-range', function () {
 });
 $(document).on('click', '#resetLeadFilters', function () {
     window.clearLeadDateRange(false);
+    Object.keys(leadHeaderFilters).forEach(field => delete leadHeaderFilters[field]);
+    $('.lead-column-filter').val('');
     const table = $('#leads-table').DataTable();
     table.search(''); table.columns().search('');
     window.setLeadView('total');

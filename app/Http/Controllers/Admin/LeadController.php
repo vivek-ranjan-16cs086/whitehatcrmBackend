@@ -130,6 +130,7 @@ $leadSources = Lead::query()
 
     $filterOptions = app(\App\Services\LeadOptionsService::class)->filtersFor($request->user());
     return view('admin.lead-management.index', [
+        'headerFilters' => app(\App\Services\LeadHeaderFilterService::class)->forUser($request->user()),
         'inlineLeadOptions' => app(\App\Services\LeadOptionsService::class)->inline(),
         'assignmentUsers' => $request->user()->hasRole('super-admin', 'web')
             ? User::with('roles')->orderBy('name')->orderBy('id')->get(['id', 'name'])->map(fn ($user) => [
@@ -339,6 +340,8 @@ $leadSources = Lead::query()
 		    'date_from' => 'nullable|date_format:Y-m-d',
 		    'date_to' => 'nullable|date_format:Y-m-d|after_or_equal:date_from',
 		    'source' => 'nullable|string|max:255',
+            'header_filters' => 'sometimes|array',
+            'header_filters.*' => 'nullable|string|max:255',
 		    'attention' => 'nullable|in:unassigned,overdue,no-follow-up,stale',
             'filter_status' => 'nullable|string|max:50',
             'filter_project' => 'nullable|integer|min:1',
@@ -353,7 +356,7 @@ $leadSources = Lead::query()
 			|| $user->canViewAllLeads();
 		$attention = $request->input('attention');
 
-		if (!$canViewTeam && $attention !== null) {
+		if (!$canViewTeam) {
 			$query->where('leads.assigned_to', $user->id);
 		}
 
@@ -419,6 +422,21 @@ $leadSources = Lead::query()
 			}
 		}
         if ($openLeadId === null) {
+            foreach ($request->input('header_filters', []) as $field => $value) {
+                if (!in_array($field, \App\Services\LeadHeaderFilterService::FIELDS, true) || $value === null || $value === '') continue;
+                if ($value === '__empty__') {
+                    $query->where(function ($empty) use ($field) {
+                        $empty->whereNull('leads.'.$field);
+                        if (!in_array($field, ['assigned_to', 'project_id', 'visit_date'], true)) $empty->orWhere('leads.'.$field, '');
+                    });
+                } elseif ($field === 'visit_date') {
+                    validator(['visit_date' => $value], ['visit_date' => 'date_format:Y-m-d'])->validate();
+                    $query->whereDate('leads.visit_date', $value);
+                } else {
+                    if (in_array($field, ['assigned_to', 'project_id'], true)) validator(['id' => $value], ['id' => 'integer|min:1'])->validate();
+                    $query->where('leads.'.$field, $value);
+                }
+            }
             $available = array_flip(Schema::getColumnListing('leads'));
             foreach ($request->input('filters', []) as $field => $value) {
                 if ($value === null || $value === '') continue;
@@ -448,7 +466,7 @@ $leadSources = Lead::query()
 //...
 		// Record counts
 		$totalRecordsQuery = Lead::query();
-		if (!$canViewTeam && $attention !== null) {
+		if (!$canViewTeam) {
 			$totalRecordsQuery->where('leads.assigned_to', $user->id);
 		}
 		$totalRecords = $totalRecordsQuery->count();

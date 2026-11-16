@@ -30,8 +30,8 @@ class AdminTableSortingTest extends TestCase
         $user->assignRole($role);
 
         $this->actingAs($user);
-        Lead::create(['name' => 'Zulu']);
-        Lead::create(['name' => 'Alpha']);
+        Lead::create(['name' => 'Zulu', 'assigned_to' => $user->id]);
+        Lead::create(['name' => 'Alpha', 'assigned_to' => $user->id]);
 
         $response = $this->get(route('lead-management.ajax-list', [
             'draw' => 1,

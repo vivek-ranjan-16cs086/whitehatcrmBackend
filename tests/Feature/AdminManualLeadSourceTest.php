@@ -157,6 +157,7 @@ class AdminManualLeadSourceTest extends TestCase
         $user = $this->userWithCreateLeadPermission();
         $lead = Lead::create([
             'name' => 'Notification target lead',
+            'assigned_to' => $user->id,
             'phone' => '1234567890',
             'status' => 'closed',
         ]);
