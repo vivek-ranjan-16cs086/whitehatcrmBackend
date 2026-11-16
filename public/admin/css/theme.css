@@ -386,3 +386,51 @@ body.leads-management-page #leadToolbarActions .btn { min-height: 36px; }
     body.leads-management-page #leadToolbarActions { margin-left: 0; }
     body.leads-management-page .lead-column-filter { min-height: 32px; height: 32px; }
 }
+
+/* Capitalize displayed lead fields without altering stored values or messages. */
+body.leads-management-page #leads-table tbody td:not(.lead-message-cell),
+body.leads-management-page #leads-table tbody td:not(.lead-message-cell) :is(select, option, .badge, .lead-page-badge, .lead-name-text),
+body.leads-management-page .lead-column-filter,
+body.leads-management-page .lead-column-filter option {
+    text-transform: capitalize;
+}
+body.leads-management-page #leads-table tbody td.lead-message-cell {
+    text-transform: none;
+}
+
+/* Blue calendar action, quiet view tabs, and a reset beside search. */
+body.leads-management-page #leadCalendarToggle {
+    color: #fff !important;
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+}
+body.leads-management-page #leadCalendarToggle:hover { background: #1d4ed8 !important; }
+body.leads-management-page .lead-status-filters .lead-filter-btn,
+body.leads-management-page #resetLeadFilters {
+    color: #4b5563 !important;
+    background: #fff !important;
+    border-color: #d1d5db !important;
+    box-shadow: none !important;
+}
+body.leads-management-page .lead-status-filters .lead-filter-btn.btn-primary {
+    color: #1f2937 !important;
+    background: #e5e7eb !important;
+    border-color: #9ca3af !important;
+}
+body.leads-management-page .lead-status-filters .lead-filter-btn:hover,
+body.leads-management-page #resetLeadFilters:hover { background: #f3f4f6 !important; color: #111827 !important; }
+.lead-search-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.lead-search-actions #resetLeadFilters { min-height: 40px; white-space: nowrap; }
+body.leads-management-page #leadCalendarToggle:is(:focus, :focus-visible, :active),
+body.leads-management-page #leads-table_wrapper .dt-buttons .btn:is(:focus, :active),
+body.leads-management-page :is(.form-select, .select2-selection, .dropdown-toggle):is(:focus, :focus-visible, :active),
+body.leads-management-page .select2-container--focus .select2-selection,
+body.leads-management-page .select2-container--open .select2-selection,
+body.leads-management-page :is(.select2-dropdown, .dropdown-menu, .dt-button-collection, .lead-calendar-panel) {
+    box-shadow: none !important;
+}
+@media (max-width: 600px) {
+    .lead-search-actions { width: 100%; margin-left: 0; }
+    .lead-search-actions #leadSearchSlot { flex: 1; min-width: 0; }
+    .lead-search-actions input[type="search"] { width: 100%; }
+}

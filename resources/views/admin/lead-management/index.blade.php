@@ -48,7 +48,7 @@
 				<button type="button" class="btn btn-sm btn-outline-secondary lead-filter-btn" data-view="follow-ups">Follow Ups</button>
 				<button type="button" class="btn btn-sm btn-outline-secondary lead-filter-btn" data-view="expired-follow-ups">Expired Leads</button>
 				<button type="button" class="btn btn-sm btn-outline-secondary lead-filter-btn" data-view="booked">Booked Leads</button>
-			</div><div id="leadSearchSlot"></div></div>
+			</div><div class="lead-search-actions"><div id="leadSearchSlot"></div><button type="button" id="resetLeadFilters" class="btn btn-outline-secondary btn-sm" title="Clear all filters"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Reset</button></div></div>
 
 		<div class="card-body">
 			<div class="table-responsive">
@@ -580,7 +580,7 @@ d.open_lead_id = pendingLeadId;
 
 				{ data: 'phone' },
 
-				{ data: 'message' },
+				{ data: 'message', className: 'lead-message-cell' },
 				{ data: 'source_website' },
 
 				{
@@ -759,6 +759,20 @@ $(document).on('click', '.lead-filter-btn', function () {
     window.setLeadView(view, this.dataset.attention || null);
 });
 
+
+$(document).on('click', '#resetLeadFilters', function () {
+    window.clearLeadDateRange(false);
+    Object.keys(leadHeaderFilters).forEach(field => delete leadHeaderFilters[field]);
+    $('.lead-column-filter').val('');
+    pendingLeadId = null;
+    const destination = new URL(window.location.href);
+    destination.searchParams.delete('open_lead');
+    history.replaceState(history.state, '', destination.pathname + destination.search + destination.hash);
+    const table = $('#leads-table').DataTable();
+    table.search('');
+    table.columns().search('');
+    window.setLeadView('total');
+});
 
 $(document).on('lead:date-range', function () {
     $('#leads-table').DataTable().ajax.reload(null, true);
