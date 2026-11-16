@@ -21,6 +21,8 @@ Route::prefix('v1')->group(function () {
     Route::post('/check-email', [AuthController::class, 'checkEmail']);	
 
     Route::middleware('auth:api')->group(function () {
+        Route::post('/device/register', [\App\Http\Controllers\DeviceController::class, 'register']);
+        Route::post('/device/unregister', [\App\Http\Controllers\DeviceController::class, 'unregister']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/refresh', [AuthController::class, 'refresh']);
         Route::get('/user', [AuthController::class, 'user']);

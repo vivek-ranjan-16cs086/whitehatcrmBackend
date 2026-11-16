@@ -10,17 +10,35 @@ class FirebaseNotificationService
 {
     protected $messaging;
 
-    public function __construct()
+    public function sendToUser(\App\Models\User $user, string $title, string $body, array $data = []): void
     {
-        $factory = (new Factory)->withServiceAccount(
-            storage_path('app/firebase/firebase-service-account.json')
-        );
-
-        $this->messaging = $factory->createMessaging(); 
+        foreach ($user->devices()->get() as $device) {
+            try {
+                $this->sendToDevice($device->fcm_token, $title, $body, $data);
+            } catch (\Kreait\Firebase\Exception\MessagingException $exception) {
+                $errors = $exception->errors();
+                $unregistered = collect($errors['error']['details'] ?? [])->contains(
+                    fn ($detail) => ($detail['errorCode'] ?? null) === 'UNREGISTERED'
+                );
+                if ($unregistered) {
+                    $user->devices()->whereKey($device->id)->where('token_hash', $device->token_hash)->delete();
+                } else {
+                    report($exception);
+                }
+            } catch (\Throwable $exception) {
+                report($exception);
+            }
+        }
     }
 
     public function sendToDevice(string $deviceToken, string $title, string $body, array $data = [])
     {
+        if (! $this->messaging) {
+            $this->messaging = (new Factory)->withServiceAccount(
+                storage_path('app/firebase/firebase-service-account.json')
+            )->createMessaging();
+        }
+
         $message = CloudMessage::withTarget('token', $deviceToken)
             ->withNotification(Notification::create($title, $body))
             ->withData($data);

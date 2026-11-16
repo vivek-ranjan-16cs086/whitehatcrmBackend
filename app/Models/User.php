@@ -41,6 +41,7 @@ class User extends Authenticatable implements JWTSubject
     protected $hidden = [
         'password',
         'remember_token',
+        'device_token',
     ];
 
     /**
@@ -78,6 +79,11 @@ class User extends Authenticatable implements JWTSubject
         return [];
     }
 	
+    public function devices()
+    {
+        return $this->hasMany(UserDevice::class);
+    }
+
     public function project()
     {
         return $this->belongsTo(Project::class);

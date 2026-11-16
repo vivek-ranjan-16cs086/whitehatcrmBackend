@@ -294,12 +294,9 @@ class ChatController extends Controller
                 'preview' => \Illuminate\Support\Str::limit($message->body ?: 'Shared '.$message->attachment['kind'].': '.$message->attachment['name'], 120),
             ]);
             // Send through the existing Firebase setup only when a recipient has a device token.
-            foreach ($conversation->members()->where('enable', true)->whereKeyNot($user->id)->whereNotNull('device_token')->get() as $recipient) {
-                if (! $recipient->device_token) {
-                    continue;
-                }
+            foreach ($conversation->members()->where('enable', true)->whereKeyNot($user->id)->whereHas('devices')->get() as $recipient) {
                 try {
-                    app(FirebaseNotificationService::class)->sendToDevice($recipient->device_token,
+                    app(FirebaseNotificationService::class)->sendToUser($recipient,
                         $user->name, \Illuminate\Support\Str::limit($message->body ?: 'Shared '.$message->attachment['kind'], 120),
                         ['type' => 'CHAT_MESSAGE', 'conversationId' => (string) $conversation->id, 'messageId' => (string) $message->id]);
                 } catch (\Throwable $exception) {

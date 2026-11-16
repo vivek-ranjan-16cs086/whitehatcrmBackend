@@ -33,6 +33,8 @@ Route::get('logout', [LoginController::class, 'logout'])->name('logout')->middle
 Route::get('/dashboard', fn() => redirect()->route('dashboard'));
 
 Route::middleware(['auth','no-cache'])->group(function () {
+    Route::post('/device/register', [\App\Http\Controllers\DeviceController::class, 'register']);
+    Route::post('/device/unregister', [\App\Http\Controllers\DeviceController::class, 'unregister']);
 	
 				//added
 			

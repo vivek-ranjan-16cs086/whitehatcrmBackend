@@ -69,6 +69,9 @@ class LoginController extends Controller
 
     public function logout(Request $request)
     {
+        if ($deviceId = $request->session()->get('notification_device_id')) {
+            $request->user()->devices()->where('device_id', $deviceId)->delete();
+        }
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

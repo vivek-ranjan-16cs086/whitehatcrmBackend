@@ -165,9 +165,13 @@ class AuthController extends BaseController
 		return $this->sendResponse('User data', new UserResource($user));
 	}
 
-    public function logout(): JsonResponse
+    public function logout(Request $request): JsonResponse
     {
+        $data = $request->validate(['device_id' => 'nullable|string|max:191']);
         try {
+            if (!empty($data['device_id'])) {
+                $request->user()->devices()->where('device_id', $data['device_id'])->delete();
+            }
             Auth::guard('api')->logout();
             return $this->sendResponse('Successfully logged out');
         } catch (\Exception $e) {
@@ -339,35 +343,23 @@ class AuthController extends BaseController
         }
     }
 	
-	public function storeDeviceId(Request $request)
-	{
-		try {
-			$user = auth()->user(); 
-             
-			$request->validate([
-              'deviceToken' => 'required|string|max:255'
-            ]); 
-			// device token
-			$user->device_token = $request->deviceToken;
-			$user->save();
+    public function storeDeviceId(Request $request)
+    {
+        $data = $request->validate([
+            'deviceToken' => 'required|string|max:4096',
+            'device_id' => 'nullable|string|max:191',
+            'platform' => 'nullable|in:android,web,ios',
+        ]);
+        $device = app(\App\Services\DeviceRegistrationService::class)->register(
+            $request->user(), $data['device_id'] ?? 'legacy-'.hash('sha256', $data['deviceToken']),
+            $data['platform'] ?? 'unknown', $data['deviceToken']
+        );
+        return $this->sendResponse('Device token stored successfully', [
+            'user_id' => $request->user()->id, 'device_id' => $device->device_id,
+            'device_token' => $device->fcm_token,
+        ]);
+    }
 
-			return $this->sendResponse('Device token stored successfully', [
-				'user_id' => $user->id,
-				'device_token' => $user->device_token
-			]);
-
-		} catch (\Exception $e) {
-
-			\Log::error('Store Device Token Error: '.$e->getMessage());
-
-			return $this->sendError(
-				'Something went wrong',
-				['error' => $e->getMessage()],
-				500
-			);
-		}
-	}
-	
 	public function changeStatus(Request $request, $id)
 	{
 		$request->validate([
