@@ -35,20 +35,10 @@
     </div>
 
     <aside class="sidebar" id="sidebar">
-        <div class="sidebar-brand">
-            <span class="brand-icon">
-                <i data-lucide="zap"></i>
-            </span>
-            <div>
-                <span class="brand-name">Whitehat</span>
-                <span class="brand-sub">Super Admin Console</span>
-            </div>
-            <button class="sidebar-close-btn d-md-none" onclick="closeSidebar()" aria-label="Close sidebar">
-                <i class="bi bi-x"></i>
-            </button>
+        <div class="sidebar-mobile-controls d-md-none">
+            <button class="sidebar-close-btn" onclick="closeSidebar()" aria-label="Close sidebar"><i class="bi bi-x"></i></button>
         </div>
 
-        
         <!-- Dynamic Sidebar Navigation -->
         <div id="dynamicSidebar">
 
@@ -82,10 +72,14 @@
     </aside>
 
     <header class="topbar">
-        <div class="topbar-left">
             <button class="btn btn-outline-secondary d-md-none topbar-hamburger" aria-label="Toggle sidebar" onclick="toggleSidebar()">
                 <i class="bi bi-list"></i>
             </button>
+        <a class="topbar-brand" href="{{ route('dashboard') }}" aria-label="Whitehat dashboard">
+            <span class="brand-icon" aria-hidden="true"><i data-lucide="zap"></i></span>
+            <span class="brand-copy"><span class="brand-name">Whitehat</span><span class="brand-sub">Super Admin Console</span></span>
+        </a>
+        <div class="topbar-left">
             <div class="page-title-section">
                 <div class="page-title">@yield('page-title', 'Dashboard')</div>
                 <div class="page-subtitle">@yield('page-subtitle', '')</div>
@@ -473,6 +467,7 @@ if (menu.attention) {
                     }
 
                     dashboardItems.appendChild(menuItem);
+                    currentSection = menu.section || currentSection;
                 } else {
                     if (menu.section && menu.section !== currentSection) {
                         const heading = document.createElement('li');

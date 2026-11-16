@@ -434,3 +434,32 @@ body.leads-management-page :is(.select2-dropdown, .dropdown-menu, .dt-button-col
     .lead-search-actions #leadSearchSlot { flex: 1; min-width: 0; }
     .lead-search-actions input[type="search"] { width: 100%; }
 }
+
+/* Brand and page tools share one header; navigation uses the space below it. */
+body .topbar { left: 0; padding-left: 0; gap: 24px; z-index: 1030; }
+body .topbar-brand { display: flex; align-items: center; gap: 10px; align-self: stretch; flex: 0 0 var(--sidebar-width); width: var(--sidebar-width); padding: 0 20px; border-right: 1px solid #e5e7eb; color: #172033; text-decoration: none; }
+.topbar-brand .brand-icon { display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 34px; background: #eff6ff; color: #2563eb; border-radius: 3px; }
+.topbar-brand .brand-icon svg { width: 22px; height: 22px; }
+.topbar-brand .brand-copy { display: flex; flex-direction: column; min-width: 0; }
+.topbar-brand .brand-name { font-size: 20px; font-weight: 700; line-height: 1.2; }
+.topbar-brand .brand-sub { margin-top: 2px; font-size: 10px; color: #667085; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+body .topbar-left { margin-right: auto; }
+body .sidebar { top: var(--topbar-height); }
+body #dynamicSidebar { padding-top: 6px; }
+body .sidebar .sidebar-nav { padding-top: 0; padding-bottom: 0; }
+body .sidebar .sidebar-nav-heading { margin-top: 4px; padding: 10px 20px 6px; }
+body .sidebar .sidebar-nav-heading:first-child { margin-top: 0; }
+body .sidebar .sidebar-nav .nav-item a { padding: 9px 12px; margin-top: 1px; margin-bottom: 1px; }
+.sidebar-mobile-controls { display: flex; justify-content: flex-end; padding: 4px 12px; }
+@media (min-width: 769px) { body .sidebar-mobile-controls { display: none !important; } }
+@media (max-width: 768px) {
+    body .topbar { padding: 0 12px; gap: 8px; }
+    body .topbar-brand { flex: 0 1 auto; width: auto; padding: 0; border-right: 0; gap: 8px; margin-right: auto; }
+    .topbar-brand .brand-name { font-size: 18px; }
+    .topbar-brand .brand-sub { font-size: 9px; }
+    body .topbar-left { display: none; }
+    body .topbar-hamburger { display: inline-flex !important; flex: 0 0 34px; width: 34px; height: 34px; margin: 0; }
+    body .sidebar-mobile-controls { display: flex !important; }
+    body .topbar-right { gap: 8px; }
+}
+@media (max-width: 400px) { .topbar-brand .brand-icon { display: none; } }
