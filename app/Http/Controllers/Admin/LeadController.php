@@ -81,13 +81,13 @@ class LeadController extends Controller
 
     public function assignees(Request $request)
     {
-        $query = User::query()->orderBy('name')->orderBy('id');
+        $query = User::query()->with('roles')->orderBy('name')->orderBy('id');
         if ($request->filled('q')) {
             $query->where('name', 'like', '%' . $request->string('q') . '%');
         }
         $users = $query->paginate(20, ['id', 'name']);
         return response()->json([
-            'results' => $users->map(fn ($user) => ['id' => $user->id, 'text' => $user->name]),
+            'results' => $users->map(fn ($user) => ['id' => $user->id, 'text' => $user->name.($user->roles->isNotEmpty() ? ' ? '.$user->roles->pluck('name')->join(', ') : '')]),
             'pagination' => ['more' => $users->hasMorePages()],
         ]);
     }
@@ -130,6 +130,12 @@ $leadSources = Lead::query()
 
     $filterOptions = app(\App\Services\LeadOptionsService::class)->filtersFor($request->user());
     return view('admin.lead-management.index', [
+        'assignmentUsers' => $request->user()->hasRole('super-admin', 'web')
+            ? User::with('roles')->orderBy('name')->orderBy('id')->get(['id', 'name'])->map(fn ($user) => [
+                'id' => $user->id,
+                'text' => $user->name.($user->roles->isNotEmpty() ? ' ? '.$user->roles->pluck('name')->join(', ') : ''),
+            ])->values()->all()
+            : [],
         'selectedView' => $view,
         'pageTitle' => $titles[$view],
 		'leadSources' => $filterOptions['source_website'],
@@ -704,6 +710,44 @@ $leadSources = Lead::query()
 		}
 	}
 	
+    public function assign(Request $request, NotificationService $notificationService)
+    {
+        $data = $request->validate([
+            'id' => 'required|integer|exists:leads,id',
+            'assigned_to' => 'present|nullable|integer|exists:users,id',
+        ]);
+        [$lead, $changed] = DB::transaction(function () use ($request, $data) {
+            $lead = Lead::whereKey($data['id'])->lockForUpdate()->firstOrFail();
+            $previousId = $lead->assigned_to;
+            $nextId = $data['assigned_to'];
+            if ((string) $previousId === (string) $nextId) {
+                return [$lead, false];
+            }
+            $previousName = User::find($previousId)?->name ?? 'Unassigned';
+            $nextName = User::find($nextId)?->name ?? 'Unassigned';
+            $lead->assigned_to = $nextId;
+            $lead->save();
+            \App\Models\LeadTimelineEvent::create([
+                'lead_id' => $lead->id,
+                'user_id' => $request->user()->id,
+                'user_name' => $request->user()->name,
+                'user_role' => $request->user()->getRoleNames()->first(),
+                'event_type' => 'TRANSFER',
+                'message' => "Lead transferred from {$previousName} to {$nextName}",
+                'assigned_to_user_id' => $nextId,
+            ]);
+            return [$lead, true];
+        });
+        if ($changed && $lead->assigned_to) {
+            try {
+                $notificationService->sendLeadAssignedNotification($lead->assigned_to, $lead);
+            } catch (\Throwable $exception) {
+                report($exception);
+            }
+        }
+        return response()->json(['success' => true, 'message' => 'Lead assignment updated.', 'data' => $lead]);
+    }
+
 	public function updateDetails(Request $request, NotificationService $notificationService)
     {
         try { 

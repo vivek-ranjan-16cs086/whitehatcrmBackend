@@ -258,6 +258,68 @@
 
 
 //added
+const canAssignLeadsInline = @json(auth()->user()->hasRole('super-admin', 'web'));
+const leadAssignmentUsers = @json($assignmentUsers);
+
+function renderLeadAssignee(data, type, row) {
+    if (type !== 'display' || !canAssignLeadsInline) return data;
+    const assignedId = String(row.edit_data?.assigned_to ?? '');
+    const select = $('<select>', {
+        class: 'form-select form-select-sm lead-assignee-select',
+        'aria-label': 'Assign lead ' + $('<div>').html(row.name || '').text(),
+        'data-lead-id': row.lead_id,
+        'data-current-value': assignedId,
+        style: 'min-width:220px;max-width:320px'
+    }).append(new Option('Unassigned', ''));
+    leadAssignmentUsers.forEach(user => select.append(new Option(user.text, String(user.id))));
+    // Preserve an owner absent from the available list until the admin changes it.
+    if (assignedId && !leadAssignmentUsers.some(user => String(user.id) === assignedId)) {
+        select.append(new Option(row.assigned_user_name || 'User #' + assignedId, assignedId));
+    }
+    select.find('option').each(function () { this.defaultSelected = this.value === assignedId; });
+    return select.prop('outerHTML');
+}
+
+$(document).on('change', '.lead-assignee-select', async function () {
+    const select = $(this);
+    const previous = this.dataset.currentValue;
+    const next = this.value;
+    if (previous === next) return;
+    const nextName = select.find(':selected').text();
+    select.prop('disabled', true);
+    try {
+        const result = await Swal.fire({
+            icon: 'warning',
+            title: next ? 'Assign this lead?' : 'Unassign this lead?',
+            text: next
+                ? 'This lead will be assigned to ' + nextName + '. The previous owner will lose access unless their permissions allow it.'
+                : 'This lead will become unassigned. The previous owner will lose access unless their permissions allow it.',
+            showCancelButton: true,
+            focusCancel: true,
+            reverseButtons: true,
+            confirmButtonText: next ? 'Assign lead' : 'Unassign lead',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#5146d8',
+            customClass: { popup: 'admin-swal-popup' }
+        });
+        if (!result.isConfirmed) { select.val(previous); return; }
+        const response = await $.ajax({
+            url: '{{ route("lead-management.assign") }}',
+            type: 'POST',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            data: { id: this.dataset.leadId, assigned_to: next || '' }
+        });
+        if (!response.success) throw new Error(response.message || 'Could not update assignment.');
+        this.dataset.currentValue = next;
+        $('#leads-table').DataTable().ajax.reload(null, false);
+    } catch (error) {
+        select.val(previous);
+        await Swal.fire({ icon: 'error', title: 'Assignment failed', text: error.responseJSON?.message || error.message || 'Please try again.' });
+    } finally {
+        select.prop('disabled', false);
+    }
+});
+
 const leadViewTitles = {
     'total': 'Total Leads',
     'active': 'Active Leads',
@@ -377,7 +439,7 @@ d.open_lead_id = pendingLeadId;
 				},
 
 				{ data: 'project' },
-				{ data: 'assigned_to' },
+				{ data: 'assigned_to', render: renderLeadAssignee },
 				{
 					data: 'status',
 					orderable: false,
@@ -639,17 +701,23 @@ $(document).on(
 		}
 
 		initSalesPersonSelect(
-			lead.assigned_to ?? $(this).data('assigned'),
+			row?.edit_data ? (lead.assigned_to ?? null) : ($(this).attr('data-assigned') || null),
 			row?.assigned_user_name ?? $(this).data('assigned-name')
 		);
+        $('#editLeadForm').data('original-assigned', String($('#edit_assigned').val() || ''));
         toggleDeactivationReason('edit_');
 		$('#editLeadModal').modal('show');
 	});
 
 	$('#updateLead').click(function () {
-		confirmAdminAction({
-			title: 'Save lead changes?',
-			text: 'The lead details will be updated.',
+        const assignmentChanged = String($('#edit_assigned').val() || '') !== $('#editLeadForm').data('original-assigned');
+        const nextOwner = $('#edit_assigned').val() ? $('#edit_assigned option:selected').text() : 'Unassigned';
+        confirmAdminAction({
+            icon: assignmentChanged ? 'warning' : 'question',
+            title: 'Save lead changes?',
+            text: assignmentChanged
+                ? 'The lead details will be updated and ownership changed to ' + nextOwner + '. The previous owner may lose access.'
+                : 'The lead details will be updated.',
 			confirmButtonText: 'Save changes',
 			onConfirm: function () {
 				$.ajax({
@@ -686,10 +754,12 @@ $(document).on(
 		});
 	});
 	function initSalesPersonSelect(selectedId = null, selectedText = null) {
+        // Clear options from the previous lead, including Select2's retained selection.
+        $('#edit_assigned').empty().append(new Option('Unassigned', '', true, true));
 
 		$('#edit_assigned').select2({
 			dropdownParent: $('#editLeadModal'), // important for modal
-			placeholder: 'Search users',
+			placeholder: 'Unassigned',
 			allowClear: true,
 			 width: '100%',
 
@@ -711,10 +781,12 @@ $(document).on(
 		});
 
 		// Preselect value when editing
-		if (selectedId && selectedText) {
-			let option = new Option(selectedText, selectedId, true, true);
+		if (selectedId !== null && selectedId !== undefined && String(selectedId) !== '') {
+			let option = new Option(selectedText || 'User #' + selectedId, selectedId, true, true);
 			$('#edit_assigned').append(option).trigger('change');
-		}
+		} else {
+            $('#edit_assigned').val('').trigger('change');
+        }
 	}
 
 	// Initialize Select2 for Add Lead Modal

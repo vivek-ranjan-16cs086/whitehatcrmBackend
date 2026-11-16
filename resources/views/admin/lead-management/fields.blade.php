@@ -33,6 +33,8 @@
                         @foreach($projects as $project)
                             <option value="{{ $project->id }}">{{ $project->name }}</option>
                         @endforeach
+                    @elseif($field === 'assigned_to')
+                        <option value="">Unassigned</option>
                     @elseif($field !== 'assigned_to')
                         @if(in_array($field, ['lead_source', 'inventory', 'deactivate_reason']))
                             <option value="">None</option>

@@ -66,6 +66,7 @@ Route::get('/admin/sidebar/menu', function (
 			Route::get('{lead}/responses/{response}/recording', [Admin\LeadDetailsController::class, 'recording'])->name('lead-management.recording');
 		});
 		
+        Route::post('assign', [LeadController::class, 'assign'])->middleware('super-admin')->name('lead-management.assign');
 		//POST METHOD 
 		Route::post('update', [LeadController::class, 'updateDetails'])
 			->middleware('permission:edit.lead,web')
