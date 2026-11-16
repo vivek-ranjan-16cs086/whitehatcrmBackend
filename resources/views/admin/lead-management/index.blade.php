@@ -21,27 +21,29 @@
 			</div>
 		</div>
 
-		<div class="lead-filter-bar">
-            <div class="lead-date-filter">
-                <div class="lead-date-inputs">
-                    <input type="date" id="leadDateFrom" class="form-control" aria-label="From date">
-                    <span aria-hidden="true">to</span>
-                    <input type="date" id="leadDateTo" class="form-control" aria-label="To date">
+        <div id="leadCalendarFilter" class="lead-calendar-toolbar">
+            <input type="hidden" id="leadDateFrom">
+            <input type="hidden" id="leadDateTo">
+            <button type="button" id="leadCalendarToggle" class="btn btn-outline-secondary btn-sm" aria-haspopup="dialog" aria-expanded="false" aria-controls="leadCalendarPanel">
+                <i class="bi bi-calendar3" aria-hidden="true"></i> <span id="leadCalendarLabel">All dates</span> <i class="bi bi-chevron-down" aria-hidden="true"></i>
+            </button>
+            <button type="button" id="resetLeadFilters" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Reset</button>
+        </div>
+        <div id="leadCalendarPanel" class="lead-calendar-panel" role="dialog" aria-label="Filter leads by arrival date" hidden>
+            <div class="lead-calendar-presets" aria-label="Quick date ranges">
+                @foreach(['today' => 'Today', 'yesterday' => 'Yesterday', 'last7' => 'Last 7 Days', 'last30' => 'Last 30 Days', 'month' => 'This Month', 'lastMonth' => 'Last Month', 'last3' => 'Last 3 Months', 'last6' => 'Last 6 Months'] as $range => $label)
+                    <button type="button" data-calendar-preset="{{ $range }}">{{ $label }}</button>
+                @endforeach
+            </div>
+            <div class="lead-calendar-months" id="leadCalendarMonths"></div>
+            <div class="lead-calendar-footer">
+                <span id="leadCalendarDraft" role="status" aria-live="polite">Choose a start and end date</span>
+                <div class="d-flex gap-2">
+                    <button type="button" id="leadCalendarClear" class="btn btn-outline-secondary btn-sm">Clear</button>
+                    <button type="button" id="leadCalendarApply" class="btn btn-primary btn-sm" disabled>Apply</button>
                 </div>
             </div>
-			<div class="lead-source-filter">
-
-				<select id="leadSourceFilter" class="form-select" aria-label="Source">
-					<option value="">All Sources</option>
-					@foreach($leadSources as $source)
-						<option value="{{ $source }}">{{ $source }}</option>
-					@endforeach
-				</select>
-			</div>
-                <button type="button" class="btn btn-outline-secondary btn-sm" id="leadMoreFiltersToggle" aria-expanded="false" aria-controls="leadMoreFilters"><i class="bi bi-plus"></i> More filters</button>
-                <button type="button" id="resetLeadFilters" class="btn btn-sm lead-reset-button"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
-
-		</div>
+        </div>
 
         <div class="lead-list-secondary">			<div id="leadFilterTabs" class="lead-status-filters" role="group" aria-label="Lead status filters">
 				<button type="button" class="btn btn-sm btn-primary lead-filter-btn" data-view="total">All</button>
@@ -52,35 +54,6 @@
 				<button type="button" class="btn btn-sm btn-outline-secondary lead-filter-btn" data-view="booked">Booked Leads</button>
 			</div><div id="leadSearchSlot"></div></div>
 
-        <div id="leadMoreFilters" class="lead-filter-popover" role="dialog" aria-label="More lead filters" hidden>
-            <div class="d-flex justify-content-between align-items-center px-3 pt-3"><strong class="small">More filters</strong><button type="button" id="closeLeadMoreFilters" class="btn-close" aria-label="Close filters"></button></div>
-            <div class="row g-2 p-3">
-                <div class="col-sm-6"><label class="form-label small" for="leadStatusFilter">Status</label><select id="leadStatusFilter" class="form-select form-select-sm lead-extra-filter"><option value="">All statuses</option>@foreach($filterOptions['status'] as $status)<option value="{{ $status }}">{{ ucwords(str_replace('_', ' ', $status)) }}</option>@endforeach</select></div>
-                <div class="col-sm-6"><label class="form-label small" for="leadProjectFilter">Project</label><select id="leadProjectFilter" class="form-select form-select-sm lead-extra-filter"><option value="">All projects</option>@foreach($projects as $project)<option value="{{ $project->id }}">{{ $project->name }}</option>@endforeach</select></div>
-                @foreach(\App\Support\LeadFormFields::FIELDS as $field => [$label, $kind])
-                @if($kind === 'select' && !in_array($field, ['status', 'project_id', 'assigned_to', 'source_website'], true))
-                <div class="col-sm-6"><label class="form-label small" for="lead-filter-{{ $field }}">{{ $label }}</label><select id="lead-filter-{{ $field }}" data-lead-filter="{{ $field }}" class="form-select form-select-sm lead-extra-filter"><option value="">All</option>@foreach($filterOptions[$field] as $value)<option value="{{ $value }}">{{ $value }}</option>@endforeach</select></div>
-                @endif
-                @endforeach
-                <div class="col-sm-6"><label class="form-label small" for="filterAssigned">Assigned to</label><select id="filterAssigned" data-lead-filter="assigned_to" class="form-select form-select-sm lead-extra-filter"><option value="">Anyone</option><option value="unassigned">Unassigned</option>@foreach($filterUsers as $filterUser)<option value="{{ $filterUser->id }}">{{ $filterUser->name }}</option>@endforeach</select></div>
-                @foreach($advancedFilterFields as $field)
-                <div class="col-sm-6"><label class="form-label small" for="lead-filter-{{ $field }}">{{ ucwords(str_replace('_', ' ', $field)) }} contains</label><input id="lead-filter-{{ $field }}" data-lead-filter="{{ $field }}" class="form-control form-control-sm lead-extra-filter" maxlength="255"></div>
-                @endforeach
-                @foreach(['follow_up_date' => 'Follow-up', 'visit_date' => 'Visit'] as $field => $label)
-                @if(in_array($field, $leadFilterColumns, true))
-                @foreach(['from', 'to'] as $bound)
-                <div class="col-sm-6"><label class="form-label small" for="lead-filter-{{ $field }}-{{ $bound }}">{{ $label }} {{ $bound }}</label><input type="date" id="lead-filter-{{ $field }}-{{ $bound }}" data-lead-filter="{{ $field }}_{{ $bound }}" class="form-control form-control-sm lead-extra-filter"></div>
-                @endforeach
-                @endif
-                @endforeach
-                @foreach(['budget_min' => 'Minimum budget at least', 'budget_max' => 'Maximum budget at most'] as $field => $label)
-                @if(in_array($field, $leadFilterColumns, true))
-                <div class="col-sm-6"><label class="form-label small" for="lead-filter-{{ $field }}">{{ $label }}</label><input type="number" min="0" step="0.01" id="lead-filter-{{ $field }}" data-lead-filter="{{ $field }}" class="form-control form-control-sm lead-extra-filter"></div>
-                @endif
-                @endforeach
-            </div>
-        </div>
-
 		<div class="card-body">
 			<div class="table-responsive">
 				<table id="leads-table" class="table leads-table">
@@ -89,8 +62,8 @@
 							<th class="lead-selection-cell"><input type="checkbox" id="selectAllLeads" class="form-check-input lead-select-checkbox" aria-label="Select all leads on this page" title="Select all leads on this page"></th>
 							<th>Name</th>
 							<th>Phone</th>
-							<th>Source</th>
 							<th>Message</th>
+							<th>Source</th>
 							<th>Page Name</th>
 							<th>Assigned To</th>
 							<th>Status</th>
@@ -249,6 +222,7 @@
 @endsection
 
 @push('scripts')
+<script src="{{ asset('admin/js/lead-calendar.js') }}?v={{ filemtime(public_path('admin/js/lead-calendar.js')) }}"></script>
 <script src="{{ asset('admin/js/lead-details.js') }}?v={{ filemtime(public_path('admin/js/lead-details.js')) }}"></script>
 <script>
     function toggleDeactivationReason(prefix) {
@@ -500,11 +474,8 @@ ajax: {
 	 // New filters
 d.date_from = $('#leadDateFrom').val();
 d.date_to = $('#leadDateTo').val();
-d.source = $('#leadSourceFilter').val();
-d.filters = {};
-$('[data-lead-filter]').each(function () { if (this.value) d.filters[this.dataset.leadFilter] = this.value; });
-d.filter_status = $('#leadStatusFilter').val();
-d.filter_project = $('#leadProjectFilter').val();
+
+
 d.open_lead_id = pendingLeadId;
 }
 },
@@ -528,8 +499,8 @@ d.open_lead_id = pendingLeadId;
 
 				{ data: 'phone' },
 
-				{ data: 'source_website' },
 				{ data: 'message' },
+				{ data: 'source_website' },
 
 				{
 					data: 'source_page_name',
@@ -571,24 +542,19 @@ d.open_lead_id = pendingLeadId;
 				}
 			],
 
-			dom: '<"lead-controls-row"<"lead-controls-left"B><"lead-controls-right">>frtip',
+			dom: '<"lead-controls-row"<"lead-controls-left"B>>frtip',
             initComplete: function () {
                 const wrapper = $(this.api().table().container());
-                wrapper.find('.lead-controls-right').append($('.lead-filter-bar'));
-                const buttons = wrapper.find('.dt-buttons');
-                buttons.find('.buttons-colvis').insertAfter(buttons.find('.buttons-page-length'));
+                wrapper.find('.lead-controls-left').prepend($('#leadCalendarFilter'));
                 $('#leadSearchSlot').empty().append(wrapper.find('.dataTables_filter'));
                 $('.lead-list-secondary').insertAfter(wrapper.find('.lead-controls-row'));
-                $('#leadMoreFilters').appendTo(document.body);
+
             },
 
-			lengthMenu: [
-				[20, 25, 50, 100],
-				['20 rows', '25 rows', '50 rows', '100 rows']
-			],
+            pageLength: 20,
+            lengthChange: false,
 
 			buttons: [
-				'pageLength',
 				{
 					extend: 'collection',
 					text: '<i class="bi bi-download"></i> Export',
@@ -620,10 +586,6 @@ d.open_lead_id = pendingLeadId;
 							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12], orthogonal: 'export' }
 						}
 					]
-				},
-				{
-					extend: 'colvis',
-					text: '<i class="bi bi-layout-three-columns"></i> Columns'
 				}
 			],
 
@@ -712,59 +674,15 @@ $(document).on('click', '.lead-filter-btn', function () {
 });
 
 
-function closeLeadFilterPanel() {
-    $('#leadMoreFilters').prop('hidden', true);
-    $('#leadMoreFiltersToggle').attr('aria-expanded', 'false');
-}
-$(document).on('click', '#leadMoreFiltersToggle', function () {
-    const panel = document.getElementById('leadMoreFilters');
-    if (!panel.hidden) { closeLeadFilterPanel(); return; }
-    const rect = this.getBoundingClientRect();
-    panel.hidden = false;
-    const width = Math.min(560, window.innerWidth - 24);
-    Object.assign(panel.style, {width: width + 'px', left: Math.max(12, Math.min(rect.right - width, window.innerWidth - width - 12)) + 'px', top: Math.min(rect.bottom + 8, window.innerHeight - 160) + 'px', maxHeight: Math.max(140, window.innerHeight - rect.bottom - 24) + 'px'});
-    $(this).attr('aria-expanded', 'true');
-});
-$(document).on('click', '#closeLeadMoreFilters', function () { closeLeadFilterPanel(); $('#leadMoreFiltersToggle').trigger('focus'); });
-$(document).on('click', function (e) { if (!$(e.target).closest('#leadMoreFilters, #leadMoreFiltersToggle').length) closeLeadFilterPanel(); });
-$(document).on('keydown', function (e) { if (e.key === 'Escape' && !$('#leadMoreFilters').prop('hidden')) { closeLeadFilterPanel(); $('#leadMoreFiltersToggle').trigger('focus'); } });
-$(window).on('resize', closeLeadFilterPanel);
-
-let extraFilterTimer;
-$(document).on('input change', '.lead-extra-filter', function () {
-    clearTimeout(extraFilterTimer);
-    if (this.id === 'leadStatusFilter' && this.value) {
-        currentLeadView = 'total'; pendingAttention = null;
-        sessionStorage.setItem('selectedLeadView', 'total');
-        updateLeadFilterButtons('total');
-    }
-    extraFilterTimer = setTimeout(() => $('#leads-table').DataTable().ajax.reload(null, true), 300);
+$(document).on('lead:date-range', function () {
+    $('#leads-table').DataTable().ajax.reload(null, true);
 });
 $(document).on('click', '#resetLeadFilters', function () {
-    clearTimeout(extraFilterTimer);
-    $('#leadDateFrom, #leadDateTo, #leadSourceFilter, .lead-extra-filter').val('');
-    closeLeadFilterPanel();
+    window.clearLeadDateRange(false);
     const table = $('#leads-table').DataTable();
     table.search(''); table.columns().search('');
     window.setLeadView('total');
 });
-
-// Reload leads when the date range or source changes
-$(document).on(
-    'change',
-    '#leadDateFrom, #leadDateTo, #leadSourceFilter',
-    function () {
-        const from = $('#leadDateFrom').val();
-        const to = $('#leadDateTo').val();
-        if (from && to && from > to) return;
-
-        if ($.fn.DataTable.isDataTable('#leads-table')) {
-            $('#leads-table')
-                .DataTable()
-                .ajax.reload(null, true);
-        }
-    }
-);
 //---
 	$(document).on('click', '.editBtn', function () {
 		const row = $('#leads-table').DataTable().row($(this).closest('tr')).data();

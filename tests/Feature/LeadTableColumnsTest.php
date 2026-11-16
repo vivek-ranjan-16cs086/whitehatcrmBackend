@@ -28,48 +28,21 @@ class LeadTableColumnsTest extends TestCase
             ->assertOk()->assertJsonMissing(['label' => 'Unassigned leads']);
     }
 
-    public function test_filter_fields_match_the_form_and_ignore_other_columns(): void
+    public function test_calendar_replaces_old_date_source_and_more_filter_controls(): void
     {
         $admin = User::factory()->create();
         $admin->assignRole(Role::create(['name' => 'super-admin', 'guard_name' => 'web']));
-        Lead::create(['name' => 'Database buyer', 'status' => 'database-status', 'type' => 'database-type']);
         $html = $this->actingAs($admin)->get(route('lead-management.index'))->assertOk()->getContent();
         $document = new \DOMDocument();
         @$document->loadHTML($html);
         $xpath = new \DOMXPath($document);
-        $this->assertSame(1, $xpath->query("//input[@id='leadDateFrom' and @type='date']")->length);
-        $this->assertSame(1, $xpath->query("//input[@id='leadDateTo' and @type='date']")->length);
-        $formFields = [];
-        foreach ($xpath->query("//*[@id='addLeadForm']//*[@name]") as $input) {
-            $formFields[] = $input->getAttribute('name');
+        $this->assertSame(1, $xpath->query("//input[@id='leadDateFrom' and @type='hidden']")->length);
+        $this->assertSame(1, $xpath->query("//input[@id='leadDateTo' and @type='hidden']")->length);
+        $this->assertSame(1, $xpath->query("//button[@id='leadCalendarToggle']")->length);
+        $this->assertSame(8, $xpath->query("//button[@data-calendar-preset]")->length);
+        foreach (['leadSourceFilter', 'leadMoreFiltersToggle', 'leadMoreFilters'] as $id) {
+            $this->assertSame(0, $xpath->query("//*[@id='{$id}']")->length);
         }
-        foreach ($xpath->query('//*[@data-lead-filter]') as $input) {
-            $field = preg_replace('/^((?:follow_up|visit)_date)_(from|to)$/', '$1', $input->getAttribute('data-lead-filter'));
-            $this->assertContains($field, $formFields);
-        }
-        $filterIds = ['status' => 'leadStatusFilter', 'source_website' => 'leadSourceFilter',
-            'project_id' => 'leadProjectFilter', 'assigned_to' => 'filterAssigned'];
-        foreach ($xpath->query("//*[@id='addLeadForm']//select[@name]") as $dropdown) {
-            $field = $dropdown->getAttribute('name');
-            $id = $filterIds[$field] ?? 'lead-filter-'.$field;
-            $this->assertSame(1, $xpath->query("//select[@id='{$id}']")->length, $field.' must have a dropdown filter');
-            $this->assertSame(0, $xpath->query("//input[@data-lead-filter='{$field}']")->length, $field.' must not have a text filter');
-        }
-        foreach ($formFields as $field) {
-            if (in_array($field, ['status', 'project_id', 'source_website'], true)) continue;
-            if (in_array($field, ['visit_date', 'follow_up_date'], true)) $field .= '_from';
-            $this->assertSame(1, $xpath->query("//*[@data-lead-filter='{$field}']")->length, $field.' needs a filter');
-        }
-        $statusValues = [];
-        foreach ($xpath->query("//*[@id='leadStatusFilter']/option[@value!='']") as $option) {
-            $statusValues[] = $option->getAttribute('value');
-        }
-        $this->assertSame(['database-status'], $statusValues);
-        $this->assertSame(0, $xpath->query("//*[@id='filterResponse']")->length);
-        $this->getJson(route('lead-management.ajax-list', [
-            'start' => 0, 'length' => 20,
-            'filters' => ['external_id' => '999', 'updated_at_from' => '2099-01-01', 'sub_response_id' => 999],
-        ]))->assertOk()->assertJsonPath('recordsFiltered', 1);
     }
 
     public function test_top_date_range_limits_arrivals_and_can_be_cleared(): void

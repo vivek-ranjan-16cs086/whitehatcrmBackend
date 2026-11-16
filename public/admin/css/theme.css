@@ -360,3 +360,25 @@ body.leads-management-page #leads-table_wrapper .pagination .page-item.active .p
     border-color: #374151 !important;
     color: #fff !important;
 }
+
+/* Compact date-range toolbar and two-month calendar. */
+body.leads-management-page .lead-controls-left,
+.lead-calendar-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.lead-calendar-toolbar { margin-bottom: 0; }
+#leadCalendarToggle { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; }
+.lead-calendar-panel { position: fixed; z-index: 1060; padding: 14px; background: #fff; color: #374151; border: 1px solid #d7dbe0; border-radius: 8px; box-shadow: 0 12px 36px rgb(16 24 40 / 14%); overflow-y: auto; }
+.lead-calendar-panel[hidden] { display: none !important; }
+.lead-calendar-presets { display: flex; flex-wrap: wrap; gap: 4px; padding-bottom: 12px; border-bottom: 1px solid #eee; }
+.lead-calendar-panel button:not(.btn) { border: 0; background: transparent; color: #475467; padding: 6px 8px; font-size: 12px; cursor: pointer; }
+.lead-calendar-panel button:not(.btn):hover { background: #f0f1f3; color: #111827; }
+.lead-calendar-months { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; padding: 10px 0; }
+.lead-calendar-heading { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+.lead-calendar-heading button { font-size: 22px !important; }
+.lead-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); text-align: center; gap: 2px; }
+.lead-calendar-grid > span { min-height: 28px; padding-top: 6px; color: #9ca3af; font-size: 11px; }
+.lead-calendar-grid button { min-height: 30px; padding: 4px 0 !important; }
+.lead-calendar-grid button.in-range { background: #f0f1f3; }
+.lead-calendar-grid button.range-end { background: #374151 !important; color: #fff !important; }
+.lead-calendar-grid button[aria-current="date"] { box-shadow: inset 0 0 0 1px #9ca3af; }
+.lead-calendar-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding-top: 10px; border-top: 1px solid #eee; font-size: 12px; }
+@media (max-width: 480px) { .lead-calendar-months { grid-template-columns: 1fr; gap: 12px; } }
