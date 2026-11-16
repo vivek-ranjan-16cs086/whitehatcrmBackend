@@ -92,13 +92,13 @@
 							<th>Source</th>
 							<th>Message</th>
 							<th>Page Name</th>
-							<th>Project</th>
 							<th>Assigned To</th>
 							<th>Status</th>
-							<th>Inventory</th>
-							<th>Type</th>
 							<th>Visit</th>
 							<th>Visit Status</th>
+							<th>Inventory</th>
+							<th>Project</th>
+							<th>Type</th>
 							<th>Action</th>
 						</tr>
 					</thead>
@@ -438,27 +438,13 @@ d.open_lead_id = pendingLeadId;
 					}
 				},
 
-				{ data: 'project' },
-				{ data: 'assigned_to', render: renderLeadAssignee },
-				{
-					data: 'status',
-					orderable: false,
-					searchable: false
-				},
+                { data: 'assigned_to', render: renderLeadAssignee },
+                { data: 'status', orderable: false, searchable: false },
+                { data: 'visit_date' },
+                { data: 'visit_status' },
                 { data: 'inventory' },
-
-				{
-					data: 'type',
-					orderable: false,
-					searchable: false,
-					render: function(data){
-						return data;
-					}
-				},
-
-				{ data: 'visit_date' },
-
-				{ data: 'visit_status' },
+                { data: 'project' },
+                { data: 'type', orderable: false, searchable: false },
 
 				{
 					data: 'action',

@@ -87,7 +87,7 @@ class LeadController extends Controller
         }
         $users = $query->paginate(20, ['id', 'name']);
         return response()->json([
-            'results' => $users->map(fn ($user) => ['id' => $user->id, 'text' => $user->name.($user->roles->isNotEmpty() ? ' ? '.$user->roles->pluck('name')->join(', ') : '')]),
+            'results' => $users->map(fn ($user) => ['id' => $user->id, 'text' => $user->name.($user->roles->isNotEmpty() ? ' - '.$user->roles->pluck('name')->join(', ') : '')]),
             'pagination' => ['more' => $users->hasMorePages()],
         ]);
     }
@@ -133,7 +133,7 @@ $leadSources = Lead::query()
         'assignmentUsers' => $request->user()->hasRole('super-admin', 'web')
             ? User::with('roles')->orderBy('name')->orderBy('id')->get(['id', 'name'])->map(fn ($user) => [
                 'id' => $user->id,
-                'text' => $user->name.($user->roles->isNotEmpty() ? ' ? '.$user->roles->pluck('name')->join(', ') : ''),
+                'text' => $user->name.($user->roles->isNotEmpty() ? ' - '.$user->roles->pluck('name')->join(', ') : ''),
             ])->values()->all()
             : [],
         'selectedView' => $view,

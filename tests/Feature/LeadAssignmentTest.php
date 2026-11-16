@@ -90,7 +90,7 @@ class LeadAssignmentTest extends TestCase
         $owner = User::factory()->create(['name' => 'Assignment Person']);
         $owner->assignRole(Role::create(['name' => 'business-executive', 'guard_name' => 'web']));
         $this->actingAs($admin)->getJson(route('lead-management.assignees', ['q' => 'Assignment Person']))->assertOk()
-            ->assertJsonPath('results.0.id', $owner->id)->assertJsonPath('results.0.text', 'Assignment Person ? business-executive');
+            ->assertJsonPath('results.0.id', $owner->id)->assertJsonPath('results.0.text', 'Assignment Person - business-executive');
         $this->get(route('lead-management.index'))->assertOk()->assertViewHas('assignmentUsers', fn ($users) => collect($users)->contains(fn ($user) => $user['id'] === $owner->id && str_contains($user['text'], 'business-executive')));
     }
 }
