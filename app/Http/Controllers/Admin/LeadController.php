@@ -130,6 +130,7 @@ $leadSources = Lead::query()
 
     $filterOptions = app(\App\Services\LeadOptionsService::class)->filtersFor($request->user());
     return view('admin.lead-management.index', [
+        'inlineLeadOptions' => app(\App\Services\LeadOptionsService::class)->inline(),
         'assignmentUsers' => $request->user()->hasRole('super-admin', 'web')
             ? User::with('roles')->orderBy('name')->orderBy('id')->get(['id', 'name'])->map(fn ($user) => [
                 'id' => $user->id,
@@ -238,22 +239,6 @@ $leadSources = Lead::query()
             $assignedUserName = $row->assignedUser?->name ?? '';
 
             $action = "
-                <button 
-                    class='btn btn-xs btn-info editBtn rounded-circle text-light m-1'
-                    data-id='{$row->id}'
-                    data-name='" . e($row->name) . "'
-                    data-phone='" . e($row->phone) . "'
-                    data-email='" . e($row->email) . "'
-                    data-message='" . e($row->message) . "'
-                    data-source='" . e($row->source_website) . "'
-                    data-status='" . e($row->status) . "'
-					data-type='" . e($row->type) . "'
-                    data-assigned='{$assignedUserId}'
-                    data-assigned-name='" . e($assignedUserName) . "'
-                    data-followup='{$row->follow_up_date}'
-                >
-                    <i class='bi-pencil'></i>
-                </button>
 
                 <a href='javascript:void(0)' onclick=\"return myConfirm('leads/delete/{$encodedId}')\" class='btn btn-xs btn-danger'>
                     <i class='bi-trash'></i>
@@ -535,23 +520,6 @@ $leadSources = Lead::query()
 				>
 					<i class='bi-eye'></i>
 				</button>
-				<button
-					type='button'
-					class='btn btn-xs btn-info editBtn rounded-circle text-light m-1'
-					data-id='{$row->id}'
-					data-name='" . e($row->name) . "'
-					data-phone='" . e($row->phone) . "'
-					data-email='" . e($row->email) . "'
-					data-message='" . e($row->message) . "'
-					data-source='" . e($row->source_website) . "'
-					data-status='" . e($row->status) . "'
-					data-type='" . e($row->type) . "'
-					data-assigned='{$assignedUserId}'
-					data-assigned-name='" . e($assignedUserName) . "'
-					data-followup='" . e($row->follow_up_date) . "'
-				>
-					<i class='bi-pencil'></i>
-				</button>
 
 				<a
 					href='javascript:void(0)'
@@ -710,6 +678,54 @@ $leadSources = Lead::query()
 		}
 	}
 	
+    public function updateField(Request $request)
+    {
+        $data = $request->validate([
+            'id' => 'required|integer|exists:leads,id',
+            'field' => ['required', Rule::in(['status', 'type', 'inventory', 'project_id', 'visit_status', 'visit_date'])],
+        ]);
+        $lead = Lead::findOrFail($data['id']);
+        abort_if(!$request->user()->canViewAllLeads() && (string) $lead->assigned_to !== (string) $request->user()->id, 404);
+        $field = $data['field'];
+        $options = app(\App\Services\LeadOptionsService::class)->inline();
+        $valueRules = match ($field) {
+            'project_id' => ['present', 'nullable', 'integer', 'exists:projects,id'],
+            'visit_date' => ['present', 'nullable', 'date_format:Y-m-d'],
+            default => ['present', 'nullable', 'string', Rule::in($options[$field])],
+        };
+        $validated = $request->validate(['value' => $valueRules]);
+        $value = $validated['value'];
+        $reason = null;
+        if ($field === 'status' && $value === 'deactive') {
+            $reasonData = $request->validate([
+                'deactivate_reason' => ['required', 'string', Rule::in($options['deactivate_reason'])],
+            ]);
+            $reason = $reasonData['deactivate_reason'];
+        }
+        DB::transaction(function () use ($request, $lead, $field, $value, $reason) {
+            $lockedLead = Lead::whereKey($lead->id)->lockForUpdate()->firstOrFail();
+            abort_if(!$request->user()->canViewAllLeads() && (string) $lockedLead->assigned_to !== (string) $request->user()->id, 404);
+            $oldValue = $lockedLead->getRawOriginal($field);
+            if ((string) $oldValue === (string) $value && ($field !== 'status' || $lockedLead->deactivate_reason === $reason)) {
+                return;
+            }
+            $lockedLead->setAttribute($field, $value);
+            if ($field === 'status') $lockedLead->deactivate_reason = $reason;
+            $lockedLead->save();
+            $label = \App\Support\LeadFormFields::FIELDS[$field][0];
+            $oldLabel = $field === 'project_id' ? Project::find($oldValue)?->name : $oldValue;
+            $newLabel = $field === 'project_id' ? Project::find($value)?->name : $value;
+            \App\Models\LeadTimelineEvent::create([
+                'lead_id' => $lockedLead->id, 'user_id' => $request->user()->id,
+                'user_name' => $request->user()->name, 'user_role' => $request->user()->getRoleNames()->first(),
+                'event_type' => $field === 'status' ? 'STATUS' : 'UPDATE',
+                'message' => $label.' changed from '.($oldLabel ?: 'None').' to '.($newLabel ?: 'None')
+                    .($reason ? '. Reason: '.$reason : ''),
+            ]);
+        });
+        return response()->json(['success' => true, 'message' => 'Lead updated successfully.']);
+    }
+
     public function assign(Request $request, NotificationService $notificationService)
     {
         $data = $request->validate([

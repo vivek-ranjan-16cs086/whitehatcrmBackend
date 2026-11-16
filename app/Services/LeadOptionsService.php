@@ -26,6 +26,22 @@ class LeadOptionsService
             $options[$field] = $values->filter(fn ($value) => is_string($value) && trim($value) !== '')
                 ->unique()->sort()->values()->all();
         }
+
+        return $options;
+    }
+
+    public function inline(): array
+    {
+        $options = $this->all();
+        // Keep the API's workflow choices available even when no lead currently uses one.
+        foreach ([
+            'status' => ['not_available', 'active', 'booked', 'deactive', 'follow_up', 'follow_up_expired', 'follow_up_complete', 'visit'],
+            'type' => ['hot', 'cold', 'warm', 'ready-to-buy'],
+            'visit_status' => ['not_scheduled', 'scheduled', 'completed', 'visited', 'cancelled', 're-visit-plan', 're-visit-done'],
+        ] as $field => $defaults) {
+            $options[$field] = array_values(array_unique([...$defaults, ...$options[$field]]));
+        }
+
         return $options;
     }
 
@@ -35,13 +51,14 @@ class LeadOptionsService
         $options = ['deactivate_reason' => app(DeactivationReasonService::class)->values()];
         foreach (['status', 'type', 'visit_status', 'lead_source', 'inventory', 'source_website'] as $field) {
             $query = Lead::query();
-            if (!$user->canViewAllLeads()) {
+            if (! $user->canViewAllLeads()) {
                 $query->where('assigned_to', $user->id);
             }
             $options[$field] = isset($columns[$field])
                 ? $query->whereNotNull($field)->where($field, '!=', '')->distinct()->orderBy($field)->pluck($field)->all()
                 : [];
         }
+
         return $options;
     }
 }

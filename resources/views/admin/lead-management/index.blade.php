@@ -328,6 +328,81 @@ const leadViewTitles = {
     'booked': 'Booked Leads'
 };
 
+const canEditLeadFields = @json(auth()->user()->hasCrmPermission('edit.lead'));
+const inlineLeadOptions = @json($inlineLeadOptions);
+const inlineLeadProjects = @json($projects);
+const inlineFieldLabels = {status: 'Status', type: 'Type', inventory: 'Inventory', project_id: 'Project', visit_status: 'Visit status', visit_date: 'Visit date'};
+
+function renderLeadField(field) {
+    return function (data, type, row) {
+        if (type !== 'display' || !canEditLeadFields) return data;
+        const value = String(row.edit_data?.[field] ?? '');
+        const attributes = {
+            class: 'form-select form-select-sm lead-field-select',
+            'aria-label': inlineFieldLabels[field] + ' for ' + $('<div>').html(row.name || '').text(),
+            'data-lead-id': row.lead_id,
+            'data-field': field,
+            'data-current-value': value,
+            style: 'min-width:140px'
+        };
+        if (field === 'visit_date') {
+            return $('<input>', {...attributes, class: 'form-control form-control-sm lead-field-select', type: 'date', value: value.substring(0, 10)})
+                .attr('data-current-value', value.substring(0, 10)).prop('outerHTML');
+        }
+        const choices = field === 'project_id'
+            ? inlineLeadProjects.map(project => ({value: String(project.id), text: project.name}))
+            : (inlineLeadOptions[field] || []).map(option => ({value: option, text: option.replace(/[_-]/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase())}));
+        const select = $('<select>', attributes).append(new Option(field === 'project_id' ? 'No project' : 'None', ''));
+        choices.forEach(option => select.append(new Option(option.text, option.value)));
+        if (value && !choices.some(option => option.value === value)) {
+            select.append(new Option($('<div>').html(data || value).text(), value));
+        }
+        select.find('option').each(function () { this.defaultSelected = this.value === value; });
+        return select.prop('outerHTML');
+    };
+}
+
+$(document).on('change', '.lead-field-select', async function () {
+    const input = $(this);
+    const previous = this.dataset.currentValue;
+    const next = this.value;
+    const field = this.dataset.field;
+    if (previous === next) return;
+    input.prop('disabled', true);
+    try {
+        const deactivating = field === 'status' && next === 'deactive';
+        const warning = {
+            icon: 'warning', title: 'Update ' + inlineFieldLabels[field].toLowerCase() + '?',
+            text: 'This lead will be updated to ' + (this.tagName === 'SELECT' ? input.find(':selected').text() : (next || 'None')) + '.',
+            showCancelButton: true, focusCancel: true, reverseButtons: true,
+            confirmButtonText: 'Save change', cancelButtonText: 'Cancel',
+            confirmButtonColor: '#5146d8', customClass: { popup: 'admin-swal-popup' }
+        };
+        if (deactivating) {
+            warning.input = 'select';
+            warning.inputOptions = Object.fromEntries(inlineLeadOptions.deactivate_reason.map(reason => [reason, reason]));
+            warning.inputPlaceholder = 'Choose a deactivation reason';
+            warning.inputValidator = reason => reason ? undefined : 'Select a deactivation reason.';
+        }
+        const result = await Swal.fire(warning);
+        if (!result.isConfirmed) { input.val(previous); return; }
+        const response = await $.ajax({
+            url: '{{ route("lead-management.update-field") }}', type: 'POST',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            data: { id: this.dataset.leadId, field: field, value: next || '', ...(deactivating ? {deactivate_reason: result.value} : {}) }
+        });
+        if (!response.success) throw new Error(response.message || 'Could not update lead.');
+        this.dataset.currentValue = next;
+        $('#leads-table').DataTable().ajax.reload(null, false);
+    } catch (error) {
+        input.val(previous);
+        const errors = error.responseJSON?.errors;
+        await Swal.fire({icon: 'error', title: 'Update failed', text: errors ? Object.values(errors).flat().join(' ') : (error.responseJSON?.message || error.message || 'Please try again.')});
+    } finally {
+        input.prop('disabled', false);
+    }
+});
+
 let currentLeadView =
     sessionStorage.getItem('selectedLeadView') || 'total';
 
@@ -439,12 +514,12 @@ d.open_lead_id = pendingLeadId;
 				},
 
                 { data: 'assigned_to', render: renderLeadAssignee },
-                { data: 'status', orderable: false, searchable: false },
-                { data: 'visit_date' },
-                { data: 'visit_status' },
-                { data: 'inventory' },
-                { data: 'project' },
-                { data: 'type', orderable: false, searchable: false },
+                { data: 'status', orderable: false, searchable: false, render: renderLeadField('status') },
+                { data: 'visit_date', render: renderLeadField('visit_date') },
+                { data: 'visit_status', render: renderLeadField('visit_status') },
+                { data: 'inventory', render: renderLeadField('inventory') },
+                { data: 'project', render: renderLeadField('project_id') },
+                { data: 'type', orderable: false, searchable: false, render: renderLeadField('type') },
 
 				{
 					data: 'action',
