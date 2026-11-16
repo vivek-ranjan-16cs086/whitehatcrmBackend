@@ -841,19 +841,29 @@ table.dataTable tbody tr:hover > * {
 .lead-arrival-time { display: block; margin-top: 3px; font-size: 10px; line-height: 1.4; white-space: nowrap; }
 .lead-name-text { line-height: 1.4; }
 
+/* Apply identical alignment to DataTables' separate header and body tables. */
+#leads-table_wrapper table.dataTable thead th,
+#leads-table_wrapper table.dataTable tbody td {
+    text-align: left !important;
+    vertical-align: middle;
+}
+
 /* Compact WordPress-style selection column beside the lead name. */
 #leads-table th.lead-selection-cell,
-#leads-table td.lead-selection-cell {
+#leads-table td.lead-selection-cell,
+#leads-table_wrapper table.dataTable th.lead-selection-cell,
+#leads-table_wrapper table.dataTable td.lead-selection-cell {
     box-sizing: border-box;
     width: 36px !important;
     min-width: 36px !important;
     max-width: 36px !important;
-    padding: 10px 8px !important;
-    text-align: center;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    text-align: center !important;
     vertical-align: middle;
 }
 
-#leads-table .lead-select-checkbox {
+:is(#leads-table, #leads-table_wrapper) .lead-select-checkbox {
     float: none;
     width: 18px;
     height: 18px;
@@ -864,13 +874,13 @@ table.dataTable tbody tr:hover > * {
     cursor: pointer;
 }
 
-#leads-table .lead-select-checkbox:checked,
-#leads-table .lead-select-checkbox:indeterminate {
+:is(#leads-table, #leads-table_wrapper) .lead-select-checkbox:checked,
+:is(#leads-table, #leads-table_wrapper) .lead-select-checkbox:indeterminate {
     border-color: #2271b1;
     background-color: #2271b1;
 }
 
-#leads-table .lead-select-checkbox:focus-visible {
+:is(#leads-table, #leads-table_wrapper) .lead-select-checkbox:focus-visible {
     outline: 2px solid #2271b1;
     outline-offset: 2px;
 }

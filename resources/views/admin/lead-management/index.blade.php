@@ -424,7 +424,7 @@ function syncLeadSelection() {
         $(this).closest('tr').toggleClass('table-active', this.checked);
     });
     const checkedCount = checkboxes.filter(':checked').length;
-    $('#selectAllLeads').prop({
+    $('input[id="selectAllLeads"]').prop({
         checked: checkboxes.length > 0 && checkedCount === checkboxes.length,
         indeterminate: checkedCount > 0 && checkedCount < checkboxes.length,
         disabled: checkboxes.length === 0
@@ -484,6 +484,7 @@ if (pendingLeadId && !/^\d+$/.test(pendingLeadId)) {
 			processing: true,
 			serverSide: true,
             order: [],
+            autoWidth: true,
 			destroy: true,
 
 			//added
