@@ -9,6 +9,8 @@ class Notification extends Model
 {
     use SoftDeletes;
 
+    public const DUE_FOLLOWUP_LEADS = 'DUE_FOLLOWUP_LEADS';
+
     protected $fillable = [
         'user_id',
         'title',

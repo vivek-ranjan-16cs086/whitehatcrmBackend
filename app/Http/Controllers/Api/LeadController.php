@@ -1476,6 +1476,22 @@ $data['type'] = $data['type'] ?: 'cold';
 		}
 	}
 	
+	public function getDueFollowUpLeads(Request $request): JsonResponse
+	{
+		$from = now()->toImmutable();
+		$leads = Lead::dueForFollowUp($from, $from->addHours(12))
+			->where('assigned_to', $request->user()->id)
+			->orderBy('follow_up_date')
+			->orderBy('id')
+			->get();
+
+		return response()->json([
+			'status' => true,
+			'message' => 'Due follow-up leads',
+			'data' => ['leads' => $leads],
+		]);
+	}
+
 	public function getVisitStatusOptions(): JsonResponse
 	{
 		try {

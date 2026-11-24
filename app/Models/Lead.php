@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Traits\HasModelPermissions;
 use App\Traits\ScopedToOwner;
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -140,6 +142,14 @@ class Lead extends Model
         'budget_max' => 'decimal:2',
     ];
 
+
+    public function scopeDueForFollowUp(Builder $query, CarbonInterface $from, CarbonInterface $until): Builder
+    {
+        return $query->whereNotNull('assigned_to')
+            ->whereNotIn('status', ['booked', 'deactive', 'follow_up_complete'])
+            ->where('follow_up_date', '>=', $from)
+            ->where('follow_up_date', '<', $until);
+    }
 
     public function assignedTo()
     {

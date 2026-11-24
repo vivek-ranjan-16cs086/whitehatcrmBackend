@@ -69,6 +69,7 @@ Route::prefix('v1')->group(function () {
 			Route::get('/leads', [LeadController::class, 'getLeads']);
 			Route::get('/leads/{id}', [LeadController::class, 'getSingleLead']);
 			Route::get('/followup-leads', [LeadController::class, 'getFollowUp']);
+			Route::get('/due_followup_leads', [LeadController::class, 'getDueFollowUpLeads']);
 
 			Route::get('/weekly-visit-target', [LeadController::class, 'weeklyVisitTarget']);
 			Route::get('/weekly-booking-target', [LeadController::class, 'weeklyBookingTarget']);

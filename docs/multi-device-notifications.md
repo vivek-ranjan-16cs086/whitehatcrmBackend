@@ -27,3 +27,9 @@ POST /api/v1/store-device-token still accepts deviceToken, plus optional device_
 Lead, role, reminder and chat push sends use every registered device. Notification history remains one row per recipient/event. The token hash has a unique constraint so a token cannot remain attached to two accounts. Registration moves an existing token to the authenticated account. Concurrent conflicting registrations can be rejected by the unique constraint; clients may retry registration.
 
 Firebase UNREGISTERED responses remove only the matching unchanged token. Other failures are reported and tokens retained; subsequent devices are still attempted. Automatic retry of transient push failures is not configured. Real Firebase delivery must be verified with valid credentials and client devices.
+
+## Due follow-up reminders
+
+Run Laravel's scheduler every minute with `php artisan schedule:run`. The `crm:due-followup-reminder` command sends one digest to each enabled assignee with upcoming follow-ups at 6:00 AM and 6:00 PM India time. Each digest includes up to five leads, ordered by earliest follow-up.
+
+When a user opens a notification with type `DUE_FOLLOWUP_LEADS`, call `GET /api/v1/due_followup_leads` with their bearer token. The endpoint requires lead-view permission and returns all leads assigned to the signed-in user that are due in the next 12 hours under `data.leads`. Notification history stores the digest leads under `data.leads`. Firebase sends `leads` as a JSON string with lead IDs and follow-up timestamps. Handle other notification types according to their existing destinations.
