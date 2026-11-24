@@ -297,6 +297,7 @@
 //added
 const canAssignLeadsInline = @json(auth()->user()->hasRole('super-admin', 'web'));
 const leadAssignmentUsers = @json($assignmentUsers);
+const currentLeadAssignee = @json(['id' => $currentUser->id, 'name' => $currentUser->name]);
 
 function renderLeadAssignee(data, type, row) {
     if (type !== 'display' || !canAssignLeadsInline) return data;
@@ -873,6 +874,12 @@ $(document).on('lead:date-range', function () {
 	function initSalesPersonSelect(selectedId = null, selectedText = null) {
         // Clear options from the previous lead, including Select2's retained selection.
         $('#edit_assigned').empty().append(new Option('Unassigned', '', true, true));
+		if (!@json($isSuperAdmin)) {
+			$('#edit_assigned').empty().append(new Option(currentLeadAssignee.name, currentLeadAssignee.id, true, true));
+			$('#edit_assigned').prop('disabled', true);
+			return;
+		}
+		$('#edit_assigned').prop('disabled', false);
 
 		$('#edit_assigned').select2({
 			dropdownParent: $('#editLeadModal'), // important for modal
@@ -908,6 +915,10 @@ $(document).on('lead:date-range', function () {
 
 	// Initialize Select2 for Add Lead Modal
 	function initAddSalesPersonSelect() {
+		if (!@json($isSuperAdmin)) {
+			$('#add_assigned').val(currentLeadAssignee.id).prop('disabled', true);
+			return;
+		}
 		$('#add_assigned').select2({
 			dropdownParent: $('#addLeadModal'), // important for modal
 			placeholder: 'Search users',
@@ -932,7 +943,7 @@ $(document).on('lead:date-range', function () {
 	// Init on Add button click
 	$('[data-bs-target="#addLeadModal"]').click(function() {
 		$('#addLeadForm')[0].reset();
-		$('#add_assigned').val(null).trigger('change');
+		$('#add_assigned').prop('disabled', false).val(null).trigger('change');
 		if ($('#add_assigned').hasClass("select2-hidden-accessible")) {
 			$('#add_assigned').select2('destroy');
 		}
