@@ -16,7 +16,7 @@ class DueFollowUpReminderTest extends TestCase
 
     public function test_evening_digest_sends_once_per_recipient_and_lists_the_five_earliest_due_leads(): void
     {
-        $this->travelTo(now()->setDate(2026, 11, 24)->setTime(18, 0));
+        $this->travelTo(now()->setDate(2026, 11, 24)->setTime(17, 10));
         $salesperson = User::factory()->create();
         $other = User::factory()->create();
         $earliest = $this->lead($salesperson, 0);
