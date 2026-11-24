@@ -17,7 +17,7 @@ class DueFollowUpReminder extends Command
     {
         $now = now('Asia/Kolkata')->toImmutable();
         $morning = $now->setTime(6, 0);
-        $evening = $now->setTime(17, 53);
+        $evening = $now->setTime(18, 11);
         $from = match (true) {
             $now >= $evening => $evening,
             $now >= $morning => $morning,
