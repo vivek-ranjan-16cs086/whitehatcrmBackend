@@ -30,6 +30,6 @@ Firebase UNREGISTERED responses remove only the matching unchanged token. Other 
 
 ## Due follow-up reminders
 
-Run Laravel's scheduler every minute with `php artisan schedule:run`. The `crm:due-followup-reminder` command sends one digest to each enabled assignee with upcoming follow-ups at 6:00 AM and 5:10 PM India time. Each digest includes up to five leads due within 12 hours of its start time, ordered by earliest follow-up.
+Run Laravel's scheduler every minute with `php artisan schedule:run`. The `crm:due-followup-reminder` command sends one digest to each enabled assignee with upcoming follow-ups at 6:00 AM and 5:18 PM India time. Each digest includes up to five leads due within 12 hours of its start time, ordered by earliest follow-up.
 
 When a user opens a notification with type `DUE_FOLLOWUP_LEADS`, call `GET /api/v1/due_followup_leads` with their bearer token. The endpoint requires lead-view permission and returns all leads assigned to the signed-in user that are due in the next 12 hours under `data.leads`. Notification history stores the digest leads under `data.leads`. Firebase sends `leads` as a JSON string with lead IDs and follow-up timestamps. Handle other notification types according to their existing destinations.

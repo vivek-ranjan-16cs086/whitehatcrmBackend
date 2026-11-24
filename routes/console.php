@@ -9,4 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 Schedule::command('crm:lead-reminder')->everyTwoHours();
 Schedule::command('crm:due-followup-reminder')->dailyAt('06:00')->timezone('Asia/Kolkata');
-Schedule::command('crm:due-followup-reminder')->dailyAt('17:10')->timezone('Asia/Kolkata');
+Schedule::command('crm:due-followup-reminder')->dailyAt('17:18')->timezone('Asia/Kolkata');
