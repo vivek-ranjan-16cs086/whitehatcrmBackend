@@ -82,6 +82,9 @@ class LeadController extends Controller
     public function assignees(Request $request)
     {
         $query = User::query()->with('roles')->orderBy('name')->orderBy('id');
+		if (!$request->user()->hasRole('super-admin', 'web')) {
+			$query->whereKey($request->user()->id);
+		}
         if ($request->filled('q')) {
             $query->where('name', 'like', '%' . $request->string('q') . '%');
         }
@@ -132,6 +135,8 @@ $leadSources = Lead::query()
     return view('admin.lead-management.index', [
         'headerFilters' => app(\App\Services\LeadHeaderFilterService::class)->forUser($request->user()),
         'inlineLeadOptions' => app(\App\Services\LeadOptionsService::class)->inline(),
+        'isSuperAdmin' => $request->user()->hasRole('super-admin', 'web'),
+        'currentUser' => $request->user(),
         'assignmentUsers' => $request->user()->hasRole('super-admin', 'web')
             ? User::with('roles')->orderBy('name')->orderBy('id')->get(['id', 'name'])->map(fn ($user) => [
                 'id' => $user->id,
@@ -647,6 +652,9 @@ $leadSources = Lead::query()
 			if ($assignedUserId && !is_numeric($assignedUserId)) {
 				$assignedUserId = base64_decode($assignedUserId);
 			}
+			if (!$request->user()->hasRole('super-admin', 'web')) {
+				$assignedUserId = $request->user()->id;
+			}
 
 
 			$lead->name = $validated['name'];
@@ -663,7 +671,7 @@ $leadSources = Lead::query()
 			$lead->save();
 
 			
-			// If assignment changed → send notification
+			// Send assignment notification.
 			if (!empty($assignedUserId) && (string)$oldAssignedUserId !== (string)$assignedUserId) {
 				try {
 					$notificationService->sendLeadAssignedNotification($assignedUserId, $lead);
@@ -819,7 +827,9 @@ $leadSources = Lead::query()
 						(string) $lead->source_website,
 					])),
 				],
-				'assigned_to' => 'nullable|integer|exists:users,id',
+				'assigned_to' => $request->user()->hasRole('super-admin', 'web')
+					? 'nullable|integer|exists:users,id'
+					: 'nullable',
 				'follow_up_date' => 'nullable|date',
 				'notes' => 'nullable|string',
 				'visit_status' => 'nullable|string|max:255',
@@ -864,6 +874,9 @@ $leadSources = Lead::query()
             $oldAssignedUserId = $lead->assigned_to;
 
             $assignedUserId = array_key_exists('assigned_to', $validated) ? $validated['assigned_to'] : $oldAssignedUserId;
+			if (!$user->hasRole('super-admin', 'web')) {
+				$assignedUserId = $user->id;
+			}
 
 			foreach (self::EDITABLE_LEAD_FIELDS as $field) {
 				if (array_key_exists($field, $validated) && isset($availableColumns[$field])) {
@@ -949,7 +962,9 @@ $leadSources = Lead::query()
 				'source_website' => ['required', 'string', 'max:255', Rule::in(array_unique([...array_values(self::MANUAL_LEAD_SOURCES), ...Lead::query()->whereNotNull('source_website')->distinct()->pluck('source_website')->all()]))],
 				'status' => ['nullable', Rule::in($options['status'])],
 				'type' => ['nullable', Rule::in($options['type'])],
-				'assigned_to' => 'nullable|integer|exists:users,id',
+				'assigned_to' => $request->user()->hasRole('super-admin', 'web')
+					? 'nullable|integer|exists:users,id'
+					: 'nullable',
 				'follow_up_date' => 'nullable|date',
 				'notes' => 'nullable|string',
                 'deactivate_reason' => ['required_if:status,deactive', 'nullable', 'string', Rule::in($options['deactivate_reason'])],
@@ -965,6 +980,9 @@ $leadSources = Lead::query()
 			$assignedUserId = $validated['assigned_to'] ?? null;
 			if ($assignedUserId && !is_numeric($assignedUserId)) {
 				$assignedUserId = base64_decode($assignedUserId);
+			}
+			if (!$request->user()->hasRole('super-admin', 'web')) {
+				$assignedUserId = $request->user()->id;
 			}
 
 			$lead = new Lead();
@@ -989,7 +1007,7 @@ $lead->type = !empty($validated['type']) ? $validated['type'] : 'cold';
             $lead->fill(collect($validated)->only(['visit_status', 'visit_date', 'lead_source', 'inventory', 'budget_min', 'budget_max'])->all());
             $lead->save();
 
-			// If assignment changed → send notification
+			// Send assignment notification.
 			if (!empty($assignedUserId)) {
 				try {
 					$notificationService->sendLeadAssignedNotification($assignedUserId, $lead);

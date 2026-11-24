@@ -22,7 +22,7 @@
         <div @if($field === 'deactivate_reason') id="{{ $prefix }}deactivate_reason_group" hidden @endif class="{{ $kind === 'textarea' ? 'col-12' : 'col-md-6' }}">
             <label class="form-label" for="{{ $id }}">{{ $label }}</label>
             @if($kind === 'select')
-                <select name="{{ $field }}" id="{{ $id }}" class="form-select" @disabled($locked) @required(!$editing && $field === 'source_website')>
+                <select name="{{ $field }}" id="{{ $id }}" class="form-select" @disabled($locked || ($field === 'assigned_to' && empty($isSuperAdmin))) @required(!$editing && $field === 'source_website')>
                     @if($field === 'source_website')
                         <option value="">Select a source</option>
                         @foreach($manualLeadSources as $sourceLabel => $value)
@@ -34,7 +34,11 @@
                             <option value="{{ $project->id }}">{{ $project->name }}</option>
                         @endforeach
                     @elseif($field === 'assigned_to')
-                        <option value="">Unassigned</option>
+                        @if(!empty($isSuperAdmin))
+                            <option value="">Unassigned</option>
+                        @else
+                            <option value="{{ $currentUser->id }}" selected>{{ $currentUser->name }}</option>
+                        @endif
                     @elseif($field !== 'assigned_to')
                         @if(in_array($field, ['lead_source', 'inventory', 'deactivate_reason']))
                             <option value="">None</option>

@@ -714,6 +714,7 @@ class LeadController extends BaseController
 
 	public function createNewLead(Request $request)
 	{
+		$user = $request->user('api');
 		$validator = Validator::make($request->all(), [
 			'name' => 'required|string|max:255',
 			'phone' => 'nullable',
@@ -721,7 +722,9 @@ class LeadController extends BaseController
 			'status' => 'nullable|in:not_available,active,booked,deactive,follow_up,follow_up_expired,follow_up_complete',
 			'type' => 'nullable|in:hot,cold,warm,ready-to-buy',
 
-			'assigned_to' => 'nullable|exists:users,id',
+			'assigned_to' => $user->hasRole('super-admin', 'web')
+				? 'nullable|integer|exists:users,id'
+				: 'nullable',
 			'follow_up_date' => 'nullable|date',
 
 			'visit_status' => 'nullable|in:not_scheduled,scheduled,completed',
@@ -742,10 +745,12 @@ class LeadController extends BaseController
 
 		// Create lead
 		$data = $validator->validated();
-		$user = $request->user('api');
 		$data['created_by'] = $user->id;
-// Default Cold if the API doesn't provide a type
-$data['type'] = $data['type'] ?: 'cold';
+		$data['assigned_to'] = $user->hasRole('super-admin', 'web')
+			? ($data['assigned_to'] ?? null)
+			: $user->id;
+		// Default to cold when the API does not provide a type.
+		$data['type'] = $data['type'] ?? 'cold';
 		$lead = Lead::create($data);
 		if ($request->filled('follow_up_date')) {
 
@@ -779,6 +784,9 @@ $data['type'] = $data['type'] ?: 'cold';
 			$user = $request->user('api');
 			$leadIds = $validated['lead_ids'];
 			$assignedUserId = $validated['assigned_to'];
+			if (!$user->hasRole('super-admin', 'web') && (string) $assignedUserId !== (string) $user->id) {
+				return response()->json(['status' => false, 'message' => 'You may only assign leads to yourself.'], 403);
+			}
 			$assignedUser = User::find($assignedUserId);
             $assignedUserName = $assignedUser?->name ?? 'Unknown';
 
