@@ -681,6 +681,7 @@ class LeadController extends BaseController
 	public function createNewLead(Request $request)
 	{
 		$user = $request->user('api');
+		$canChooseAssignee = $user->hasRole('super-admin', 'web');
 		$validator = Validator::make($request->all(), [
 			'name' => 'required|string|max:255',
 			'phone' => 'nullable',
@@ -688,9 +689,9 @@ class LeadController extends BaseController
 			'status' => ['nullable', 'string', app(LeadEnumOptions::class)->rule('status')],
 			'type' => ['nullable', 'string', app(LeadEnumOptions::class)->rule('type')],
 
-			'assigned_to' => $user->hasRole('super-admin', 'web')
-				? 'nullable|integer|exists:users,id'
-				: 'nullable',
+			'assigned_to' => $canChooseAssignee
+				? 'sometimes|nullable|integer|exists:users,id'
+				: 'exclude',
 			'follow_up_date' => 'nullable|date',
 
 			'visit_status' => ['nullable', 'string', app(LeadEnumOptions::class)->rule('visit_status')],
@@ -704,7 +705,7 @@ class LeadController extends BaseController
 		if ($validator->fails()) {
 			return response()->json([
 				'status' => false,
-				'message' => 'Validation error',
+				'message' => $validator->errors()->first(),
 				'errors' => $validator->errors()
 			], 422);
 		}
@@ -712,7 +713,7 @@ class LeadController extends BaseController
 		// Create lead
 		$data = $validator->validated();
 		$data['created_by'] = $user->id;
-		$data['assigned_to'] = $user->hasRole('super-admin', 'web')
+		$data['assigned_to'] = $canChooseAssignee
 			? ($data['assigned_to'] ?? null)
 			: $user->id;
 		// Default to cold when the API does not provide a type.

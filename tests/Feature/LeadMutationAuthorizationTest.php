@@ -14,6 +14,39 @@ class LeadMutationAuthorizationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_business_executive_creates_a_self_assigned_lead_without_choosing_a_user(): void
+    {
+        $executive = $this->userWithPermissions('business-executive', ['create.lead']);
+        $this->actingAs($executive, 'api');
+
+        $this->getJson('/api/v1/all-users')->assertForbidden();
+        $this->postJson('/api/v1/create-lead', ['name' => 'Self assigned lead'])->assertOk();
+        $other = User::factory()->create();
+        $this->postJson('/api/v1/create-lead', [
+            'name' => 'Lead with another assignee in the request',
+            'assigned_to' => $other->id,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('leads', ['name' => 'Self assigned lead', 'assigned_to' => $executive->id]);
+        $this->assertDatabaseHas('leads', ['name' => 'Lead with another assignee in the request', 'assigned_to' => $executive->id]);
+    }
+
+    public function test_super_admin_can_create_an_unassigned_lead_or_select_an_existing_user(): void
+    {
+        $admin = $this->userWithPermissions('super-admin', ['create.lead']);
+        $assignee = User::factory()->create();
+        $this->actingAs($admin, 'api');
+
+        $this->postJson('/api/v1/create-lead', ['name' => 'Unassigned lead'])->assertOk();
+        $this->postJson('/api/v1/create-lead', ['name' => 'Assigned lead', 'assigned_to' => $assignee->id])->assertOk();
+        $this->postJson('/api/v1/create-lead', ['name' => 'Invalid assignee', 'assigned_to' => 0])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('assigned_to');
+
+        $this->assertDatabaseHas('leads', ['name' => 'Unassigned lead', 'assigned_to' => null]);
+        $this->assertDatabaseHas('leads', ['name' => 'Assigned lead', 'assigned_to' => $assignee->id]);
+    }
+
     public function test_editor_can_mark_an_assigned_lead_as_not_connected_with_a_note(): void
     {
         $user = $this->userWithPermissions('lead-editor', ['edit.lead']);
