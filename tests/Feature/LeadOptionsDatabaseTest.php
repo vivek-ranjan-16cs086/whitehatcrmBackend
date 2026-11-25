@@ -13,6 +13,21 @@ class LeadOptionsDatabaseTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_api_returns_shared_enum_choices_and_descriptions_before_any_leads_exist(): void
+    {
+        $response = $this->getJson('/api/v1/lead-options')
+            ->assertOk()
+            ->assertJsonPath('data.status.description', config('lead-enums.status.description'));
+
+        foreach (config('lead-enums') as $field => $definition) {
+            $this->assertSame($definition['values'], array_column($response->json("data.{$field}.options"), 'value'));
+        }
+
+        $this->getJson('/api/v1/status-list')
+            ->assertOk()
+            ->assertJsonPath('data.status', $response->json('data.status.options'));
+    }
+
     public function test_reasons_match_the_api_without_counting_saved_leads(): void
     {
         $expected = ['Plot or Villa', 'Budget', 'Location', 'Ready To Move', 'Rent', 'Invalid Mobile Number', 'Others', 'Switch Off'];

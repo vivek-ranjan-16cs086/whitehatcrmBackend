@@ -5,7 +5,7 @@ namespace App\Imports;
 use App\Models\Lead;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
+use App\Services\LeadEnumOptions;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\ToCollection;
@@ -27,16 +27,6 @@ class AdminLeadsImport extends DefaultValueBinder implements SkipsEmptyRows, ToC
         'follow_up_date',
         'notes',
         'source_page_name',
-    ];
-
-    private const STATUSES = [
-        'not_available',
-        'active',
-        'booked',
-        'deactive',
-        'follow_up',
-        'follow_up_expired',
-        'follow_up_complete',
     ];
 
     public function __construct(private readonly string $sourceWebsite) {}
@@ -63,8 +53,8 @@ class AdminLeadsImport extends DefaultValueBinder implements SkipsEmptyRows, ToC
                 'phone' => 'nullable|string|max:20',
                 'email' => 'nullable|email|max:255',
                 'message' => 'nullable|string',
-                'status' => ['nullable', 'string', Rule::in(self::STATUSES)],
-                'type' => ['nullable', 'string', Rule::in(['hot', 'warm', 'cold'])],
+                'status' => ['nullable', 'string', app(LeadEnumOptions::class)->rule('status')],
+                'type' => ['nullable', 'string', app(LeadEnumOptions::class)->rule('type')],
                 'follow_up_date' => 'nullable|date',
                 'notes' => 'nullable|string',
                 'source_page_name' => 'nullable|string|max:255',

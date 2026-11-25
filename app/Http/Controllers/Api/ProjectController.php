@@ -10,6 +10,7 @@ use Spatie\Permission\Models\Role;
 use App\Models\Project;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\JsonResponse;
+use App\Services\LeadEnumOptions;
 
 class ProjectController extends BaseController
 {
@@ -35,7 +36,7 @@ class ProjectController extends BaseController
             'name' => 'required',
             'email' => 'required|email',
             'phone' => 'required',
-			'inventory' => 'required|in:1 BHK,2 BHK,3 BHK,4 BHK,5 BHK,6 BHK,Plots,Villa,Studio Apartment,Shops',
+			'inventory' => ['required', 'string', app(LeadEnumOptions::class)->rule('inventory')],
 			'min_price' => 'required',
 			'max_price' => 'required'
         ]);
@@ -111,25 +112,7 @@ class ProjectController extends BaseController
     //inventory api
 	public function getInventoryList()
 	{
-		$options = [
-			'1 BHK',
-			'2 BHK',
-			'3 BHK',
-			'4 BHK',
-			'5 BHK',
-			'6 BHK',
-			'Plots',
-			'Villa',
-			'Studio Apartment',
-			'Shops'
-		];
-
-		$formattedOptions = array_map(function ($option) {
-			return [
-				'label' => $option,
-				'value' => $option
-			];
-		}, $options);
+		$formattedOptions = app(LeadEnumOptions::class)->options('inventory');
 
 		return response()->json([
 			'success' => true,

@@ -119,6 +119,7 @@ Route::prefix('v1')->group(function () {
     });
 	
 	Route::get('/roles', [ApiController::class, 'getRoles']);
+	Route::get('/lead-options', [LeadController::class, 'getLeadOptions']);
 	Route::get('/status-list', [LeadController::class, 'getStatusList']); 
 	Route::get('/lead-source', [LeadController::class, 'getLeadSourceList']);
 	Route::get('/deactivate-list', [LeadController::class, 'getDeactivateList']);

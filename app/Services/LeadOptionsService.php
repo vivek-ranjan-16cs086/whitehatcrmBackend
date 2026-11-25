@@ -33,13 +33,9 @@ class LeadOptionsService
     public function inline(): array
     {
         $options = $this->all();
-        // Keep the API's workflow choices available even when no lead currently uses one.
-        foreach ([
-            'status' => ['not_available', 'active', 'booked', 'deactive', 'follow_up', 'follow_up_expired', 'follow_up_complete', 'visit'],
-            'type' => ['hot', 'cold', 'warm', 'ready-to-buy'],
-            'visit_status' => ['not_scheduled', 'scheduled', 'completed', 'visited', 'cancelled', 're-visit-plan', 're-visit-done'],
-        ] as $field => $defaults) {
-            $options[$field] = array_values(array_unique([...$defaults, ...$options[$field]]));
+        $enums = app(LeadEnumOptions::class);
+        foreach (array_keys(config('lead-enums')) as $field) {
+            $options[$field] = array_values(array_unique([...$enums->values($field), ...$options[$field]]));
         }
 
         return $options;

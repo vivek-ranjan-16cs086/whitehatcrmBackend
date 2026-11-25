@@ -76,7 +76,7 @@ class LeadController extends Controller
 
     private function leadOptions(): array
     {
-        return app(\App\Services\LeadOptionsService::class)->all();
+        return app(\App\Services\LeadOptionsService::class)->inline();
     }
 
     public function assignees(Request $request)

@@ -13,6 +13,7 @@ use App\Models\LeadTimelineEvent;
 use App\Models\User;
 use App\Models\SubResponse;
 use Carbon\Carbon;
+use App\Services\LeadEnumOptions;
 use App\Services\LeadService;
 use App\Http\Resources\LeadResource;
 use App\Services\NotificationService; 
@@ -396,22 +397,22 @@ class LeadController extends BaseController
 				// dd($request->all());
 				// Validation
 				$validator = Validator::make($request->all(), [
-					'visitStatus' => 'sometimes|in:not_scheduled,scheduled,completed,visited,cancelled,re-visit-plan,re-visit-done',
+					'visitStatus' => ['sometimes', 'string', app(LeadEnumOptions::class)->rule('visit_status')],
 					'visitDate'   => 'nullable|date|required_if:visitStatus,scheduled',
 
-					'status' => 'sometimes|in:not_available,active,booked,deactive,follow_up,follow_up_expired,follow_up_complete,visit',
-					'type'   => 'sometimes|in:hot,cold,warm,ready-to-buy',
+					'status' => ['sometimes', 'string', app(LeadEnumOptions::class)->rule('status')],
+					'type'   => ['sometimes', 'string', app(LeadEnumOptions::class)->rule('type')],
 
 					'note'   => 'required|nullable|string',
 					'project_id' => 'sometimes|nullable|exists:projects,id',
 
-					'deactivate_reason' => 'sometimes|nullable|in:Plot or Villa,Budget,Location,Ready To Move,Rent,Invalid Mobile Number,Others,Switch Off',
+					'deactivate_reason' => ['sometimes', 'nullable', 'string', app(LeadEnumOptions::class)->rule('deactivate_reason')],
 
-					'lead_source' => 'sometimes|nullable|string|max:255',
+					'lead_source' => ['sometimes', 'nullable', 'string', app(LeadEnumOptions::class)->rule('lead_source')],
 					'budget.min' => 'sometimes|nullable|numeric|min:0',
 					'budget.max' => 'sometimes|nullable|numeric|gte:budget.min',
 
-					'inventory' => 'sometimes|nullable|string|max:100',
+					'inventory' => ['sometimes', 'nullable', 'string', app(LeadEnumOptions::class)->rule('inventory')],
 					'follow_up_date' => 'sometimes|date',
 					'remarks' => 'nullable|string|required_if:status,follow_up_complete',
 					'sub_response_id' => 'nullable|exists:sub_responses,id',
@@ -583,27 +584,22 @@ class LeadController extends BaseController
 			}
 	}   
 
+	public function getLeadOptions(LeadEnumOptions $enums): JsonResponse
+	{
+		$data = [];
+		foreach (config('lead-enums') as $field => $definition) {
+			$data[$field] = [
+				'description' => $definition['description'],
+				'options' => $enums->options($field),
+			];
+		}
+
+		return response()->json(['success' => true, 'data' => $data]);
+	}
+
 	public function getStatusList()
 	{
-		
-		
-		$statuses = [
-			'Active',
-			'Not Connected',
-			'Follow Up',
-			'Visit',
-			'Deactive',
-			'Follow Up Expired',
-			'Follow Up Complete',
-			'Booked'
-		];
-
-		$formattedStatus = array_map(function ($status) {
-			return [
-				'label' => $status,
-				'value' => strtolower(str_replace(' ', '_', $status))
-			];
-		}, $statuses);
+		$formattedStatus = app(LeadEnumOptions::class)->options('status');
 
 		return response()->json([
 			'success' => true,
@@ -615,39 +611,7 @@ class LeadController extends BaseController
 	
 	public function getLeadSourceList()
 	{
-		$sources = [
-			'Calling',
-			'Whitehat',
-			'WHATSAPP',
-			'CATCHING',
-			'Youtube',
-			'4QT',
-			'360youtube',
-			'99Acre',
-			'Advert IQ',
-			'Referral',
-			'Other',
-			'Facebook', 
-			'Instagram',
-			'Housing.com',
-			'PPC',
-			'Google',
-			'360propguide Website',
-			'Static Websites',
-			'IVR',
-			'Walk-in',
-			'Broker',
-			'Dealer',
-			'Print Media',
-			'Out Door Media'
-		];
-
-		$formattedSources = array_map(function ($source) {
-			return [
-				'label' => $source,
-				 'value' => $source
-			];
-		}, $sources);
+		$formattedSources = app(LeadEnumOptions::class)->options('lead_source');
 
 		return response()->json([
 			'success' => true,
@@ -721,19 +685,19 @@ class LeadController extends BaseController
 			'name' => 'required|string|max:255',
 			'phone' => 'nullable',
 			'email' => 'nullable|email',
-			'status' => 'nullable|in:not_available,active,booked,deactive,follow_up,follow_up_expired,follow_up_complete',
-			'type' => 'nullable|in:hot,cold,warm,ready-to-buy',
+			'status' => ['nullable', 'string', app(LeadEnumOptions::class)->rule('status')],
+			'type' => ['nullable', 'string', app(LeadEnumOptions::class)->rule('type')],
 
 			'assigned_to' => $user->hasRole('super-admin', 'web')
 				? 'nullable|integer|exists:users,id'
 				: 'nullable',
 			'follow_up_date' => 'nullable|date',
 
-			'visit_status' => 'nullable|in:not_scheduled,scheduled,completed',
+			'visit_status' => ['nullable', 'string', app(LeadEnumOptions::class)->rule('visit_status')],
 			'visit_date' => 'nullable|date',
 
 			'notes' => 'nullable|string',
-			'lead_source' => 'sometimes|nullable|in:Calling,Whitehat,WHATSAPP,CATCHING,Youtube,4QT,360youtube,99Acre,Advert IQ,Referral,Other,Facebook,Instagram,Housing.com,PPC,Google,360propguide Website,Static Websites,IVR,Walk-in,Broker,Dealer,Print Media,Out Door Media',
+			'lead_source' => ['sometimes', 'nullable', 'string', app(LeadEnumOptions::class)->rule('lead_source')],
 		]); 
 
 		//Validation fail
@@ -1506,32 +1470,7 @@ class LeadController extends BaseController
 	{
 		try {
 
-			$visitStatusOptions = [
-				[
-					'label' => 'Scheduled',
-					'value' => 'scheduled',
-				],
-				[
-					'label' => 'Visited',
-					'value' => 'visited',
-				],
-				[
-					'label' => 'Re-visit Plan',
-					'value' => 're-visit-plan',
-				],
-				[
-					'label' => 'Re-visit Done',
-					'value' => 're-visit-done',
-				],
-				[
-					'label' => 'Cancelled',
-					'value' => 'cancelled',
-				],
-				[
-					'label' => 'Not Schedule',
-					'value' => 'not_scheduled',
-				],
-			];
+			$visitStatusOptions = app(LeadEnumOptions::class)->options('visit_status');
 
 			return response()->json([
 				'status' => true,
