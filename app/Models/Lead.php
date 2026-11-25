@@ -76,6 +76,7 @@ class Lead extends Model
 
         'source_page_id',
         'source_page_name',
+        'meta_app_name',
 
         /*
         |--------------------------------------------------------------------------

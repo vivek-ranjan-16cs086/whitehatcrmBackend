@@ -23,6 +23,7 @@ class LeadResource extends JsonResource
             'visitDate'   => $this->visit_date,
 			'pageKey'  => $this->getRawOriginal('source_page_name'),
 			'pageName' => $this->page_name,
+			'meta_app_name' => $this->meta_app_name,
 		   
 		  //added
 		  

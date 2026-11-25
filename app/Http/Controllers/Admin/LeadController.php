@@ -70,7 +70,7 @@ class LeadController extends Controller
 
     private const READ_ONLY_LEAD_FIELDS = [
         'name', 'phone', 'email', 'message', 'external_id', 'source_website', 'project_id',
-        'source_page_id', 'source_page_name', 'source_form_id', 'source_form_name',
+        'source_page_id', 'source_page_name', 'meta_app_name', 'source_form_id', 'source_form_name',
         'campaign_id', 'campaign_name', 'adset_id', 'adset_name', 'ad_id', 'ad_name', 'source_submitted_at',
     ];
 
@@ -178,6 +178,7 @@ $leadSources = Lead::query()
             'message' => 'message',
             'source_website' => 'source_website',
             'source_page_name' => 'source_page_name',
+            'meta_app_name' => 'meta_app_name',
             'status' => 'status',
             'type' => 'type',
             'assigned_to' => 'assigned_to',
@@ -273,6 +274,7 @@ $leadSources = Lead::query()
                 "message"        => e(\Str::limit($row->message, 50)),
                 "source_website" => e($row->source_website ?? '-'),
                 "source_page_name" => e($row->source_page_name ?? '-'),
+                "meta_app_name" => e($row->meta_app_name ?? '-'),
                 "status"         => $statusBadge,
 				"type"          =>  $typeBadge,
                 "assigned_to"    => e($assignedUserName ?: 'Unassigned'),
@@ -318,6 +320,7 @@ $leadSources = Lead::query()
 			'message' => 'message',
 			'source_website' => 'source_website',
 			'source_page_name' => 'source_page_name',
+			'meta_app_name' => 'meta_app_name',
 			'status' => 'status',
 			'type' => 'type',
 			'assigned_to' => 'assigned_to',
@@ -583,6 +586,7 @@ $leadSources = Lead::query()
 				'message' => e(\Str::limit($row->message, 50)),
 				'source_website' => e($row->source_website ?? '-'),
 				'source_page_name' => $row->pageName,
+				'meta_app_name' => e($row->meta_app_name ?? '-'),
                 'project' => e($row->project?->name ?? '-'),
                 'inventory' => e($row->inventory ?: '-'),
                 'visit_date' => $row->visit_date?->format('d M Y') ?? '-',

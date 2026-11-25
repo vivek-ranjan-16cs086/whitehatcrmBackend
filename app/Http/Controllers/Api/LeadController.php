@@ -154,6 +154,7 @@ class LeadController extends BaseController
 				'email' => 'nullable|email',
 				'external_id' => 'nullable|integer',
 				'source_page_name' => 'nullable|string|max:255',
+				'meta_app_name' => 'nullable|string|max:255',
 				'message' => 'nullable|string',
 			]);
 
@@ -213,6 +214,7 @@ class LeadController extends BaseController
 				$data['source_website'],
 				$data['source_page_name'] ?? $lead->source_page_name
 			);
+			$lead->meta_app_name = $data['meta_app_name'] ?? $lead->meta_app_name;
 			$lead->name = $data['name'] ?? $lead->name;
 			$lead->phone = $data['phone'] ?? $lead->phone;
 			$lead->email = $data['email'] ?? $lead->email;

@@ -55,6 +55,28 @@ class LeadHeaderFilterTest extends TestCase
         $this->getJson(route('lead-management.ajax-list', ['header_filters' => 'bad']))->assertUnprocessable();
     }
 
+    public function test_meta_app_name_is_shown_separately_from_the_page_name(): void
+    {
+        $admin = $this->admin();
+        $lead = Lead::create([
+            'name' => 'Wooden Strings lead',
+            'source_website' => 'facebook.com',
+            'source_page_name' => 'TWS Instant Form',
+            'meta_app_name' => 'The Wooden Strings',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('lead-management.index'))
+            ->assertOk()
+            ->assertSee('<th>Meta App</th>', false);
+
+        $this->getJson(route('lead-management.ajax-list'))
+            ->assertOk()
+            ->assertJsonPath('data.0.source_page_name', 'TWS Instant Form')
+            ->assertJsonPath('data.0.meta_app_name', 'The Wooden Strings')
+            ->assertJsonPath('data.0.lead_id', $lead->id);
+    }
+
     public function test_filter_options_and_results_do_not_expose_other_owners_leads(): void
     {
         $user = User::factory()->create();

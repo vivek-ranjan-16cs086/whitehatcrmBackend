@@ -75,6 +75,7 @@
                                     @endforeach
                                 </select>
                             </th>
+							<th>Meta App</th>
 							<th class="lead-filter-heading"><span>Assigned To</span>
                                 <select class="form-select form-select-sm lead-column-filter" data-lead-column-filter="assigned_to" aria-label="Filter Assigned To">
                                     <option value="">All</option>
@@ -539,7 +540,7 @@ if (pendingLeadId && !/^\d+$/.test(pendingLeadId)) {
 			serverSide: true,
             order: [],
             autoWidth: true,
-            columnDefs: [{ targets: [4,5,6,7,8,9,10,11,12,13], orderable: false }],
+            columnDefs: [{ targets: [4,5,6,7,8,9,10,11,12,13,14], orderable: false }],
 			destroy: true,
 
 			//added
@@ -609,6 +610,8 @@ d.open_lead_id = pendingLeadId;
 					}
 				},
 
+				{ data: 'meta_app_name' },
+
                 { data: 'assigned_to', render: renderLeadAssignee },
                 { data: 'status', orderable: false, searchable: false, render: renderLeadField('status') },
                 { data: 'visit_date', render: renderLeadField('visit_date') },
@@ -646,27 +649,27 @@ d.open_lead_id = pendingLeadId;
 						{
 							extend: 'copyHtml5',
 							title: 'Leads',
-							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12], orthogonal: 'export', format: { header: leadExportHeading } }
+							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12,13], orthogonal: 'export', format: { header: leadExportHeading } }
 						},
 						{
 							extend: 'excelHtml5',
 							title: 'Leads',
-							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12], orthogonal: 'export' }
+							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12,13], orthogonal: 'export' }
 						},
 						{
 							extend: 'csv',
 							title: 'Leads',
-							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12], orthogonal: 'export' }
+							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12,13], orthogonal: 'export' }
 						},
 						{
 							extend: 'pdfHtml5',
 							title: 'Leads',
-							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12], orthogonal: 'export' }
+							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12,13], orthogonal: 'export' }
 						},
 						{
 							extend: 'print',
 							title: 'Leads',
-							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12], orthogonal: 'export' }
+							exportOptions: { columns: [1,2,3,4,5,6,7,8,9,10,11,12,13], orthogonal: 'export' }
 						}
 					]
 				}

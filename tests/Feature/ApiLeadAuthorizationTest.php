@@ -152,6 +152,36 @@ class ApiLeadAuthorizationTest extends TestCase
         ]);
     }
 
+    public function test_meta_app_name_is_saved_without_changing_the_facebook_form_page_name(): void
+    {
+        config(['services.erp.key' => 'test-api-key']);
+        $notifications = $this->mock(NotificationService::class);
+        $notifications->shouldReceive('sendToRole')->once();
+
+        $payload = [
+            'external_id' => '1893247868694560',
+            'source_website' => 'facebook.com',
+            'name' => 'Wooden Strings Customer',
+            'phone' => '9876543210',
+            'source_page_name' => 'TWS Instant Form',
+            'meta_app_name' => 'The Wooden Strings',
+            'message' => 'Facebook Lead Ads | Form: TWS Instant Form | Property location: Pune',
+        ];
+
+        $this->postJson('/api/v1/leads/store', $payload, ['x-api-key' => 'test-api-key'])
+            ->assertOk()
+            ->assertJsonPath('data.source_page_name', 'TWS Instant Form')
+            ->assertJsonPath('data.meta_app_name', 'The Wooden Strings')
+            ->assertJsonPath('data.message', $payload['message']);
+
+        $this->assertDatabaseHas('leads', [
+            'external_id' => '1893247868694560',
+            'source_website' => 'facebook.com',
+            'source_page_name' => 'TWS Instant Form',
+            'meta_app_name' => 'The Wooden Strings',
+        ]);
+    }
+
     public function test_duplicate_phone_with_a_different_facebook_lead_id_is_still_rejected(): void
     {
         config(['services.erp.key' => 'test-api-key']);
