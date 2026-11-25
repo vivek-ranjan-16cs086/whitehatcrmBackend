@@ -93,6 +93,7 @@ Route::prefix('v1')->group(function () {
 		});
 
 		Route::middleware('api-lead-permission:create.lead')->group(function () {
+			Route::get('/users', [ApiController::class, 'getUsers']);
 			Route::post('/create-lead', [LeadController::class, 'createNewLead']);
 			Route::post('/leads/import', [ResponseController::class, 'import']);
 		});
@@ -113,7 +114,6 @@ Route::prefix('v1')->group(function () {
         Route::get('/users/{id}', [ApiController::class, 'getUser']);
         Route::post('/users/{id}', [ApiController::class, 'updateUser']);
         Route::delete('/users/{id}', [ApiController::class, 'deleteUser']);
-		Route::get('/users', [ApiController::class, 'getUsers']); 
 		Route::get('/all-users', [ApiController::class, 'getAllUsers']);
 		Route::post('/assign-lead', [LeadController::class, 'assignLead']);
     });

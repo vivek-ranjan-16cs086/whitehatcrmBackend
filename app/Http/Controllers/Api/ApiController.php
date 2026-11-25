@@ -267,7 +267,11 @@ class ApiController extends BaseController
 			$pageId = $request->page ?? 1;
 			$perPage = 10;
 
-			$query = $this->userService->getUsers($request)->where('enable', 1); 
+			$user = $request->user('api');
+			$query = $this->userService->getUsers($request)->where('enable', 1);
+			if (! $user->hasRole('super-admin', 'web')) {
+				$query->whereKey($user->id);
+			}
 			 
              $search = $request->input('search.value') ?? $request->input('search');
 

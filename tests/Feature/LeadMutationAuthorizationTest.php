@@ -14,6 +14,21 @@ class LeadMutationAuthorizationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_business_executive_can_list_only_their_own_user_for_lead_assignment(): void
+    {
+        $executive = $this->userWithPermissions('business-executive', ['create.lead']);
+        $other = User::factory()->create(['enable' => 1]);
+        $executive->forceFill(['enable' => 1])->save();
+        $this->actingAs($executive, 'api');
+
+        $this->getJson('/api/v1/users')->assertOk()
+            ->assertJsonPath('total_count', 1)
+            ->assertJsonPath('data.0.id', $executive->id);
+        $this->getJson('/api/v1/users?user_id='.$other->id)->assertOk()
+            ->assertJsonPath('data', []);
+        $this->getJson('/api/v1/users/'.$other->id)->assertForbidden();
+    }
+
     public function test_business_executive_creates_a_self_assigned_lead_without_choosing_a_user(): void
     {
         $executive = $this->userWithPermissions('business-executive', ['create.lead']);
