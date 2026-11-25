@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Artisan;
 class ApiController extends BaseController
 {
 	
-	protected $userService;
+	protected $userService; 
 
     public function __construct(UserService $userService)
     {
