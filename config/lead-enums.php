@@ -4,7 +4,7 @@ return [
     'status' => [
         'description' => 'Current stage of the lead.',
         'default' => 'active',
-        'values' => ['active', 'not_connected', 'not_available', 'follow_up', 'visit', 'deactive', 'follow_up_expired', 'follow_up_complete', 'booked'],
+        'values' => ['active', 'not_connected', 'follow_up', 'visit', 'deactive', 'follow_up_expired', 'follow_up_complete', 'booked'],
     ],
     'type' => [
         'description' => 'Lead interest or readiness to buy.',

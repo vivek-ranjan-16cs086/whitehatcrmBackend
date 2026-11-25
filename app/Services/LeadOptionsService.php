@@ -27,6 +27,8 @@ class LeadOptionsService
                 ->unique()->sort()->values()->all();
         }
 
+        $options['status'] = LeadEnumOptions::currentStatuses($options['status']);
+
         return $options;
     }
 
@@ -54,6 +56,8 @@ class LeadOptionsService
                 ? $query->whereNotNull($field)->where($field, '!=', '')->distinct()->orderBy($field)->pluck($field)->all()
                 : [];
         }
+
+        $options['status'] = LeadEnumOptions::currentStatuses($options['status']);
 
         return $options;
     }

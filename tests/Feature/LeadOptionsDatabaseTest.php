@@ -13,6 +13,27 @@ class LeadOptionsDatabaseTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_retired_not_available_status_is_hidden_and_existing_leads_are_converted(): void
+    {
+        $legacy = Lead::create(['name' => 'Legacy lead', 'status' => 'not_available']);
+        $deleted = Lead::create(['name' => 'Deleted lead', 'status' => 'not_available']);
+        $deleted->delete();
+        $unchanged = Lead::create(['name' => 'Booked lead', 'status' => 'booked']);
+
+        $options = $this->getJson('/api/v1/lead-options')->assertOk();
+        $statuses = array_column($options->json('data.status.options'), 'value');
+        $this->assertContains('not_connected', $statuses);
+        $this->assertNotContains('not_available', $statuses);
+
+        $migration = require database_path('migrations/2026_11_25_000003_replace_not_available_lead_status.php');
+        $migration->up();
+
+        foreach ([$legacy, $deleted] as $lead) {
+            $this->assertDatabaseHas('leads', ['id' => $lead->id, 'status' => 'not_connected']);
+        }
+        $this->assertDatabaseHas('leads', ['id' => $unchanged->id, 'status' => 'booked']);
+    }
+
     public function test_api_returns_shared_enum_choices_and_descriptions_before_any_leads_exist(): void
     {
         $response = $this->getJson('/api/v1/lead-options')

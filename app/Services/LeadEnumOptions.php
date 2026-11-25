@@ -11,13 +11,24 @@ class LeadEnumOptions
 {
     public function values(string $field): array
     {
-        $definition = Schema::getColumnType('leads', $field, true);
+        $values = self::parseDefinition(Schema::getColumnType('leads', $field, true))
+            ?? config("lead-enums.{$field}.values");
 
+        return $field === 'status' ? self::currentStatuses($values) : $values;
+    }
+
+    public static function currentStatuses(array $values): array
+    {
+        return array_values(array_filter($values, fn ($value) => strcasecmp($value, 'not_available') !== 0));
+    }
+
+    public static function parseDefinition(string $definition): ?array
+    {
         if (str_starts_with(strtolower($definition), 'enum(')) {
             return array_map(stripcslashes(...), str_getcsv(substr($definition, 5, -1), ',', "'", '\\'));
         }
 
-        return config("lead-enums.{$field}.values");
+        return null;
     }
 
     public function rule(string $field): In

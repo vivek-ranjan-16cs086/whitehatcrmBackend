@@ -14,6 +14,25 @@ class LeadMutationAuthorizationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_editor_can_mark_an_assigned_lead_as_not_connected_with_a_note(): void
+    {
+        $user = $this->userWithPermissions('lead-editor', ['edit.lead']);
+        $lead = Lead::create(['name' => 'Buyer', 'status' => 'active', 'assigned_to' => $user->id]);
+        $payload = ['status' => 'not_connected'];
+
+        $this->actingAs($user, 'api')
+            ->postJson('/api/v1/leads/update-lead-status/'.$lead->id, $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('note');
+
+        $this->postJson('/api/v1/leads/update-lead-status/'.$lead->id, $payload + ['note' => 'Call went unanswered'])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'not_connected');
+
+        $this->assertDatabaseHas('leads', ['id' => $lead->id, 'status' => 'not_connected']);
+        $this->assertDatabaseHas('lead_timeline_events', ['lead_id' => $lead->id, 'event_type' => 'STATUS']);
+    }
+
     public function test_user_without_edit_permission_cannot_update_lead_status(): void
     {
         $user = $this->userWithPermissions('business-associate', ['view.lead', 'create.lead']);
