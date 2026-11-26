@@ -161,7 +161,7 @@
 					<div class="modal-body">
 						<p class="text-muted">
 							Choose a default lead source for rows that leave <code>lead_source</code> blank.
-							Use the Excel template for dropdowns in the enum columns. Enter follow-up dates as YYYY-MM-DD.
+							Use the Excel template for dropdowns. Enter follow-up dates as YYYY-MM-DD, with an optional time in HH:MM.
 						</p>
 						<a class="btn btn-sm btn-outline-secondary mb-3" href="{{ route('lead-managment.import-template', ['format' => 'xlsx']) }}" download>
 							<i class="bi bi-download"></i> Download Excel template

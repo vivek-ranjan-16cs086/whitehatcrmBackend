@@ -1047,9 +1047,15 @@ $lead->type = !empty($validated['type']) ? $validated['type'] : 'cold';
 
 		try {
 			DB::transaction(function () use ($request, $validated, $enums): void {
+                $file = $request->file('file');
 				Excel::import(
-					new AdminLeadsImport($enums, $validated['source_website'] ?? 'Manual', $validated['lead_source'] ?? null),
-					$request->file('file')
+                    new AdminLeadsImport(
+                        $enums,
+                        $validated['source_website'] ?? 'Manual',
+                        $validated['lead_source'] ?? null,
+                        strtolower($file->getClientOriginalExtension()) === 'xlsx',
+                    ),
+                    $file
 				);
 			});
 

@@ -25,7 +25,17 @@ class LeadImportTemplate
         $leads->getColumnDimension('B')->setWidth(18);
         $leads->getColumnDimension('G')->setWidth(23);
         $leads->getStyle('B:B')->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_TEXT);
-        $leads->getStyle('G:G')->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_TEXT);
+        $leads->getStyle('G:G')->getNumberFormat()->setFormatCode('yyyy-mm-dd hh:mm');
+        $leads->getDataValidation('G2')
+            ->setSqref('G2:G1048576')
+            ->setType(DataValidation::TYPE_DATE)
+            ->setOperator(DataValidation::OPERATOR_BETWEEN)
+            ->setFormula1('1')
+            ->setFormula2('2958465')
+            ->setAllowBlank(true)
+            ->setErrorStyle(DataValidation::STYLE_STOP)
+            ->setShowErrorMessage(true)
+            ->setError('Enter a valid follow-up date, such as 2026-11-26.');
 
         $choices = $workbook->createSheet()->setTitle('Choices');
         $choices->setSheetState(Worksheet::SHEETSTATE_HIDDEN);

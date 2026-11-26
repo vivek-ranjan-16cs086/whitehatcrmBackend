@@ -16,6 +16,7 @@ use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use Maatwebsite\Excel\DefaultValueBinder;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 class AdminLeadsImport extends DefaultValueBinder implements SkipsEmptyRows, ToCollection, WithCustomValueBinder, WithHeadingRow, WithMultipleSheets
 {
@@ -39,6 +40,7 @@ class AdminLeadsImport extends DefaultValueBinder implements SkipsEmptyRows, ToC
         private readonly LeadEnumOptions $enums,
         private readonly string $sourceWebsite,
         private readonly ?string $leadSource,
+        private readonly bool $excelDates = false,
     ) {}
 
     public function sheets(): array
@@ -80,6 +82,11 @@ class AdminLeadsImport extends DefaultValueBinder implements SkipsEmptyRows, ToC
                 } else {
                     $data[$field] = $acceptedValues[$value] ?? $value;
                 }
+            }
+
+            $followUpDate = $data['follow_up_date'] ?? null;
+            if ($this->excelDates && is_numeric($followUpDate) && $followUpDate >= 1 && $followUpDate <= 2958465) {
+                $data['follow_up_date'] = Date::excelToDateTimeObject((float) $followUpDate)->format('Y-m-d H:i:s');
             }
 
             $validator = Validator::make($data, [

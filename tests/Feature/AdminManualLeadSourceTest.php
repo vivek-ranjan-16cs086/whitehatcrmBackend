@@ -11,6 +11,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -341,7 +342,10 @@ class AdminManualLeadSourceTest extends TestCase
             );
         }
 
-        $leads->fromArray(['Workbook lead', '0987654321', null, null, 'Follow Up', 'Cold', '2026-11-26'], null, 'A2');
+        $this->assertSame('yyyy-mm-dd hh:mm', $leads->getStyle('G2')->getNumberFormat()->getFormatCode());
+        $this->assertSame('date', $leads->getDataValidation('G2')->getType());
+        $leads->fromArray(['Workbook lead', '0987654321', null, null, 'Follow Up', 'Cold'], null, 'A2');
+        $leads->setCellValue('G2', Date::PHPToExcel(new \DateTimeImmutable('2026-11-26 16:45:00')));
         $leads->setCellValue('J2', 'Calling');
         $leads->setCellValue('K2', 'Visit Done');
         $upload = UploadedFile::fake()->create('leads.xlsx');
@@ -352,6 +356,7 @@ class AdminManualLeadSourceTest extends TestCase
         $this->assertDatabaseHas('leads', [
             'name' => 'Workbook lead', 'phone' => '0987654321', 'status' => 'follow_up',
             'type' => 'cold', 'lead_source' => 'Calling', 'visit_status' => 'visited',
+            'follow_up_date' => '2026-11-26 16:45:00',
         ]);
     }
 
