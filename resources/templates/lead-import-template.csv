@@ -1,1 +1,1 @@
-name,phone,email,message,status,type,follow_up_date,notes,source_page_name
+name,phone,email,message,status,type,follow_up_date,notes,source_page_name,lead_source,visit_status,inventory,deactivate_reason

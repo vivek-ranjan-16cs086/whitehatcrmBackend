@@ -233,6 +233,42 @@ class AdminManualLeadSourceTest extends TestCase
         ]);
     }
 
+    public function test_create_and_import_accept_enum_sources_without_a_website(): void
+    {
+        $user = $this->userWithCreateLeadPermission();
+        $this->actingAs($user)->postJson(route('lead-managment.store'), [
+            'name' => 'Inbound referral',
+            'phone' => '5550012345',
+            'lead_source' => 'Referral',
+        ])->assertOk();
+        $this->assertDatabaseHas('leads', ['name' => 'Inbound referral', 'lead_source' => 'Referral']);
+
+        $csv = UploadedFile::fake()->createWithContent('leads.csv',
+            "name,lead_source,status,type,visit_status,inventory,deactivate_reason\n"
+            ."Default source,,active,ready-to-buy,re-visit-plan,Studio Apartment,\n"
+            ."Row source,WHATSAPP,deactive,cold,cancelled,Villa,Budget\n"
+        );
+        $this->postJson(route('lead-managment.import'), ['lead_source' => 'Calling', 'file' => $csv])->assertOk();
+        $this->assertDatabaseHas('leads', [
+            'name' => 'Default source', 'lead_source' => 'Calling', 'type' => 'ready-to-buy',
+            'visit_status' => 're-visit-plan', 'inventory' => 'Studio Apartment',
+        ]);
+        $this->assertDatabaseHas('leads', [
+            'name' => 'Row source', 'lead_source' => 'WHATSAPP', 'status' => 'deactive', 'deactivate_reason' => 'Budget',
+        ]);
+    }
+
+    public function test_import_rejects_values_outside_the_api_enums(): void
+    {
+        $user = $this->userWithCreateLeadPermission();
+        $csv = UploadedFile::fake()->createWithContent('leads.csv',
+            "name,inventory\nValid lead,Plots\nInvalid lead,Penthouse\n"
+        );
+        $this->actingAs($user)->postJson(route('lead-managment.import'), ['file' => $csv])
+            ->assertUnprocessable()->assertJsonPath('status', false);
+        $this->assertDatabaseMissing('leads', ['name' => 'Valid lead']);
+    }
+
     public function test_duplicate_phone_rejects_the_import_without_partially_inserting_rows(): void
     {
         $this->mock(NotificationService::class);

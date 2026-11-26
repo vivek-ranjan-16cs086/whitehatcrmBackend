@@ -10,7 +10,7 @@
         <div id="leadToolbarActions" class="d-flex align-items-center gap-2 flex-wrap">
 				@can('create.lead')
 					<button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#importLeadsModal">
-						<i class="bi bi-upload"></i> Import CSV
+						<i class="bi bi-file-earmark-arrow-up" aria-hidden="true"></i> Import CSV
 					</button>
 					<button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addLeadModal">
 						<i class="bi bi-plus"></i> Add Lead
@@ -160,8 +160,8 @@
 					</div>
 					<div class="modal-body">
 						<p class="text-muted">
-							Choose the source for this upload. All leads in the CSV will be saved under that source.
-							Use the template to see all supported lead fields. Leave optional fields blank when unknown.
+							Choose a default lead source for rows that leave <code>lead_source</code> blank.
+							Use the CSV template for the supported columns.
 						</p>
 						<a class="btn btn-sm btn-outline-secondary mb-3" href="{{ route('lead-managment.import-template') }}" download>
 							<i class="bi bi-download"></i> Download CSV template
@@ -169,9 +169,18 @@
 						<form id="importLeadsForm" enctype="multipart/form-data">
 							@csrf
 							<div class="mb-3">
-								<label for="import_source" class="form-label">Source <span class="text-danger">*</span></label>
-								<select id="import_source" name="source_website" class="form-select" required>
-									<option value="">Select a source</option>
+								<label for="import_source" class="form-label">Default lead source</label>
+								<select id="import_source" name="lead_source" class="form-select">
+									<option value="">No default</option>
+									@foreach($leadOptions['lead_source'] as $option)
+										<option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
+									@endforeach
+								</select>
+							</div>
+							<div class="mb-3">
+								<label for="import_source_website" class="form-label">Source website</label>
+								<select id="import_source_website" name="source_website" class="form-select">
+									<option value="">No website</option>
 									@foreach($manualLeadSources as $label => $value)
 										<option value="{{ $value }}">{{ $label }}</option>
 									@endforeach
@@ -185,6 +194,15 @@
 									Existing phone numbers are rejected as duplicates.
 								</div>
 							</div>
+							<details class="mb-3">
+								<summary>Accepted CSV values</summary>
+								<dl class="mt-2 mb-0">
+									@foreach($leadOptions as $field => $choices)
+										<dt><code>{{ $field }}</code></dt>
+										<dd>{{ implode(', ', array_column($choices, 'value')) }}</dd>
+									@endforeach
+								</dl>
+							</details>
 						</form>
 					</div>
 					<div class="modal-footer">
@@ -505,7 +523,7 @@ $(document).on('change', '.lead-column-filter', function () {
     else delete leadHeaderFilters[field];
     $('.lead-column-filter').filter(function () { return this.dataset.leadColumnFilter === field; }).val(this.value);
     if (field === 'status' && this.value) {
-        currentLeadView = 'total'; pendingAttention = null;
+        currentLeadView = 'total';
         sessionStorage.setItem('selectedLeadView', 'total');
         updateLeadFilterButtons('total');
     }
@@ -649,7 +667,7 @@ d.open_lead_id = pendingLeadId;
 			buttons: [
 				{
 					extend: 'collection',
-					text: '<i class="bi bi-download"></i> Export',
+					text: '<i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> Export',
 					autoClose: true,
 					buttons: [
 						{

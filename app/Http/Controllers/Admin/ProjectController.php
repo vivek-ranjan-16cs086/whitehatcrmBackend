@@ -4,16 +4,18 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
+use App\Services\LeadEnumOptions;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ProjectController extends Controller
 {
     /**
      * Display the projects listing page.
      */
-    public function index()
+    public function index(LeadEnumOptions $enums)
     {
-        return view('admin.projects.index');
+        return view('admin.projects.index', ['inventoryOptions' => $enums->options('inventory')]);
     }
 
     public function ajaxList(Request $request)
@@ -113,7 +115,7 @@ class ProjectController extends Controller
     /**
      * Store a newly created project in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request, LeadEnumOptions $enums)
     {
         $request->validate([
             'name' => 'required|string|max:255',
@@ -121,6 +123,7 @@ class ProjectController extends Controller
             'phone' => 'required|string|max:20',
             'enable' => 'required|boolean',
             'address' => 'nullable|string',
+            'inventory' => ['nullable', 'string', $enums->rule('inventory')],
         ]);
 
         Project::create($request->all());
@@ -145,7 +148,7 @@ class ProjectController extends Controller
     /**
      * Update the specified project in storage.
      */
-    public function update(Request $request, Project $project)
+    public function update(Request $request, Project $project, LeadEnumOptions $enums)
     {
         $request->validate([
             'name' => 'required|string|max:255',
@@ -153,6 +156,7 @@ class ProjectController extends Controller
             'phone' => 'required|string|max:20',
             'enable' => 'required|boolean',
             'address' => 'nullable|string',
+            'inventory' => ['nullable', 'string', Rule::in([...$enums->values('inventory'), $project->getRawOriginal('inventory')])],
         ]);
 
         $project->update($request->all());

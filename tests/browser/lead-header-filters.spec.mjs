@@ -34,8 +34,10 @@ test('header filters combine, synchronize scrolling copies, clear individually, 
     await expect(page.locator('#leads-table [data-lead-column-filter="lead_source"]')).toHaveValue('choice');
     await source.selectOption('');
     expect(await page.evaluate(() => window.requests.at(-1))).toEqual({assigned_to: 'choice'});
+    await page.evaluate(() => { window.pendingAttention = 'overdue'; });
     await page.locator('.dataTables_scrollHead [data-lead-column-filter="status"]').selectOption('choice');
     expect(await page.evaluate(() => window.currentLeadView)).toBe('total');
+    expect(await page.evaluate(() => window.pendingAttention)).toBe('overdue');
     await owner.selectOption('');
     await page.locator('.dataTables_scrollHead [data-lead-column-filter="status"]').selectOption('');
     expect(await page.evaluate(() => window.requests.at(-1))).toEqual({});

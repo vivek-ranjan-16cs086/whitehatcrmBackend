@@ -100,16 +100,9 @@
 							<label class="form-label fw-semibold" for="inventory">Inventory Type</label>
 							<select class="form-select" id="inventory" name="inventory">
 								<option value="">Select Type</option>
-								<option value="1 BHK">1 BHK</option>
-								<option value="2 BHK">2 BHK</option>
-								<option value="3 BHK">3 BHK</option>
-								<option value="4 BHK">4 BHK</option>
-								<option value="5 BHK">5 BHK</option>
-								<option value="6 BHK">6 BHK</option>
-								<option value="Plots">Plots</option>
-								<option value="Villa">Villa</option>
-								<option value="Studio Apartment">Studio Apartment</option>
-								<option value="Shops">Shops</option>
+								@foreach($inventoryOptions as $option)
+									<option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
+								@endforeach
 							</select>
 						</div>
                         <div class="col-12">
@@ -234,7 +227,14 @@ $(function () {
         $('#email').val(email);
         $('#phone').val(phone);
         $('#address').val(address);
-		$('#inventory').val(inventory);
+		const inventorySelect = $('#inventory');
+		inventorySelect.find('option[data-current-project-value]').remove();
+		if (inventory && !inventorySelect.find('option').toArray().some(option => option.value === String(inventory))) {
+			const option = new Option(inventory, inventory);
+			option.dataset.currentProjectValue = '';
+			inventorySelect.append(option);
+		}
+		inventorySelect.val(inventory);
         //$('#enable').val(enable);
         $('#enable').val(enable == 1 ? '1' : '0');
         $('#projectForm').attr('action', '{{ url("projects") }}/' + id);
@@ -243,6 +243,7 @@ $(function () {
 
    
     $('#btnAddProject').on('click', function() {
+        $('#inventory option[data-current-project-value]').remove();
         $('#projectForm')[0].reset();
         $('#projectModalTitle').text('Add New Project');
         $('#formMethod').val('POST').prop('disabled', true);

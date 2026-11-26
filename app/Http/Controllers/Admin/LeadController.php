@@ -119,15 +119,6 @@ public function index(Request $request, LeadEnumOptions $enums)
 
     abort_unless(array_key_exists($view, $titles), 404);
 
-// Get unique sources from the leads database
-$leadSources = Lead::query()
-    ->whereNotNull('source_website')
-    ->where('source_website', '!=', '')
-    ->distinct()
-    ->orderBy('source_website')
-    ->pluck('source_website');
-
-    $filterOptions = app(\App\Services\LeadOptionsService::class)->filtersFor($request->user());
     $leadOptions = [];
     foreach (array_keys(config('lead-enums')) as $field) {
         $leadOptions[$field] = $enums->options($field);
@@ -144,9 +135,7 @@ $leadSources = Lead::query()
             : [],
         'selectedView' => $view,
         'pageTitle' => $titles[$view],
-		'leadSources' => $filterOptions['source_website'],
-        'filterOptions' => $filterOptions,
-        'manualLeadSources' => collect(self::MANUAL_LEAD_SOURCES)->merge($leadSources->mapWithKeys(fn ($source) => [$source => $source]))->unique()->all(),
+        'manualLeadSources' => self::MANUAL_LEAD_SOURCES,
         'leadOptions' => $leadOptions,
         'filterUsers' => User::query()->when(!$request->user()->hasRole('super-admin', 'web') && !$request->user()->canViewAllLeads(), fn ($q) => $q->whereKey($request->user()->id))->orderBy('name')->get(['id', 'name']),
         'leadFilterColumns' => Schema::getColumnListing('leads'),
@@ -961,7 +950,7 @@ $leadSources = Lead::query()
 				'email'          => 'nullable|email|max:255',
 				'message'        => 'nullable|string',
                 'source_page_name' => 'nullable|string|max:255',
-				'source_website' => ['required', 'string', 'max:255', Rule::in(array_unique([...array_values(self::MANUAL_LEAD_SOURCES), ...Lead::query()->whereNotNull('source_website')->distinct()->pluck('source_website')->all()]))],
+				'source_website' => ['required_without:lead_source', 'nullable', 'string', 'max:255', Rule::in(array_values(self::MANUAL_LEAD_SOURCES))],
 				'status' => ['nullable', 'string', $enums->rule('status')],
 				'type' => ['nullable', 'string', $enums->rule('type')],
 				'assigned_to' => $request->user()->hasRole('super-admin', 'web')
@@ -1042,17 +1031,18 @@ $lead->type = !empty($validated['type']) ? $validated['type'] : 'cold';
 		}
 	}
 
-	public function import(Request $request)
+	public function import(Request $request, LeadEnumOptions $enums)
 	{
 		$validated = $request->validate([
 			'file' => 'required|file|mimes:csv,txt|max:10240',
-			'source_website' => ['required', 'string', Rule::in(array_values(self::MANUAL_LEAD_SOURCES))],
+			'source_website' => ['nullable', 'string', Rule::in(array_values(self::MANUAL_LEAD_SOURCES))],
+			'lead_source' => ['nullable', 'string', $enums->rule('lead_source')],
 		]);
 
 		try {
-			DB::transaction(function () use ($request, $validated): void {
+			DB::transaction(function () use ($request, $validated, $enums): void {
 				Excel::import(
-					new AdminLeadsImport($validated['source_website']),
+					new AdminLeadsImport($enums, $validated['source_website'] ?? 'Manual', $validated['lead_source'] ?? null),
 					$request->file('file')
 				);
 			});

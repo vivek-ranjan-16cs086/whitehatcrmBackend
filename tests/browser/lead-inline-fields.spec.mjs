@@ -5,9 +5,13 @@ test.use({channel: 'chrome'});
 
 async function setup(page, editable = true) {
     const view = readFileSync('resources/views/admin/lead-management/index.blade.php', 'utf8');
+    const choices = {status: ['active', 'deactive'], type: ['hot', 'cold'], inventory: ['2 BHK', '3 BHK'], visit_status: ['scheduled', 'visited'], deactivate_reason: ['Budget', 'Location']};
+    const options = Object.fromEntries(Object.entries(choices).map(([field, values]) => [
+        field, values.map(value => ({value, label: value})),
+    ]));
     const script = view.slice(view.indexOf('const canEditLeadFields'), view.indexOf('let currentLeadView'))
         .replace(/@json\(auth\(\)->user\(\)->hasCrmPermission\('edit.lead'\)\)/, String(editable))
-        .replace('@json($inlineLeadOptions)', JSON.stringify({status: ['active', 'deactive'], type: ['hot', 'cold'], inventory: ['2 BHK', '3 BHK'], visit_status: ['scheduled', 'visited'], deactivate_reason: ['Budget', 'Location']}))
+        .replace('@json($leadOptions)', JSON.stringify(options))
         .replace('@json($projects)', JSON.stringify([{id: 4, name: 'Project A'}, {id: 5, name: 'Project B'}]))
         .replace(/{{[\s\S]*?}}/g, '/update-field');
     await page.setContent('<meta name="csrf-token" content="test"><table id="leads-table"><tbody></tbody></table>');
