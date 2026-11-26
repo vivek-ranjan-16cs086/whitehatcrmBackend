@@ -436,6 +436,8 @@ $leadSources = Lead::query()
                         $empty->whereNull('leads.'.$field);
                         if (!in_array($field, ['assigned_to', 'project_id', 'visit_date'], true)) $empty->orWhere('leads.'.$field, '');
                     });
+                } elseif ($field === 'lead_source') {
+                    $query->forLeadSource($value);
                 } elseif ($field === 'visit_date') {
                     validator(['visit_date' => $value], ['visit_date' => 'date_format:Y-m-d'])->validate();
                     $query->whereDate('leads.visit_date', $value);

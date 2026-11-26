@@ -5,7 +5,7 @@ test.use({channel: 'chrome'});
 
 test('header filters combine, synchronize scrolling copies, clear individually, and replace a status tab', async ({page}) => {
     const view = readFileSync('resources/views/admin/lead-management/index.blade.php', 'utf8');
-    const header = view.match(/<thead>[\s\S]*?<\/thead>/)[0].replace(/@foreach[\s\S]*?@endforeach/g, '<option value="choice">Database choice</option>');
+    const header = view.match(/<thead>[\s\S]*?<\/thead>/)[0].replace(/@foreach[\s\S]*?@endforeach/g, '<option value="choice">Filter choice</option>');
     const reset = view.match(/\$\(document\)\.on\('click', '#resetLeadFilters',[\s\S]*?\n\}\);/)[0];
     const script = view.slice(view.indexOf('const leadHeaderFilters ='), view.indexOf('let currentLeadView'));
     await page.route('https://app.test/**', route => route.fulfill({contentType: 'text/html', body: '<body></body>'}));
@@ -26,12 +26,12 @@ test('header filters combine, synchronize scrolling copies, clear individually, 
         window.setLeadView = view => { window.currentLeadView = view; $('#leads-table').DataTable().ajax.reload(); };
     });
     await page.addScriptTag({content: script + '\n' + reset});
-    const source = page.locator('.dataTables_scrollHead [data-lead-column-filter="source_website"]');
+    const source = page.locator('.dataTables_scrollHead [data-lead-column-filter="lead_source"]');
     const owner = page.locator('.dataTables_scrollHead [data-lead-column-filter="assigned_to"]');
     await source.selectOption('choice');
     await owner.selectOption('choice');
-    expect(await page.evaluate(() => window.requests.at(-1))).toEqual({source_website: 'choice', assigned_to: 'choice'});
-    await expect(page.locator('#leads-table [data-lead-column-filter="source_website"]')).toHaveValue('choice');
+    expect(await page.evaluate(() => window.requests.at(-1))).toEqual({lead_source: 'choice', assigned_to: 'choice'});
+    await expect(page.locator('#leads-table [data-lead-column-filter="lead_source"]')).toHaveValue('choice');
     await source.selectOption('');
     expect(await page.evaluate(() => window.requests.at(-1))).toEqual({assigned_to: 'choice'});
     await page.locator('.dataTables_scrollHead [data-lead-column-filter="status"]').selectOption('choice');

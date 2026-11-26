@@ -55,17 +55,7 @@ class LeadController extends BaseController
 			$query = $this->leadService->getLeads($request)->with('project');
 
 			if ($request->filled('lead_source')) {
-				$source = trim($request->input('lead_source'));
-				$sourceWebsite = match (strtolower($source)) {
-					'whitehat', 'whitehat realty' => 'whitehat.realty',
-					'facebook' => 'facebook.com',
-					'360propguide', '360propguide website' => '360propguide.com',
-					default => strtolower($source),
-				};
-				$query->where(function ($sourceQuery) use ($source, $sourceWebsite) {
-					$sourceQuery->whereRaw('LOWER(source_website) = ?', [$sourceWebsite])
-						->orWhereRaw('LOWER(lead_source) = ?', [strtolower($source)]);
-				});
+				$query->forLeadSource($request->input('lead_source'));
 			}
 			if ($request->filled('visit_status')) {
 				$query->where('visit_status', $request->input('visit_status'));

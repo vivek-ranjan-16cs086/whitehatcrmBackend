@@ -21,6 +21,21 @@ class Lead extends Model
         return ['view_team'];
     }
 
+    public function scopeForLeadSource(Builder $query, string $source): Builder
+    {
+        $source = strtolower(trim($source));
+        $website = match ($source) {
+            'whitehat', 'whitehat realty' => 'whitehat.realty',
+            'facebook' => 'facebook.com',
+            '360propguide', '360propguide website' => '360propguide.com',
+            default => $source,
+        };
+
+        return $query->where(fn (Builder $match) => $match
+            ->whereRaw('LOWER(leads.source_website) = ?', [$website])
+            ->orWhereRaw('LOWER(leads.lead_source) = ?', [$source]));
+    }
+
     protected $fillable = [
 
         /*

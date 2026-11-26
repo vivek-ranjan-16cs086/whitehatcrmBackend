@@ -9,7 +9,9 @@ use Carbon\Carbon;
 
 class LeadHeaderFilterService
 {
-    public const FIELDS = ['source_website', 'source_page_name', 'assigned_to', 'status', 'visit_date', 'visit_status', 'inventory', 'project_id', 'type'];
+    public const FIELDS = ['source_website', 'lead_source', 'source_page_name', 'assigned_to', 'status', 'deactivate_reason', 'visit_date', 'visit_status', 'inventory', 'project_id', 'type'];
+
+    public function __construct(private LeadEnumOptions $enums) {}
 
     public function forUser(User $user): array
     {
@@ -19,19 +21,20 @@ class LeadHeaderFilterService
             $values = (clone $base)->select($field)->distinct()->orderBy($field)->pluck($field);
             $empty = $values->contains(fn ($value) => $value === null || $value === '');
             $values = $values->filter(fn ($value) => $value !== null && $value !== '');
-            $options[$field] = match ($field) {
-                'assigned_to' => User::with('roles')->whereIn('id', $values)->orderBy('name')->get()->map(fn ($owner) => [
+            $options[$field] = match (true) {
+                isset(config('lead-enums')[$field]) => $this->enums->options($field),
+                $field === 'assigned_to' => User::with('roles')->whereIn('id', $values)->orderBy('name')->get()->map(fn ($owner) => [
                     'value' => (string) $owner->id,
                     'label' => $owner->name.($owner->roles->isNotEmpty() ? ' - '.$owner->roles->pluck('name')->join(', ') : ''),
                 ])->all(),
-                'project_id' => Project::whereIn('id', $values)->orderBy('name')->get()->map(fn ($project) => ['value' => (string) $project->id, 'label' => $project->name])->all(),
-                'visit_date' => $values->map(fn ($value) => ['value' => Carbon::parse($value)->format('Y-m-d'), 'label' => Carbon::parse($value)->format('d M Y')])->unique('value')->values()->all(),
+                $field === 'project_id' => Project::whereIn('id', $values)->orderBy('name')->get()->map(fn ($project) => ['value' => (string) $project->id, 'label' => $project->name])->all(),
+                $field === 'visit_date' => $values->map(fn ($value) => ['value' => Carbon::parse($value)->format('Y-m-d'), 'label' => Carbon::parse($value)->format('d M Y')])->unique('value')->values()->all(),
                 default => $values->map(fn ($value) => [
                     'value' => (string) $value,
-                    'label' => in_array($field, ['status', 'type', 'visit_status'], true) ? ucwords(str_replace(['_', '-'], ' ', $value)) : (string) $value,
+                    'label' => (string) $value,
                 ])->values()->all(),
             };
-            if ($empty) {
+            if ($empty && $field !== 'lead_source') {
                 array_unshift($options[$field], ['value' => '__empty__', 'label' => $field === 'assigned_to' ? 'Unassigned' : 'Not set']);
             }
         }

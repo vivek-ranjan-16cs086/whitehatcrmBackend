@@ -60,9 +60,9 @@
 							<th>Phone</th>
 							<th>Message</th>
 							<th class="lead-filter-heading"><span>Source</span>
-                                <select class="form-select form-select-sm lead-column-filter" data-lead-column-filter="source_website" aria-label="Filter Source">
+                                <select class="form-select form-select-sm lead-column-filter" data-lead-column-filter="lead_source" aria-label="Filter Source">
                                     <option value="">All</option>
-                                    @foreach($headerFilters['source_website'] as $option)
+                                    @foreach($headerFilters['lead_source'] as $option)
                                         <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
                                     @endforeach
                                 </select>
@@ -88,6 +88,12 @@
                                 <select class="form-select form-select-sm lead-column-filter" data-lead-column-filter="status" aria-label="Filter Status">
                                     <option value="">All</option>
                                     @foreach($headerFilters['status'] as $option)
+                                        <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
+                                    @endforeach
+                                </select>
+                                <select class="form-select form-select-sm lead-column-filter" data-lead-column-filter="deactivate_reason" aria-label="Filter Deactivation Reason">
+                                    <option value="">Any deactivation reason</option>
+                                    @foreach($headerFilters['deactivate_reason'] as $option)
                                         <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
                                     @endforeach
                                 </select>

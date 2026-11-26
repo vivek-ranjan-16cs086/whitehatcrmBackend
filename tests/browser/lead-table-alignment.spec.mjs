@@ -5,7 +5,7 @@ test.use({channel: 'chrome'});
 
 test('scrolling table header aligns with body cells and uses matching selection checkboxes', async ({page}) => {
     const view = readFileSync('resources/views/admin/lead-management/index.blade.php', 'utf8');
-    const header = view.match(/<thead>[\s\S]*?<\/thead>/)[0];
+    const header = view.match(/<thead>[\s\S]*?<\/thead>/)[0].replace(/@foreach[\s\S]*?@endforeach/g, '<option value="choice">Filter choice</option>');
     const selection = view.slice(view.indexOf('const selectedLeadIds'), view.indexOf('let currentLeadView'));
     await page.setViewportSize({width: 1200, height: 800});
     await page.setContent('<div style="width:1100px"><table id="leads-table" class="table leads-table">' + header + '<tbody></tbody></table></div><span id="leadSelectionCount"></span>');
@@ -23,7 +23,7 @@ test('scrolling table header aligns with body cells and uses matching selection 
             columns: [
                 {data: null, width: '36px', className: 'lead-selection-cell', orderable: false, render: renderLeadSelection},
                 {data: 'name'},
-                ...Array.from({length: 12}, (_, i) => ({data: null, render: () => i === 5 ? '<select style="width:240px"><option>Business Executive</option></select>' : 'Example value'})),
+                ...Array.from({length: 13}, (_, i) => ({data: null, render: () => i === 5 ? '<select style="width:240px"><option>Business Executive</option></select>' : 'Example value'})),
             ],
             drawCallback: syncLeadSelection,
         });
@@ -40,7 +40,7 @@ test('scrolling table header aligns with body cells and uses matching selection 
             cellAlign: getComputedStyle(cells[i]).textAlign,
         }));
     });
-    expect(layout).toHaveLength(14);
+    expect(layout).toHaveLength(15);
     for (const column of layout) {
         expect(Math.abs(column.headerLeft - column.cellLeft)).toBeLessThan(2);
         expect(Math.abs(column.headerWidth - column.cellWidth)).toBeLessThan(2);

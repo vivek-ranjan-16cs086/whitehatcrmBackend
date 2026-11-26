@@ -23,7 +23,7 @@ class LeadHeaderFilterTest extends TestCase
         return $user;
     }
 
-    public function test_header_choices_are_distinct_database_values_and_related_names(): void
+    public function test_header_choices_use_api_enums_and_related_names(): void
     {
         $admin = $this->admin();
         $owner = User::factory()->create(['name' => 'Actual Owner']);
@@ -35,11 +35,34 @@ class LeadHeaderFilterTest extends TestCase
         $options = app(LeadHeaderFilterService::class)->forUser($admin);
         $this->assertSame([['value' => 'db.example', 'label' => 'db.example']], $options['source_website']);
         $this->assertSame([['value' => 'DB Page', 'label' => 'DB Page']], $options['source_page_name']);
-        $this->assertSame([['value' => 'custom-type', 'label' => 'Custom Type']], $options['type']);
+        $api = $this->getJson('/api/v1/lead-options')->assertOk();
+        foreach ($api->json('data') as $field => $definition) {
+            $choices = array_values(array_filter($options[$field], fn ($option) => $option['value'] !== '__empty__'));
+            $this->assertSame($definition['options'], $choices, $field);
+        }
         $this->assertSame([['value' => (string) $owner->id, 'label' => 'Actual Owner']], $options['assigned_to']);
         $this->assertSame([['value' => (string) $project->id, 'label' => 'Actual Project']], $options['project_id']);
         $this->assertSame([['value' => '2026-11-20', 'label' => '20 Nov 2026']], $options['visit_date']);
-        $this->actingAs($admin)->get(route('lead-management.index'))->assertOk()->assertSee('data-lead-column-filter="source_page_name"', false);
+        $this->actingAs($admin)->get(route('lead-management.index'))->assertOk()
+            ->assertSee('data-lead-column-filter="source_page_name"', false)
+            ->assertSee('data-lead-column-filter="lead_source"', false)
+            ->assertSee('data-lead-column-filter="deactivate_reason"', false);
+    }
+
+    public function test_source_header_matches_api_sources_and_website_aliases(): void
+    {
+        $admin = $this->admin();
+        Lead::create(['name' => 'Facebook form', 'source_website' => 'facebook.com']);
+        Lead::create(['name' => 'Facebook channel', 'lead_source' => 'Facebook']);
+        $referral = Lead::create(['name' => 'Referral', 'lead_source' => 'Referral', 'status' => 'deactive']);
+        $referral->forceFill(['deactivate_reason' => 'Budget'])->save();
+
+        $this->actingAs($admin)->getJson(route('lead-management.ajax-list', ['header_filters' => ['lead_source' => 'Facebook']]))
+            ->assertOk()->assertJsonPath('recordsFiltered', 2);
+        $this->getJson(route('lead-management.ajax-list', ['header_filters' => ['lead_source' => 'Referral', 'deactivate_reason' => 'Budget']]))
+            ->assertOk()->assertJsonPath('recordsFiltered', 1)->assertJsonPath('data.0.lead_id', $referral->id);
+        $this->getJson(route('lead-management.ajax-list', ['header_filters' => ['lead_source' => 'Calling']]))
+            ->assertOk()->assertJsonPath('recordsFiltered', 0);
     }
 
     public function test_header_filters_match_exact_values_combine_and_clear(): void
