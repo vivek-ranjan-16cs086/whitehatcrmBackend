@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\LeadService;
+use App\Services\LeadEnumOptions;
 use App\Models\Lead;
 use App\Models\User;
 use App\Models\Project;
@@ -74,11 +75,6 @@ class LeadController extends Controller
         'campaign_id', 'campaign_name', 'adset_id', 'adset_name', 'ad_id', 'ad_name', 'source_submitted_at',
     ];
 
-    private function leadOptions(): array
-    {
-        return app(\App\Services\LeadOptionsService::class)->inline();
-    }
-
     public function assignees(Request $request)
     {
         $query = User::query()->with('roles')->orderBy('name')->orderBy('id');
@@ -109,7 +105,7 @@ class LeadController extends Controller
 
 	//added
 	
-public function index(Request $request)
+public function index(Request $request, LeadEnumOptions $enums)
 {
     $titles = [
         'total' => 'Total Leads',
@@ -132,9 +128,12 @@ $leadSources = Lead::query()
     ->pluck('source_website');
 
     $filterOptions = app(\App\Services\LeadOptionsService::class)->filtersFor($request->user());
+    $leadOptions = [];
+    foreach (array_keys(config('lead-enums')) as $field) {
+        $leadOptions[$field] = $enums->options($field);
+    }
     return view('admin.lead-management.index', [
         'headerFilters' => app(\App\Services\LeadHeaderFilterService::class)->forUser($request->user()),
-        'inlineLeadOptions' => app(\App\Services\LeadOptionsService::class)->inline(),
         'isSuperAdmin' => $request->user()->hasRole('super-admin', 'web'),
         'currentUser' => $request->user(),
         'assignmentUsers' => $request->user()->hasRole('super-admin', 'web')
@@ -148,7 +147,7 @@ $leadSources = Lead::query()
 		'leadSources' => $filterOptions['source_website'],
         'filterOptions' => $filterOptions,
         'manualLeadSources' => collect(self::MANUAL_LEAD_SOURCES)->merge($leadSources->mapWithKeys(fn ($source) => [$source => $source]))->unique()->all(),
-        'leadOptions' => $this->leadOptions(),
+        'leadOptions' => $leadOptions,
         'filterUsers' => User::query()->when(!$request->user()->hasRole('super-admin', 'web') && !$request->user()->canViewAllLeads(), fn ($q) => $q->whereKey($request->user()->id))->orderBy('name')->get(['id', 'name']),
         'leadFilterColumns' => Schema::getColumnListing('leads'),
         'advancedFilterFields' => array_values(array_intersect(
@@ -708,7 +707,7 @@ $leadSources = Lead::query()
 		}
 	}
 	
-    public function updateField(Request $request)
+    public function updateField(Request $request, LeadEnumOptions $enums)
     {
         $data = $request->validate([
             'id' => 'required|integer|exists:leads,id',
@@ -717,18 +716,17 @@ $leadSources = Lead::query()
         $lead = Lead::findOrFail($data['id']);
         abort_if(!$request->user()->canViewAllLeads() && (string) $lead->assigned_to !== (string) $request->user()->id, 404);
         $field = $data['field'];
-        $options = app(\App\Services\LeadOptionsService::class)->inline();
         $valueRules = match ($field) {
             'project_id' => ['present', 'nullable', 'integer', 'exists:projects,id'],
             'visit_date' => ['present', 'nullable', 'date_format:Y-m-d'],
-            default => ['present', 'nullable', 'string', Rule::in($options[$field])],
+            default => ['present', 'nullable', 'string', $enums->rule($field)],
         };
         $validated = $request->validate(['value' => $valueRules]);
         $value = $validated['value'];
         $reason = null;
         if ($field === 'status' && $value === 'deactive') {
             $reasonData = $request->validate([
-                'deactivate_reason' => ['required', 'string', Rule::in($options['deactivate_reason'])],
+                'deactivate_reason' => ['required', 'string', $enums->rule('deactivate_reason')],
             ]);
             $reason = $reasonData['deactivate_reason'];
         }
@@ -794,7 +792,7 @@ $leadSources = Lead::query()
         return response()->json(['success' => true, 'message' => 'Lead assignment updated.', 'data' => $lead]);
     }
 
-	public function updateDetails(Request $request, NotificationService $notificationService)
+	public function updateDetails(Request $request, NotificationService $notificationService, LeadEnumOptions $enums)
     {
         try { 
 			$validatedId = $request->validate([
@@ -862,12 +860,11 @@ $leadSources = Lead::query()
 				'source_submitted_at' => 'nullable|date',
 			];
 			$fieldRules = array_diff_key($fieldRules, array_flip(self::READ_ONLY_LEAD_FIELDS));
-            $options = $this->leadOptions();
-            foreach (['status', 'type', 'visit_status', 'lead_source', 'inventory', 'deactivate_reason'] as $field) {
-                $fieldRules[$field] = ['nullable', 'string', Rule::in($options[$field])];
+            foreach (['status', 'type', 'visit_status', 'lead_source', 'inventory'] as $field) {
+                $fieldRules[$field] = ['nullable', 'string', Rule::in([...$enums->values($field), $lead->getRawOriginal($field)])];
             }
             $isDeactive = ($request->input('status') ?? $lead->status) === 'deactive';
-            $fieldRules['deactivate_reason'] = [$isDeactive ? 'required' : 'nullable', 'string', Rule::in($options['deactivate_reason'])];
+            $fieldRules['deactivate_reason'] = [$isDeactive ? 'required' : 'nullable', 'string', $enums->rule('deactivate_reason')];
             $rules = array_intersect_key($fieldRules, $availableColumns);
 			$validated = $request->validate([
 				'id' => 'required|integer|exists:leads,id',
@@ -953,10 +950,9 @@ $leadSources = Lead::query()
         }
     }
 	
-	public function store(Request $request, NotificationService $notificationService)
+	public function store(Request $request, NotificationService $notificationService, LeadEnumOptions $enums)
 	{
 		try { 
-			$options = $this->leadOptions();
             $validated = $request->validate([
 				'name'           => 'required|string|max:255',
 				'phone'          => 'required|string|max:20',
@@ -964,18 +960,18 @@ $leadSources = Lead::query()
 				'message'        => 'nullable|string',
                 'source_page_name' => 'nullable|string|max:255',
 				'source_website' => ['required', 'string', 'max:255', Rule::in(array_unique([...array_values(self::MANUAL_LEAD_SOURCES), ...Lead::query()->whereNotNull('source_website')->distinct()->pluck('source_website')->all()]))],
-				'status' => ['nullable', Rule::in($options['status'])],
-				'type' => ['nullable', Rule::in($options['type'])],
+				'status' => ['nullable', 'string', $enums->rule('status')],
+				'type' => ['nullable', 'string', $enums->rule('type')],
 				'assigned_to' => $request->user()->hasRole('super-admin', 'web')
 					? 'nullable|integer|exists:users,id'
 					: 'nullable',
 				'follow_up_date' => 'nullable|date',
 				'notes' => 'nullable|string',
-                'deactivate_reason' => ['required_if:status,deactive', 'nullable', 'string', Rule::in($options['deactivate_reason'])],
-                'visit_status' => ['nullable', Rule::in($options['visit_status'])],
+                'deactivate_reason' => ['required_if:status,deactive', 'nullable', 'string', $enums->rule('deactivate_reason')],
+                'visit_status' => ['nullable', 'string', $enums->rule('visit_status')],
                 'visit_date' => 'nullable|date',
-                'lead_source' => ['nullable', Rule::in($options['lead_source'])],
-                'inventory' => ['nullable', Rule::in($options['inventory'])],
+                'lead_source' => ['nullable', 'string', $enums->rule('lead_source')],
+                'inventory' => ['nullable', 'string', $enums->rule('inventory')],
                 'project_id' => 'nullable|integer|exists:projects,id',
                 'budget_min' => 'nullable|numeric|min:0',
                 'budget_max' => 'nullable|numeric|min:0|gte:budget_min',

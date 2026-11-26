@@ -368,7 +368,7 @@ const leadViewTitles = {
 };
 
 const canEditLeadFields = @json(auth()->user()->hasCrmPermission('edit.lead'));
-const inlineLeadOptions = @json($inlineLeadOptions);
+const inlineLeadOptions = @json($leadOptions);
 const inlineLeadProjects = @json($projects);
 const inlineFieldLabels = {status: 'Status', type: 'Type', inventory: 'Inventory', project_id: 'Project', visit_status: 'Visit status', visit_date: 'Visit date'};
 
@@ -389,10 +389,10 @@ function renderLeadField(field) {
                 .attr('data-current-value', value.substring(0, 10)).prop('outerHTML');
         }
         const choices = field === 'project_id'
-            ? inlineLeadProjects.map(project => ({value: String(project.id), text: project.name}))
-            : (inlineLeadOptions[field] || []).map(option => ({value: option, text: option.replace(/[_-]/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase())}));
+            ? inlineLeadProjects.map(project => ({value: String(project.id), label: project.name}))
+            : inlineLeadOptions[field];
         const select = $('<select>', attributes).append(new Option(field === 'project_id' ? 'No project' : 'None', ''));
-        choices.forEach(option => select.append(new Option(option.text, option.value)));
+        choices.forEach(option => select.append(new Option(option.label, option.value)));
         if (value && !choices.some(option => option.value === value)) {
             select.append(new Option($('<div>').html(data || value).text(), value));
         }
@@ -419,7 +419,7 @@ $(document).on('change', '.lead-field-select', async function () {
         };
         if (deactivating) {
             warning.input = 'select';
-            warning.inputOptions = Object.fromEntries(inlineLeadOptions.deactivate_reason.map(reason => [reason, reason]));
+            warning.inputOptions = Object.fromEntries(inlineLeadOptions.deactivate_reason.map(reason => [reason.value, reason.label]));
             warning.inputPlaceholder = 'Choose a deactivation reason';
             warning.inputValidator = reason => reason ? undefined : 'Select a deactivation reason.';
         }
@@ -796,6 +796,7 @@ $(document).on('lead:date-range', function () {
 			'source_submitted_at'
 		];
 
+		$('#editLeadForm option[data-current-lead-value]').remove();
 		$('#editLeadForm')[0].reset();
 		$('#edit_id').val($(this).data('id'));
 		fields.forEach(function (field) {
@@ -805,7 +806,9 @@ $(document).on('lead:date-range', function () {
 			}
             const input = $('#edit_' + field);
             if (value && input.is('select') && !input.find('option').toArray().some(option => option.value === String(value))) {
-                input.append(new Option(value, value));
+                const option = new Option(value, value);
+                option.dataset.currentLeadValue = '';
+                input.append(option);
             }
             input.val(value);
 		});

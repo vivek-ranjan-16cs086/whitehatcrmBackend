@@ -43,8 +43,8 @@
                         @if(in_array($field, ['lead_source', 'inventory', 'deactivate_reason']))
                             <option value="">None</option>
                         @endif
-                        @foreach($leadOptions[$field] as $value)
-                            <option value="{{ $value }}">{{ ucwords(str_replace(['_', '-'], ' ', $value)) }}</option>
+                        @foreach($leadOptions[$field] as $option)
+                            <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
                         @endforeach
                     @endif
                 </select>

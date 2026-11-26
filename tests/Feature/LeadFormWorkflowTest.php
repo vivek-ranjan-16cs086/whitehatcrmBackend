@@ -81,13 +81,14 @@ class LeadFormWorkflowTest extends TestCase
         $this->assertSame('visited', $lead->visit_status);
     }
 
-    public function test_dropdown_options_include_existing_data_and_assignees_use_numeric_ids(): void
+    public function test_dropdown_options_match_api_and_assignees_use_numeric_ids(): void
     {
         $admin = User::factory()->create(['name' => 'Directory person']);
         $admin->assignRole(Role::create(['name' => 'super-admin', 'guard_name' => 'web']));
         Lead::create(['name' => 'Existing', 'lead_source' => 'Existing source', 'inventory' => 'Penthouse', 'type' => 'ready-to-buy']);
+        $api = $this->getJson('/api/v1/lead-options')->assertOk();
         $this->actingAs($admin)->get(route('lead-management.index'))->assertOk()
-            ->assertSee('Existing source')->assertSee('Penthouse')->assertSee('ready-to-buy')
+            ->assertViewHas('leadOptions', array_map(fn ($field) => $field['options'], $api->json('data')))
             ->assertSee('id="add_type"', false)->assertSee('datetime-local');
         $this->getJson(route('lead-management.assignees', ['q' => 'Directory person']))->assertOk()
             ->assertJsonPath('results.0.id', $admin->id)->assertJsonPath('pagination.more', false);

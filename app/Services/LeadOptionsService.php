@@ -32,17 +32,6 @@ class LeadOptionsService
         return $options;
     }
 
-    public function inline(): array
-    {
-        $options = $this->all();
-        $enums = app(LeadEnumOptions::class);
-        foreach (array_keys(config('lead-enums')) as $field) {
-            $options[$field] = array_values(array_unique([...$enums->values($field), ...$options[$field]]));
-        }
-
-        return $options;
-    }
-
     public function filtersFor(User $user): array
     {
         $columns = array_flip(Schema::getColumnListing('leads'));
