@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Imports\AdminLeadsImport;
 use App\Services\LeadEnumOptions;
+use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\NamedRange;
@@ -17,10 +18,12 @@ class LeadImportTemplate
     {
         $workbook = new Spreadsheet();
         $leads = $workbook->getActiveSheet()->setTitle('Leads');
-        $leads->fromArray([AdminLeadsImport::HEADINGS]);
+        $leads->fromArray([array_map(Str::headline(...), AdminLeadsImport::HEADINGS)]);
         $leads->freezePane('B2');
         $leads->getStyle('1:1')->getFont()->setBold(true);
         $leads->getDefaultColumnDimension()->setWidth(21);
+        $leads->getColumnDimension('B')->setWidth(18);
+        $leads->getColumnDimension('G')->setWidth(23);
         $leads->getStyle('B:B')->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_TEXT);
         $leads->getStyle('G:G')->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_TEXT);
 
@@ -33,9 +36,7 @@ class LeadImportTemplate
             }
 
             $column = Coordinate::stringFromColumnIndex($index + 1);
-            $values = $field === 'visit_status'
-                ? array_column($enums->options($field), 'label')
-                : $enums->values($field);
+            $values = array_column($enums->options($field), 'label');
             $choices->fromArray(array_chunk($values, 1), null, $column.'1');
             $rangeName = 'lead_import_'.$field;
             $workbook->addNamedRange(new NamedRange(

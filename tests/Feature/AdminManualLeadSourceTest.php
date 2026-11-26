@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -326,19 +327,21 @@ class AdminManualLeadSourceTest extends TestCase
         $api = $this->getJson('/api/v1/lead-options')->assertOk();
 
         foreach ($api->json('data') as $field => $definition) {
-            $column = Coordinate::stringFromColumnIndex(array_search($field, $headers, true) + 1);
+            $headerIndex = array_search(Str::headline($field), $headers, true);
+            $this->assertNotFalse($headerIndex);
+            $column = Coordinate::stringFromColumnIndex($headerIndex + 1);
             $validation = $leads->getDataValidation($column.'2');
             $this->assertSame('list', $validation->getType());
             $this->assertTrue($validation->getShowDropDown());
             $range = $workbook->getNamedRange($validation->getFormula1());
             [, $address] = explode('!', $range->getRange(), 2);
             $this->assertSame(
-                array_column($definition['options'], $field === 'visit_status' ? 'label' : 'value'),
+                array_column($definition['options'], 'label'),
                 array_column($range->getWorksheet()->rangeToArray(str_replace('$', '', $address)), 0),
             );
         }
 
-        $leads->fromArray(['Workbook lead', '0987654321', null, null, 'active', 'cold', '2026-11-26'], null, 'A2');
+        $leads->fromArray(['Workbook lead', '0987654321', null, null, 'Follow Up', 'Cold', '2026-11-26'], null, 'A2');
         $leads->setCellValue('J2', 'Calling');
         $leads->setCellValue('K2', 'Visit Done');
         $upload = UploadedFile::fake()->create('leads.xlsx');
@@ -347,7 +350,7 @@ class AdminManualLeadSourceTest extends TestCase
         $this->postJson(route('lead-managment.import'), ['file' => $upload])->assertOk();
         $this->assertDatabaseCount('leads', 1);
         $this->assertDatabaseHas('leads', [
-            'name' => 'Workbook lead', 'phone' => '0987654321', 'status' => 'active',
+            'name' => 'Workbook lead', 'phone' => '0987654321', 'status' => 'follow_up',
             'type' => 'cold', 'lead_source' => 'Calling', 'visit_status' => 'visited',
         ]);
     }

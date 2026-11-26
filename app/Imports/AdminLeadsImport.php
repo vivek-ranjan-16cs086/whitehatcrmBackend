@@ -6,6 +6,7 @@ use App\Models\Lead;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
 use App\Services\LeadEnumOptions;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\ToCollection;
@@ -55,11 +56,14 @@ class AdminLeadsImport extends DefaultValueBinder implements SkipsEmptyRows, ToC
     public function collection(Collection $rows): void
     {
         $enumRules = [];
+        $enumValues = [];
         foreach (array_keys(config('lead-enums')) as $field) {
-            $enumRules[$field] = ['nullable', 'string', $this->enums->rule($field)];
+            $options = $this->enums->options($field);
+            $values = array_column($options, 'value');
+            $enumRules[$field] = ['nullable', 'string', Rule::in($values)];
+            $enumValues[$field] = array_combine($values, $values) + array_column($options, 'value', 'label');
         }
         $enumRules['deactivate_reason'][] = 'required_if:status,deactive';
-        $visitStatusesByLabel = array_column($this->enums->options('visit_status'), 'value', 'label');
 
         foreach ($rows as $index => $row) {
             $data = $row->toArray();
@@ -69,12 +73,12 @@ class AdminLeadsImport extends DefaultValueBinder implements SkipsEmptyRows, ToC
                 continue;
             }
 
-            foreach (array_keys($enumRules) as $field) {
+            foreach ($enumValues as $field => $acceptedValues) {
                 $value = trim((string) ($data[$field] ?? ''));
                 if ($value === '') {
                     unset($data[$field]);
                 } else {
-                    $data[$field] = $field === 'visit_status' ? ($visitStatusesByLabel[$value] ?? $value) : $value;
+                    $data[$field] = $acceptedValues[$value] ?? $value;
                 }
             }
 
