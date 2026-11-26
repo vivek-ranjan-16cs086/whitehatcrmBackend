@@ -5,6 +5,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\LeadService;
 use App\Services\LeadEnumOptions;
+use App\Support\LeadImportTemplate;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use App\Models\Lead;
 use App\Models\User;
 use App\Models\Project;
@@ -580,7 +582,7 @@ public function index(Request $request, LeadEnumOptions $enums)
                 'project' => e($row->project?->name ?? '-'),
                 'inventory' => e($row->inventory ?: '-'),
                 'visit_date' => $row->visit_date?->format('d M Y') ?? '-',
-                'visit_status' => e($row->visit_status ? ucwords(str_replace('_', ' ', $row->visit_status)) : '-'),
+                'visit_status' => e($row->visit_status ? LeadEnumOptions::label('visit_status', $row->visit_status) : '-'),
 				'status' => $statusBadge,
 				'type' => $typeBadge,
 				'assigned_to' => e($assignedUserName ?: 'Unassigned'),
@@ -734,6 +736,10 @@ public function index(Request $request, LeadEnumOptions $enums)
             $label = \App\Support\LeadFormFields::FIELDS[$field][0];
             $oldLabel = $field === 'project_id' ? Project::find($oldValue)?->name : $oldValue;
             $newLabel = $field === 'project_id' ? Project::find($value)?->name : $value;
+            if ($field === 'visit_status') {
+                $oldLabel = $oldValue === null ? null : LeadEnumOptions::label($field, $oldValue);
+                $newLabel = $value === null ? null : LeadEnumOptions::label($field, $value);
+            }
             \App\Models\LeadTimelineEvent::create([
                 'lead_id' => $lockedLead->id, 'user_id' => $request->user()->id,
                 'user_name' => $request->user()->name, 'user_role' => $request->user()->getRoleNames()->first(),
@@ -1034,7 +1040,7 @@ $lead->type = !empty($validated['type']) ? $validated['type'] : 'cold';
 	public function import(Request $request, LeadEnumOptions $enums)
 	{
 		$validated = $request->validate([
-			'file' => 'required|file|mimes:csv,txt|max:10240',
+			'file' => 'required|file|mimes:csv,txt,xlsx|max:10240',
 			'source_website' => ['nullable', 'string', Rule::in(array_values(self::MANUAL_LEAD_SOURCES))],
 			'lead_source' => ['nullable', 'string', $enums->rule('lead_source')],
 		]);
@@ -1054,24 +1060,33 @@ $lead->type = !empty($validated['type']) ? $validated['type'] : 'cold';
 		} catch (ValidationException $e) {
 			return response()->json([
 				'status' => false,
-				'message' => $e->errors()['file'][0] ?? 'The uploaded CSV contains invalid data.',
+				'message' => $e->errors()['file'][0] ?? 'The uploaded file contains invalid data.',
 				'errors' => $e->errors(),
 			], 422);
 		} catch (\Throwable $e) {
-			\Log::error('Admin lead CSV import failed', [
+			\Log::error('Admin lead import failed', [
 				'error' => $e->getMessage(),
 				'user_id' => $request->user()?->id,
 			]);
 
 			return response()->json([
 				'status' => false,
-				'message' => 'Could not import the CSV file. No leads were imported.',
+				'message' => 'Could not import the file. No leads were imported.',
 			], 500);
 		}
 	}
 
-	public function downloadImportTemplate()
+	public function downloadImportTemplate(Request $request, LeadImportTemplate $template, LeadEnumOptions $enums)
 	{
+        if ($request->query('format') === 'xlsx') {
+            return response()->streamDownload(function () use ($template, $enums): void {
+                $workbook = $template->workbook($enums);
+                (new Xlsx($workbook))->save('php://output');
+            }, 'lead-import-template.xlsx', [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ]);
+        }
+
 		return response()->download(resource_path('templates/lead-import-template.csv'), 'lead-import-template.csv', [
 			'Content-Type' => 'text/csv; charset=UTF-8',
 		]);

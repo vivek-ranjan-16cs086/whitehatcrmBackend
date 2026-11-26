@@ -11,11 +11,12 @@ use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use Maatwebsite\Excel\DefaultValueBinder;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 
-class AdminLeadsImport extends DefaultValueBinder implements SkipsEmptyRows, ToCollection, WithCustomValueBinder, WithHeadingRow
+class AdminLeadsImport extends DefaultValueBinder implements SkipsEmptyRows, ToCollection, WithCustomValueBinder, WithHeadingRow, WithMultipleSheets
 {
     public const HEADINGS = [
         'name',
@@ -39,6 +40,11 @@ class AdminLeadsImport extends DefaultValueBinder implements SkipsEmptyRows, ToC
         private readonly ?string $leadSource,
     ) {}
 
+    public function sheets(): array
+    {
+        return [0 => $this];
+    }
+
     public function bindValue(Cell $cell, mixed $value): bool
     {
         $cell->setValueExplicit($value, DataType::TYPE_STRING);
@@ -53,6 +59,7 @@ class AdminLeadsImport extends DefaultValueBinder implements SkipsEmptyRows, ToC
             $enumRules[$field] = ['nullable', 'string', $this->enums->rule($field)];
         }
         $enumRules['deactivate_reason'][] = 'required_if:status,deactive';
+        $visitStatusesByLabel = array_column($this->enums->options('visit_status'), 'value', 'label');
 
         foreach ($rows as $index => $row) {
             $data = $row->toArray();
@@ -67,7 +74,7 @@ class AdminLeadsImport extends DefaultValueBinder implements SkipsEmptyRows, ToC
                 if ($value === '') {
                     unset($data[$field]);
                 } else {
-                    $data[$field] = $value;
+                    $data[$field] = $field === 'visit_status' ? ($visitStatusesByLabel[$value] ?? $value) : $value;
                 }
             }
 

@@ -492,13 +492,16 @@ class LeadController extends BaseController
 					$oldVisitStatus != $lead->visit_status ||
 					$oldVisitDate != $lead->visit_date
 				) {
+					$visitStatusLabel = $lead->visit_status === null
+						? ''
+						: LeadEnumOptions::label('visit_status', $lead->visit_status);
 					LeadTimelineEvent::create([
 						'lead_id' => $lead->id,
 						'user_id' => $user->id,
 						'user_name' => $user->name,
 						'user_role' => $user->getRoleNames()->first(),
 						'event_type' => 'VISIT',
-						'message' => "Visit status updated to {$lead->visit_status}" .
+						'message' => "Visit status updated to {$visitStatusLabel}" .
 							($lead->visit_date ? " on {$lead->visit_date}" : ''),
 					]);
 				}
@@ -865,7 +868,7 @@ class LeadController extends BaseController
 					->whereNotNull('visit_date');
 
 				$completed = (clone $leadQuery)
-					->where('visit_status', 'completed')
+					->where('visit_status', 'visited')
 					->count();
 
 				$targetValue = $target->site_visited ?? 0;
@@ -1358,7 +1361,7 @@ class LeadController extends BaseController
 			if ($target) {
 				$visitAchieved = Lead::whereBetween('visit_date', [$start, $end])
 					->where('assigned_to', $target->user_id ?? $user->id)
-					->where('visit_status', 'completed')
+					->where('visit_status', 'visited')
 					->count();
 
 				$bookingAchieved = Lead::whereBetween('created_at', [$start, $end])

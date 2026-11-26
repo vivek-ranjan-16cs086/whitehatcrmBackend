@@ -10,7 +10,7 @@
         <div id="leadToolbarActions" class="d-flex align-items-center gap-2 flex-wrap">
 				@can('create.lead')
 					<button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#importLeadsModal">
-						<i class="bi bi-file-earmark-arrow-up" aria-hidden="true"></i> Import CSV
+						<i class="bi bi-file-earmark-arrow-up" aria-hidden="true"></i> Import Leads
 					</button>
 					<button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addLeadModal">
 						<i class="bi bi-plus"></i> Add Lead
@@ -155,16 +155,16 @@
 			<div class="modal-dialog modal-lg modal-dialog-centered">
 				<div class="modal-content">
 					<div class="modal-header">
-						<h5 class="modal-title fw-bold" id="importLeadsModalLabel">Import Leads from CSV</h5>
+						<h5 class="modal-title fw-bold" id="importLeadsModalLabel">Import Leads</h5>
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 					</div>
 					<div class="modal-body">
 						<p class="text-muted">
 							Choose a default lead source for rows that leave <code>lead_source</code> blank.
-							Use the CSV template for the supported columns.
+							Use the Excel template for dropdowns in the enum columns. Enter follow-up dates as YYYY-MM-DD.
 						</p>
-						<a class="btn btn-sm btn-outline-secondary mb-3" href="{{ route('lead-managment.import-template') }}" download>
-							<i class="bi bi-download"></i> Download CSV template
+						<a class="btn btn-sm btn-outline-secondary mb-3" href="{{ route('lead-managment.import-template', ['format' => 'xlsx']) }}" download>
+							<i class="bi bi-download"></i> Download Excel template
 						</a>
 						<form id="importLeadsForm" enctype="multipart/form-data">
 							@csrf
@@ -187,8 +187,8 @@
 								</select>
 							</div>
 							<div class="mb-3">
-								<label for="import_file" class="form-label">CSV file <span class="text-danger">*</span></label>
-								<input type="file" id="import_file" name="file" class="form-control" accept=".csv,text/csv" required>
+								<label for="import_file" class="form-label">Excel or CSV file <span class="text-danger">*</span></label>
+								<input type="file" id="import_file" name="file" class="form-control" accept=".xlsx,.csv" required>
 								<div class="form-text">
 									Maximum size: 10 MB. Add <code>source_page_name</code> to include the Facebook page or form name.
 									Existing phone numbers are rejected as duplicates.
@@ -1091,7 +1091,7 @@ $(document).on('lead:date-range', function () {
 				});
 			},
 			error: function (xhr) {
-				const message = xhr.responseJSON?.message || 'Could not import the CSV file.';
+				const message = xhr.responseJSON?.message || 'Could not import the file.';
 				Swal.fire({
 					icon: 'error',
 					title: 'Import failed',

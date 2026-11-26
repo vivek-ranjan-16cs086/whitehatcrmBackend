@@ -14,7 +14,7 @@ return [
     'visit_status' => [
         'description' => 'Progress of the lead’s site visit.',
         'default' => 'not_scheduled',
-        'values' => ['not_scheduled', 'scheduled', 'completed', 'visited', 'cancelled', 're-visit-plan', 're-visit-done'],
+        'values' => ['not_scheduled', 'scheduled', 'visited', 'cancelled', 're-visit-plan', 're-visit-done'],
     ],
     'lead_source' => [
         'description' => 'Channel that generated the lead.',

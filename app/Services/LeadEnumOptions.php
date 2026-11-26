@@ -14,7 +14,16 @@ class LeadEnumOptions
         $values = self::parseDefinition(Schema::getColumnType('leads', $field, true))
             ?? config("lead-enums.{$field}.values");
 
-        return $field === 'status' ? self::currentStatuses($values) : $values;
+        return match ($field) {
+            'status' => self::currentStatuses($values),
+            'visit_status' => self::currentVisitStatuses($values),
+            default => $values,
+        };
+    }
+
+    public static function currentVisitStatuses(array $values): array
+    {
+        return array_values(array_filter($values, fn ($value) => strcasecmp($value, 'completed') !== 0));
     }
 
     public static function currentStatuses(array $values): array
@@ -38,11 +47,18 @@ class LeadEnumOptions
 
     public function options(string $field): array
     {
-        $formatLabel = in_array($field, ['status', 'type', 'visit_status'], true);
-
         return array_map(fn ($value) => [
-            'label' => $formatLabel ? Str::headline($value) : $value,
+            'label' => self::label($field, $value),
             'value' => $value,
         ], $this->values($field));
+    }
+
+    public static function label(string $field, string $value): string
+    {
+        if ($field === 'visit_status' && $value === 'visited') {
+            return 'Visit Done';
+        }
+
+        return in_array($field, ['status', 'type', 'visit_status'], true) ? Str::headline($value) : $value;
     }
 }

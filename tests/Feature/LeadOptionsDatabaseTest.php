@@ -34,6 +34,26 @@ class LeadOptionsDatabaseTest extends TestCase
         $this->assertDatabaseHas('leads', ['id' => $unchanged->id, 'status' => 'booked']);
     }
 
+    public function test_completed_visits_are_migrated_and_api_labels_visited_as_visit_done(): void
+    {
+        $legacy = Lead::create(['name' => 'Completed visit', 'visit_status' => 'completed']);
+        $deleted = Lead::create(['name' => 'Deleted completed visit', 'visit_status' => 'completed']);
+        $deleted->delete();
+        $scheduled = Lead::create(['name' => 'Scheduled visit', 'visit_status' => 'scheduled']);
+
+        $migration = require database_path('migrations/2026_11_26_000001_merge_completed_visit_status.php');
+        $migration->up();
+
+        $this->assertDatabaseHas('leads', ['id' => $legacy->id, 'visit_status' => 'visited']);
+        $this->assertDatabaseHas('leads', ['id' => $deleted->id, 'visit_status' => 'visited']);
+        $this->assertDatabaseHas('leads', ['id' => $scheduled->id, 'visit_status' => 'scheduled']);
+
+        $choices = $this->getJson('/api/v1/visit-status-options')->assertOk()->json('data');
+        $this->assertContains(['label' => 'Visit Done', 'value' => 'visited'], $choices);
+        $this->assertNotContains('completed', array_column($choices, 'value'));
+        $this->getJson('/api/v1/lead-options')->assertOk()->assertJsonPath('data.visit_status.options', $choices);
+    }
+
     public function test_api_returns_shared_enum_choices_and_descriptions_before_any_leads_exist(): void
     {
         $response = $this->getJson('/api/v1/lead-options')
