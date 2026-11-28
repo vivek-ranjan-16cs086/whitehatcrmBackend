@@ -13,6 +13,8 @@ Run `php artisan serve` and open [Swagger UI](http://127.0.0.1:8000/docs/index.h
 
 To try a protected endpoint, execute `POST /sign-in`, copy `data.access_token`, and paste the token into **Authorize → BearerAuth**. External lead ingestion at `POST /leads/store` uses **IntegrationKey** and sends the key in the `x-api-key` header.
 
+The mobile home screen can call `GET /api/v1/home` with `Authorization: Bearer <access_token>`. Render `data.cards` in the order returned and use each card's `key` for navigation. Super Admins and lead viewers with `view_team.lead` receive team metrics and `decision_focus`. Other lead viewers receive their assigned lead metrics and a null `decision_focus`. The notification badge and upcoming follow-ups always belong to the signed-in user. The follow-up count covers the next 12 hours and matches `GET /api/v1/due_followup_leads`.
+
 Update the OpenAPI spec alongside changes to `routes/api.php`, `routes/chat.php`, or their API controllers.
 
 ## About Laravel

@@ -1528,6 +1528,175 @@
         }
       }
     },
+    "/home": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Get the signed-in user's home screen",
+        "operationId": "getHome",
+        "description": "Requires `view.lead` or the Super Admin role. The JWT identifies the user. Super Admins and users with `view_team.lead` receive team totals, unassigned and expired cards, and Decision Focus. Other lead viewers receive only their assigned leads. Notification and due follow-up counts always belong to the signed-in user. The due count matches `GET /due_followup_leads` for the next 12 hours.",
+        "responses": {
+          "200": {
+            "description": "Home screen data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message",
+                    "data"
+                  ],
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "user",
+                        "scope",
+                        "date",
+                        "unread_notifications",
+                        "cards",
+                        "decision_focus",
+                        "next_best_actions"
+                      ],
+                      "properties": {
+                        "user": {
+                          "type": "object",
+                          "required": [
+                            "id",
+                            "name",
+                            "roles",
+                            "profile_picture_url"
+                          ],
+                          "properties": {
+                            "id": { "type": "integer" },
+                            "name": { "type": "string" },
+                            "roles": {
+                              "type": "array",
+                              "items": { "type": "string" }
+                            },
+                            "profile_picture_url": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          }
+                        },
+                        "scope": {
+                          "type": "string",
+                          "enum": [
+                            "team",
+                            "self"
+                          ]
+                        },
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "unread_notifications": { "type": "integer" },
+                        "cards": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "key",
+                              "label",
+                              "value"
+                            ],
+                            "properties": {
+                              "key": {
+                                "type": "string",
+                                "enum": [
+                                  "total_leads",
+                                  "unassigned_leads",
+                                  "booked_leads",
+                                  "active_leads",
+                                  "followups",
+                                  "expired_leads",
+                                  "performance_percentage",
+                                  "weekly_visit_target",
+                                  "weekly_booking_target"
+                                ]
+                              },
+                              "label": { "type": "string" },
+                              "value": { "type": "integer" }
+                            }
+                          }
+                        },
+                        "decision_focus": {
+                          "type": "object",
+                          "required": [
+                            "pipeline_health",
+                            "at_risk_leads",
+                            "breakdown"
+                          ],
+                          "properties": {
+                            "pipeline_health": { "type": "integer" },
+                            "at_risk_leads": { "type": "integer" },
+                            "breakdown": {
+                              "type": "object",
+                              "required": [
+                                "unassigned_leads",
+                                "overdue_followups",
+                                "no_followup",
+                                "stale_leads"
+                              ],
+                              "properties": {
+                                "unassigned_leads": { "type": "integer" },
+                                "overdue_followups": { "type": "integer" },
+                                "no_followup": { "type": "integer" },
+                                "stale_leads": { "type": "integer" }
+                              }
+                            }
+                          },
+                          "nullable": true
+                        },
+                        "next_best_actions": {
+                          "type": "object",
+                          "required": [
+                            "due_followups"
+                          ],
+                          "properties": {
+                            "due_followups": {
+                              "type": "object",
+                              "required": [
+                                "count",
+                                "scope",
+                                "window_hours"
+                              ],
+                              "properties": {
+                                "count": { "type": "integer" },
+                                "scope": {
+                                  "type": "string",
+                                  "enum": [
+                                    "self"
+                                  ]
+                                },
+                                "window_hours": {
+                                  "type": "integer",
+                                  "enum": [
+                                    12
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
     "/heartbeat": {
       "post": {
         "tags": [

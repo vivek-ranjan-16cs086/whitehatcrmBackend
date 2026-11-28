@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ApiController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\TargetController;
 use App\Http\Controllers\Api\EventController;
+use App\Http\Controllers\Api\HomeController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\ResponseController;
@@ -65,6 +66,7 @@ Route::prefix('v1')->group(function () {
 		});
 		
 		Route::middleware('api-lead-permission:view.lead')->group(function () {
+			Route::get('/home', HomeController::class)->name('api.home');
 			Route::get('/get-leads', [LeadController::class, 'getLeads']);
 			Route::get('/leads', [LeadController::class, 'getLeads']);
 			Route::get('/leads/{id}', [LeadController::class, 'getSingleLead']);
