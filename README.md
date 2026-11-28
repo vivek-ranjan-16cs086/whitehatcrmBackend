@@ -7,6 +7,14 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## API documentation
+
+Run `php artisan serve` and open [Swagger UI](http://127.0.0.1:8000/docs/index.html). The [OpenAPI 3.0 spec](public/docs/openapi.json) can also be imported into Postman or another OpenAPI client. Swagger UI loads its assets from jsDelivr and sends API requests to the same Laravel deployment.
+
+To try a protected endpoint, execute `POST /sign-in`, copy `data.access_token`, and paste the token into **Authorize → BearerAuth**. External lead ingestion at `POST /leads/store` uses **IntegrationKey** and sends the key in the `x-api-key` header.
+
+Update the OpenAPI spec alongside changes to `routes/api.php`, `routes/chat.php`, or their API controllers.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

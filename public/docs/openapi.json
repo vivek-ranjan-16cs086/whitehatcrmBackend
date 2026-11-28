@@ -1,0 +1,4970 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ZidTrack API",
+    "version": "1.0.0",
+    "description": "ZidTrack REST API for authentication, leads, teams' sales activity, notifications, and mobile chat."
+  },
+  "servers": [
+    {
+      "url": "../api/v1"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication"
+    },
+    {
+      "name": "Chat"
+    },
+    {
+      "name": "Dashboard"
+    },
+    {
+      "name": "Devices"
+    },
+    {
+      "name": "Lead activity"
+    },
+    {
+      "name": "Leads"
+    },
+    {
+      "name": "Notifications"
+    },
+    {
+      "name": "Projects"
+    },
+    {
+      "name": "Session"
+    },
+    {
+      "name": "Settings"
+    },
+    {
+      "name": "Targets"
+    },
+    {
+      "name": "Users"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/all-users": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "List all users",
+        "operationId": "getAllUsers",
+        "description": "Requires the `super-admin` role.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/User" }
+                    },
+                    "total_count": { "type": "integer" },
+                    "last_page": { "type": "integer" },
+                    "current_page": { "type": "integer" },
+                    "per_page": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/assign-lead": {
+      "post": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "Assign lead",
+        "operationId": "assignLead",
+        "description": "Requires the `super-admin` role.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "lead_id": { "type": "integer" },
+                  "assigned_to": { "type": "integer" }
+                },
+                "required": [
+                  "lead_id",
+                  "assigned_to"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "500": { "$ref": "#/components/responses/Http500" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/chat/broadcasting/auth": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Authorize a private chat channel",
+        "operationId": "chatBroadcast",
+        "description": "The `channel_name` must be `private-chat.user.{user_id}` for the authenticated user.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "socket_id": {
+                    "type": "string",
+                    "pattern": "^\\d+\\.\\d+$"
+                  },
+                  "channel_name": {
+                    "type": "string",
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "socket_id",
+                  "channel_name"
+                ]
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "socket_id": {
+                    "type": "string",
+                    "pattern": "^\\d+\\.\\d+$"
+                  },
+                  "channel_name": {
+                    "type": "string",
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "socket_id",
+                  "channel_name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "auth": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "429": { "$ref": "#/components/responses/Http429" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/chat/config": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Get chat configuration",
+        "operationId": "chatConfiguration",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user_id": { "type": "integer" },
+                    "realtime_enabled": { "type": "boolean" },
+                    "key": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "cluster": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "channel": { "type": "string" },
+                    "event": { "type": "string" },
+                    "poll_interval_ms": { "type": "integer" },
+                    "can_create_group": { "type": "boolean" },
+                    "profile_picture_url": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "max_attachment_bytes": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/chat/conversations": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "List conversations",
+        "operationId": "chatConversations",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Conversation" }
+                    },
+                    "current_page": { "type": "integer" },
+                    "last_page": { "type": "integer" },
+                    "total": { "type": "integer" },
+                    "per_page": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      },
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Create a conversation",
+        "operationId": "chatCreate",
+        "description": "A direct conversation requires one other member. Group creation requires permission and a group name.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "direct",
+                      "group"
+                    ]
+                  },
+                  "name": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 100,
+                    "description": "Required for a group conversation."
+                  },
+                  "member_ids": {
+                    "type": "array",
+                    "items": { "type": "integer" },
+                    "minItems": 1,
+                    "maxItems": 49,
+                    "uniqueItems": true
+                  }
+                },
+                "required": [
+                  "type",
+                  "member_ids"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Conversation" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "429": { "$ref": "#/components/responses/Http429" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/chat/conversations/{conversation}": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Get a conversation",
+        "operationId": "chatShow",
+        "parameters": [
+          {
+            "name": "conversation",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Conversation" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/chat/conversations/{conversation}/delivered": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Mark messages as delivered",
+        "operationId": "chatDelivered",
+        "parameters": [
+          {
+            "name": "conversation",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message_id": { "type": "integer" }
+                },
+                "required": [
+                  "message_id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "429": { "$ref": "#/components/responses/Http429" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/chat/conversations/{conversation}/messages": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "List messages",
+        "operationId": "chatMessages",
+        "description": "Use `before` for older messages or `after` to fetch newer messages. Results are returned in ascending message-ID order.",
+        "parameters": [
+          {
+            "name": "conversation",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Return messages older than this ID."
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Return messages newer than this ID."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/ChatMessage" }
+                    },
+                    "has_more": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      },
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Send a message",
+        "operationId": "chatSend",
+        "description": "Use JSON for a text-only message or multipart form data to send an attachment. Reuse the same `client_id` when retrying a message.",
+        "parameters": [
+          {
+            "name": "conversation",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "client_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Client-generated ID used to deduplicate retries."
+                  },
+                  "body": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 5000,
+                    "description": "Required when no file is attached."
+                  }
+                },
+                "required": [
+                  "client_id",
+                  "body"
+                ]
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "client_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Client-generated ID used to deduplicate retries."
+                  },
+                  "body": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 5000,
+                    "description": "Required when no file is attached."
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "nullable": true,
+                    "description": "Supported image, PDF or audio file. Maximum 10 MiB."
+                  }
+                },
+                "required": [
+                  "client_id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Existing message returned for a repeated client ID.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ChatMessage" }
+              }
+            }
+          },
+          "201": {
+            "description": "Message created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ChatMessage" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "429": { "$ref": "#/components/responses/Http429" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/chat/conversations/{conversation}/messages/{message}/file": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Download a message attachment",
+        "operationId": "chatFile",
+        "parameters": [
+          {
+            "name": "conversation",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "message",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Attachment content. The media type depends on the stored file.",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/chat/conversations/{conversation}/read": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Mark messages as read",
+        "operationId": "chatRead",
+        "parameters": [
+          {
+            "name": "conversation",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message_id": { "type": "integer" }
+                },
+                "required": [
+                  "message_id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "429": { "$ref": "#/components/responses/Http429" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/chat/conversations/{conversation}/typing": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Send a typing indicator",
+        "operationId": "chatTyping",
+        "parameters": [
+          {
+            "name": "conversation",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "429": { "$ref": "#/components/responses/Http429" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/chat/profile-picture": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Upload a chat profile picture",
+        "operationId": "chatProfilePicture",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "profile_pic": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "JPEG, PNG, GIF or WebP. Maximum 2 MiB."
+                  }
+                },
+                "required": [
+                  "profile_pic"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "profile_picture_url": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "429": { "$ref": "#/components/responses/Http429" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/chat/unread": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Get chat unread counts",
+        "operationId": "chatUnread",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "unread_count": { "type": "integer" },
+                    "conversations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "conversation_id": { "type": "integer" },
+                          "unread_count": { "type": "integer" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/chat/users": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "List active chat users",
+        "operationId": "chatUsers",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer" },
+                          "name": { "type": "string" }
+                        }
+                      }
+                    },
+                    "current_page": { "type": "integer" },
+                    "last_page": { "type": "integer" },
+                    "total": { "type": "integer" },
+                    "per_page": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/check-email": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Check email",
+        "operationId": "checkEmail",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                },
+                "required": [
+                  "email"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/counts": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Get dashboard counts",
+        "operationId": "dashboardCards",
+        "description": "Requires the `view.lead` permission.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "total_leads": { "type": "integer" },
+                        "active_leads": { "type": "integer" },
+                        "followups": { "type": "integer" },
+                        "performance_percentage": { "type": "number" },
+                        "followup_percentage": { "type": "number" },
+                        "unassigned_leads": { "type": "integer" },
+                        "weekly_visit_target": { "type": "integer" },
+                        "weekly_booking_target": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/create-lead": {
+      "post": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "Create a lead",
+        "operationId": "createNewLead",
+        "description": "Only Super Admins can select an assignee. Other users are assigned their own leads. Requires the `create.lead` permission.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "phone": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "nullable": true
+                  },
+                  "status": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "type": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "assigned_to": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "follow_up_date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "visit_status": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "visit_date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "notes": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "lead_source": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": { "$ref": "#/components/schemas/Lead" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/deactivate-list": {
+      "get": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "Get deactivate list",
+        "operationId": "getDeactivateList",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "options": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "label": { "type": "string" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/device/register": {
+      "post": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Register a notification device",
+        "operationId": "register",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "device_id": {
+                    "type": "string",
+                    "maxLength": 191
+                  },
+                  "platform": {
+                    "type": "string",
+                    "enum": [
+                      "android",
+                      "web",
+                      "ios"
+                    ]
+                  },
+                  "fcm_token": {
+                    "type": "string",
+                    "maxLength": 4096
+                  }
+                },
+                "required": [
+                  "device_id",
+                  "platform",
+                  "fcm_token"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "device_id": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/device/unregister": {
+      "post": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Unregister a notification device",
+        "operationId": "unregister",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "device_id": {
+                    "type": "string",
+                    "maxLength": 191
+                  }
+                },
+                "required": [
+                  "device_id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/due_followup_leads": {
+      "get": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "List upcoming follow-ups assigned to the caller",
+        "operationId": "getDueFollowUpLeads",
+        "description": "Returns leads assigned to the authenticated user with a follow-up due within 12 hours. Requires the `view.lead` permission.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "leads": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/Lead" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/followup-leads": {
+      "get": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "List follow-up leads",
+        "operationId": "getFollowUp",
+        "description": "Requires the `view.lead` permission.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "leads": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/Lead" }
+                        },
+                        "total": { "type": "integer" },
+                        "current_page": { "type": "integer" },
+                        "last_page": { "type": "integer" },
+                        "per_page": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/forgot-password": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Send a password reset code",
+        "operationId": "forgotPassword",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                },
+                "required": [
+                  "email"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "reset_token": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/get-leads": {
+      "get": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "List leads (alias)",
+        "operationId": "getLeadsLegacy",
+        "description": "Alias for `GET /leads`. Filters and returns leads visible to the caller. Requires the `view.lead` permission.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "lead_source",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "visit_status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "is_unassigned",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ]
+            }
+          },
+          {
+            "name": "page_name",
+            "in": "query",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "leads": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/Lead" }
+                        },
+                        "total_leads": { "type": "integer" },
+                        "current_page": { "type": "integer" },
+                        "last_page": { "type": "integer" },
+                        "per_page": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "500": { "$ref": "#/components/responses/Http500" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/heartbeat": {
+      "post": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Update the signed-in user's last-seen time",
+        "operationId": "heartbeat",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/inventory-list": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Get inventory list",
+        "operationId": "getInventoryList",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "options": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "label": { "type": "string" },
+                              "value": { "type": "string" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/lead-options": {
+      "get": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "Get lead options",
+        "operationId": "getLeadOptions",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "description": { "type": "string" },
+                          "options": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "label": { "type": "string" },
+                                "value": { "type": "string" }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/lead-source": {
+      "get": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "Get lead source list",
+        "operationId": "getLeadSourceList",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "lead_source": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "label": { "type": "string" },
+                              "value": { "type": "string" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/leads": {
+      "get": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "List leads",
+        "operationId": "getLeads",
+        "description": "Filters and returns leads visible to the caller. Requires the `view.lead` permission.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "lead_source",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "visit_status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "is_unassigned",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ]
+            }
+          },
+          {
+            "name": "page_name",
+            "in": "query",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "leads": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/Lead" }
+                        },
+                        "total_leads": { "type": "integer" },
+                        "current_page": { "type": "integer" },
+                        "last_page": { "type": "integer" },
+                        "per_page": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "500": { "$ref": "#/components/responses/Http500" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/leads/import": {
+      "post": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "Import leads from a spreadsheet",
+        "operationId": "import",
+        "description": "Requires the `create.lead` permission.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "XLSX, XLS or CSV. Maximum 10 MiB."
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "500": { "$ref": "#/components/responses/Http500" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/leads/store": {
+      "post": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "Ingest a lead from an external website",
+        "operationId": "storeLead",
+        "description": "Uses the integration API key. An existing lead can be updated by matching its website and external ID.",
+        "security": [
+          {
+            "IntegrationKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "source_website": { "type": "string" },
+                  "name": { "type": "string" },
+                  "phone": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "nullable": true
+                  },
+                  "external_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "source_page_name": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 255
+                  },
+                  "meta_app_name": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 255
+                  },
+                  "message": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "source_website",
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": { "$ref": "#/components/schemas/Lead" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "409": { "$ref": "#/components/responses/Http409" },
+          "500": { "$ref": "#/components/responses/Http500" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/leads/update-lead-status/{id}": {
+      "post": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "Update lead status and follow-up details",
+        "operationId": "updateLeadStatus",
+        "description": "Requires the `edit.lead` permission.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "visitStatus": { "type": "string" },
+                  "visitDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true,
+                    "description": "Required for a scheduled visit."
+                  },
+                  "status": { "type": "string" },
+                  "type": { "type": "string" },
+                  "note": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Note to add to the lead timeline."
+                  },
+                  "project_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "deactivate_reason": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "lead_source": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "budget": {
+                    "type": "object",
+                    "properties": {
+                      "min": {
+                        "type": "number",
+                        "nullable": true,
+                        "minimum": 0
+                      },
+                      "max": {
+                        "type": "number",
+                        "nullable": true
+                      }
+                    }
+                  },
+                  "inventory": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "follow_up_date": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "remarks": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Required when status is follow_up_complete."
+                  },
+                  "sub_response_id": { "type": "integer" }
+                },
+                "required": [
+                  "note"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": { "$ref": "#/components/schemas/Lead" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "500": { "$ref": "#/components/responses/Http500" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/leads/{id}": {
+      "get": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "Get a lead",
+        "operationId": "getSingleLead",
+        "description": "Requires the `view.lead` permission.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": { "$ref": "#/components/schemas/Lead" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "500": { "$ref": "#/components/responses/Http500" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/leads/{leadId}/assign": {
+      "post": {
+        "tags": [
+          "Lead activity"
+        ],
+        "summary": "Assign a lead",
+        "operationId": "missingLeadAssignment",
+        "description": "Requires the `edit.lead` permission. Unavailable in this backend. The route references the missing `EventController::assignLead` method.",
+        "parameters": [
+          {
+            "name": "leadId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "500": {
+            "description": "The registered controller action is missing.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/leads/{leadId}/calls": {
+      "get": {
+        "tags": [
+          "Lead activity"
+        ],
+        "summary": "List lead calls",
+        "operationId": "getCalls",
+        "description": "Requires the `view.lead` permission.",
+        "parameters": [
+          {
+            "name": "leadId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "type": "object" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      },
+      "post": {
+        "tags": [
+          "Lead activity"
+        ],
+        "summary": "Log a lead call",
+        "operationId": "addCall",
+        "description": "Requires the `edit.lead` permission.",
+        "parameters": [
+          {
+            "name": "leadId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "call_outcome": { "type": "string" },
+                  "note": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "call_outcome"
+                ]
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "call_outcome": { "type": "string" },
+                  "note": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "call_recording": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "call_outcome"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "lead_id": { "type": "integer" },
+                        "call_outcome": { "type": "string" },
+                        "message": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "call_recording": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/leads/{leadId}/comments": {
+      "get": {
+        "tags": [
+          "Lead activity"
+        ],
+        "summary": "List lead comments",
+        "operationId": "getComments",
+        "description": "Requires the `view.lead` permission.",
+        "parameters": [
+          {
+            "name": "leadId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "type": "object" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      },
+      "post": {
+        "tags": [
+          "Lead activity"
+        ],
+        "summary": "Add comment",
+        "operationId": "addComment",
+        "description": "Requires the `edit.lead` permission.",
+        "parameters": [
+          {
+            "name": "leadId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": { "type": "string" }
+                },
+                "required": [
+                  "message"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "integer" },
+                        "title": { "type": "string" },
+                        "user_name": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/leads/{leadId}/follow-ups": {
+      "get": {
+        "tags": [
+          "Lead activity"
+        ],
+        "summary": "Get the latest lead follow-up",
+        "operationId": "getFollowUps",
+        "description": "Requires the `view.lead` permission.",
+        "parameters": [
+          {
+            "name": "leadId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "lead_id": { "type": "integer" },
+                        "user_id": { "type": "integer" },
+                        "user_name": { "type": "string" },
+                        "user_role": { "type": "string" },
+                        "event_type": { "type": "string" },
+                        "follow_up_date": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/logout": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Logout",
+        "operationId": "logout",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "device_id": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 191
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/maintenance-mode": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Get maintenance settings",
+        "operationId": "maintenanceMode",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "maintenance_mode": {},
+                        "maintenance_message": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/notifications": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "List notifications",
+        "operationId": "getNotifications",
+        "parameters": [
+          {
+            "name": "is_read",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer" },
+                          "title": { "type": "string" },
+                          "message": { "type": "string" },
+                          "type": { "type": "string" },
+                          "data": {},
+                          "is_read": { "type": "boolean" },
+                          "image": { "type": "string" },
+                          "time": { "type": "string" }
+                        }
+                      }
+                    },
+                    "unread_count": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Clear all notifications",
+        "operationId": "clearAllNotifications",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/notifications/count": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Count unread notifications",
+        "operationId": "notificationCount",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "unread_count": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/notifications/read/{id}": {
+      "patch": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Mark a notification as read",
+        "operationId": "markAsRead",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/notifications/{id}": {
+      "delete": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Delete notification",
+        "operationId": "deleteNotification",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/performance-ranking": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Performance ranking",
+        "operationId": "performanceRanking",
+        "description": "Requires the `view.lead` permission.",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {},
+                    "scope": {
+                      "type": "string",
+                      "enum": [
+                        "team",
+                        "self"
+                      ]
+                    },
+                    "role": { "type": "string" },
+                    "summary": { "type": "object" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/pipeline-health": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Pipeline health",
+        "operationId": "pipelineHealth",
+        "description": "Requires the `view.lead` permission.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "pipeline_health": { "type": "number" },
+                        "at_risk_leads": { "type": "integer" },
+                        "breakdown": {
+                          "type": "object",
+                          "properties": {
+                            "overdue_followups": { "type": "integer" },
+                            "no_followup": { "type": "integer" },
+                            "stale_leads": { "type": "integer" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/projects": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Get projects",
+        "operationId": "getProjects",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Project" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      },
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Store project",
+        "operationId": "storeProject",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "phone": { "type": "string" },
+                  "inventory": { "type": "string" },
+                  "min_price": { "type": "number" },
+                  "max_price": { "type": "number" },
+                  "address": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "enable": { "type": "boolean" }
+                },
+                "required": [
+                  "name",
+                  "email",
+                  "phone",
+                  "inventory",
+                  "min_price",
+                  "max_price"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": { "$ref": "#/components/schemas/Project" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/projects/{id}": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Show project",
+        "operationId": "showProject",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": { "$ref": "#/components/schemas/Project" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Update project",
+        "operationId": "updateProject",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "phone": { "type": "string" },
+                  "inventory": { "type": "string" },
+                  "min_price": { "type": "number" },
+                  "max_price": { "type": "number" },
+                  "address": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "enable": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": { "$ref": "#/components/schemas/Project" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Destroy project",
+        "operationId": "destroyProject",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/projects/{id}/change-status": {
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Toggle the project's active status",
+        "operationId": "changeStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "integer" },
+                        "enable": { "type": "boolean" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/refresh": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Refresh the access token",
+        "operationId": "refresh",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "token": { "type": "string" },
+                        "token_type": {
+                          "type": "string",
+                          "example": "Bearer"
+                        },
+                        "expires_in": {
+                          "type": "integer",
+                          "description": "Token lifetime in seconds."
+                        }
+                      },
+                      "required": [
+                        "token",
+                        "token_type",
+                        "expires_in"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/reset-password": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Reset password",
+        "operationId": "resetPassword",
+        "description": "Supply the reset token and a matching `password_confirmation`.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "reset_token": { "type": "string" },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "minLength": 8
+                  },
+                  "password_confirmation": {
+                    "type": "string",
+                    "format": "password"
+                  }
+                },
+                "required": [
+                  "email",
+                  "reset_token",
+                  "password",
+                  "password_confirmation"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Http400" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/responses": {
+      "get": {
+        "tags": [
+          "Lead activity"
+        ],
+        "summary": "Get responses",
+        "operationId": "getResponses",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer" },
+                          "name": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/roles": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get roles",
+        "operationId": "getRoles",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer" },
+                          "name": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/shuffle-leads": {
+      "post": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "Reassign multiple leads",
+        "operationId": "shuffleLeads",
+        "description": "Requires the `edit.lead` permission.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "lead_ids": {
+                    "type": "array",
+                    "items": { "type": "integer" },
+                    "minItems": 1
+                  },
+                  "assigned_to": { "type": "integer" }
+                },
+                "required": [
+                  "lead_ids",
+                  "assigned_to"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "500": { "$ref": "#/components/responses/Http500" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/sidebar": {
+      "post": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Get sidebar navigation",
+        "operationId": "getSidebar",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "menus": {
+                          "type": "array",
+                          "items": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/sign-in": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Sign in",
+        "operationId": "signIn",
+        "description": "Use `data.access_token` with the Bearer authorization scheme.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "description": "Email address or username."
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password"
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "access_token": { "type": "string" },
+                        "token_type": {
+                          "type": "string",
+                          "example": "Bearer"
+                        },
+                        "expires_in": {
+                          "type": "integer",
+                          "description": "Token lifetime in seconds."
+                        },
+                        "user": { "$ref": "#/components/schemas/User" }
+                      },
+                      "required": [
+                        "access_token",
+                        "token_type",
+                        "expires_in"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/sign-up": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Create an account",
+        "operationId": "signUp",
+        "description": "Accept the terms and supply a matching `confirmPass`.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "minLength": 8
+                  },
+                  "confirmPass": {
+                    "type": "string",
+                    "format": "password"
+                  },
+                  "checked": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "email",
+                  "password",
+                  "confirmPass",
+                  "checked"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "access_token": { "type": "string" },
+                        "token_type": {
+                          "type": "string",
+                          "example": "Bearer"
+                        },
+                        "expires_in": {
+                          "type": "integer",
+                          "description": "Token lifetime in seconds."
+                        },
+                        "user": { "$ref": "#/components/schemas/User" }
+                      },
+                      "required": [
+                        "access_token",
+                        "token_type",
+                        "expires_in"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/status-list": {
+      "get": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "Get status list",
+        "operationId": "getStatusList",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "label": { "type": "string" },
+                              "value": { "type": "string" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/store-device-token": {
+      "post": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Register a device token using the legacy payload",
+        "operationId": "storeDeviceId",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "deviceToken": {
+                    "type": "string",
+                    "maxLength": 4096
+                  },
+                  "device_id": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 191
+                  },
+                  "platform": {
+                    "type": "string",
+                    "enum": [
+                      "android",
+                      "web",
+                      "ios"
+                    ],
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "deviceToken"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "user_id": { "type": "integer" },
+                        "device_id": { "type": "string" },
+                        "device_token": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/sub-responses/{responseId}": {
+      "get": {
+        "tags": [
+          "Lead activity"
+        ],
+        "summary": "List sub-responses for a response",
+        "operationId": "getSubResponses",
+        "parameters": [
+          {
+            "name": "responseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer" },
+                          "name": { "type": "string" },
+                          "response_id": { "type": "integer" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/targets": {
+      "get": {
+        "tags": [
+          "Targets"
+        ],
+        "summary": "Get targets",
+        "operationId": "getTargets",
+        "parameters": [
+          {
+            "name": "start_day",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "end_day",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Target" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      },
+      "post": {
+        "tags": [
+          "Targets"
+        ],
+        "summary": "Create target",
+        "operationId": "createTarget",
+        "description": "The start and end must be Monday and Sunday of the same week. A user may create one target per week.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "project_id": { "type": "integer" },
+                  "booking_set": { "type": "integer" },
+                  "booking_done": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "site_visited": { "type": "integer" },
+                  "site_visited_done": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "start_day": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "end_day": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                },
+                "required": [
+                  "project_id",
+                  "booking_set",
+                  "site_visited",
+                  "start_day",
+                  "end_day"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": { "$ref": "#/components/schemas/Target" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/targets/{id}": {
+      "get": {
+        "tags": [
+          "Targets"
+        ],
+        "summary": "Get a target",
+        "operationId": "showTarget",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": { "$ref": "#/components/schemas/Target" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      },
+      "post": {
+        "tags": [
+          "Targets"
+        ],
+        "summary": "Update a target",
+        "operationId": "updateTarget",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user_id": { "type": "integer" },
+                  "project_id": { "type": "integer" },
+                  "booking_set": { "type": "integer" },
+                  "booking_done": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "site_visited": { "type": "integer" },
+                  "site_visited_done": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "start_day": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "end_day": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": { "$ref": "#/components/schemas/Target" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Targets"
+        ],
+        "summary": "Delete a target",
+        "operationId": "destroy",
+        "description": "Unavailable in this backend. The route references the missing `TargetController::destroy` method.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "401": { "$ref": "#/components/responses/Http401" },
+          "500": {
+            "description": "The registered controller action is missing.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/timeline/{leadId}": {
+      "get": {
+        "tags": [
+          "Lead activity"
+        ],
+        "summary": "Get the lead timeline",
+        "operationId": "getTimeline",
+        "description": "Requires the `view.lead` permission.",
+        "parameters": [
+          {
+            "name": "leadId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "type": "object" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/trigger-reminder": {
+      "get": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "Run the lead reminder command",
+        "operationId": "triggerReminder",
+        "description": "Runs the lead reminder command and may send notifications.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/update-profile": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Update profile",
+        "operationId": "updateProfile",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 255
+                  },
+                  "phone": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 10
+                  },
+                  "alternate_phone": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 10
+                  },
+                  "date_of_birth": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
+                  },
+                  "address": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 500
+                  }
+                }
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 255
+                  },
+                  "phone": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 10
+                  },
+                  "alternate_phone": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 10
+                  },
+                  "date_of_birth": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
+                  },
+                  "address": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 500
+                  },
+                  "profile_pic": {
+                    "type": "string",
+                    "format": "binary",
+                    "nullable": true,
+                    "description": "JPEG, PNG, GIF or WebP. Maximum 2 MiB."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "integer" },
+                        "name": { "type": "string" },
+                        "email": {
+                          "type": "string",
+                          "format": "email"
+                        },
+                        "phone": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "alternate_phone": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "date_of_birth": { "type": "string" },
+                        "address": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "profile_pic": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "500": { "$ref": "#/components/responses/Http500" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/user": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Get the signed-in user",
+        "operationId": "user",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": { "$ref": "#/components/schemas/User" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "List users available for lead assignment",
+        "operationId": "getUsers",
+        "description": "Requires the `create.lead` permission.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/User" }
+                    },
+                    "total_count": { "type": "integer" },
+                    "last_page": { "type": "integer" },
+                    "current_page": { "type": "integer" },
+                    "per_page": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      },
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Create user",
+        "operationId": "createUser",
+        "description": "Requires the `super-admin` role.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 3
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "minLength": 8
+                  },
+                  "role_id": { "type": "integer" }
+                },
+                "required": [
+                  "name",
+                  "email",
+                  "password",
+                  "role_id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "user": { "$ref": "#/components/schemas/User" },
+                        "role": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "500": { "$ref": "#/components/responses/Http500" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get user",
+        "operationId": "getUser",
+        "description": "Requires the `super-admin` role.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": { "$ref": "#/components/schemas/User" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "500": { "$ref": "#/components/responses/Http500" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      },
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Update user",
+        "operationId": "updateUser",
+        "description": "Requires the `super-admin` role.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "minLength": 8
+                  },
+                  "role_id": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": { "$ref": "#/components/schemas/User" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "500": { "$ref": "#/components/responses/Http500" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Delete user",
+        "operationId": "deleteUser",
+        "description": "Requires the `super-admin` role.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "500": { "$ref": "#/components/responses/Http500" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/users/{id}/change-status": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Set the user's active status",
+        "operationId": "userStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enable": {
+                    "type": "integer",
+                    "enum": [
+                      0,
+                      1
+                    ]
+                  }
+                },
+                "required": [
+                  "enable"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "integer" },
+                        "enable": {}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "404": { "$ref": "#/components/responses/Http404" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/verify-otp": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Verify a password reset code",
+        "operationId": "verifyOtp",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "otp": { "type": "string" }
+                },
+                "required": [
+                  "email",
+                  "otp"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Http400" },
+          "422": { "$ref": "#/components/responses/Http422" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/visit-status-options": {
+      "get": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "Get visit status options",
+        "operationId": "getVisitStatusOptions",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": { "type": "string" },
+                          "value": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/weekly-booking-target": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Weekly booking target",
+        "operationId": "weeklyBookingTarget",
+        "description": "Requires the `view.lead` permission.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {},
+                    "scope": {
+                      "type": "string",
+                      "enum": [
+                        "team",
+                        "self"
+                      ]
+                    },
+                    "role": { "type": "string" },
+                    "summary": { "type": "object" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    },
+    "/weekly-visit-target": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Weekly visit target",
+        "operationId": "weeklyVisitTarget",
+        "description": "Requires the `view.lead` permission.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {},
+                    "scope": {
+                      "type": "string",
+                      "enum": [
+                        "team",
+                        "self"
+                      ]
+                    },
+                    "role": { "type": "string" },
+                    "summary": { "type": "object" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Http401" },
+          "403": { "$ref": "#/components/responses/Http403" },
+          "503": { "$ref": "#/components/responses/Http503" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "IntegrationKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "status": { "type": "boolean" },
+          "success": { "type": "boolean" },
+          "error": { "type": "string" },
+          "errors": {},
+          "maintenance": { "type": "boolean" }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "username": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "alternate_phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "date_of_birth": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "profile_pic": {
+            "type": "string",
+            "nullable": true
+          },
+          "role_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "role_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": { "type": "boolean" },
+          "last_seen_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "is_online": { "type": "boolean" }
+        }
+      },
+      "Lead": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "nullable": true
+          },
+          "status": { "type": "string" },
+          "type": { "type": "string" },
+          "visit_status": {
+            "type": "string",
+            "nullable": true
+          },
+          "visit_date": {
+            "type": "string",
+            "nullable": true
+          },
+          "follow_up_date": {
+            "type": "string",
+            "nullable": true
+          },
+          "lead_source": {
+            "type": "string",
+            "nullable": true
+          },
+          "project_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "assigned_to": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "Project": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "phone": { "type": "string" },
+          "inventory": { "type": "string" },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "enable": { "type": "boolean" },
+          "min_price": {},
+          "max_price": {}
+        }
+      },
+      "Target": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "user_id": { "type": "integer" },
+          "project_id": { "type": "integer" },
+          "booking_set": { "type": "integer" },
+          "booking_done": {
+            "type": "integer",
+            "nullable": true
+          },
+          "site_visited": { "type": "integer" },
+          "site_visited_done": {
+            "type": "integer",
+            "nullable": true
+          },
+          "start_day": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_day": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "ChatMessage": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "conversation_id": { "type": "integer" },
+          "sender_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "sender_name": { "type": "string" },
+          "client_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "body": {
+            "type": "string",
+            "nullable": true
+          },
+          "attachment": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "mime": { "type": "string" },
+              "size": { "type": "integer" },
+              "url": { "type": "string" }
+            },
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Conversation": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "type": {
+            "type": "string",
+            "enum": [
+              "direct",
+              "group"
+            ]
+          },
+          "name": { "type": "string" },
+          "members": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "integer" },
+                "name": { "type": "string" },
+                "avatar_url": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "last_read_message_id": { "type": "integer" },
+                "last_delivered_message_id": { "type": "integer" }
+              }
+            }
+          },
+          "latest_message": {
+            "type": "object",
+            "nullable": true,
+            "allOf": [
+              { "$ref": "#/components/schemas/ChatMessage" }
+            ]
+          },
+          "unread_count": { "type": "integer" }
+        }
+      }
+    },
+    "responses": {
+      "Http400": {
+        "description": "The code or reset token is invalid.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "Http401": {
+        "description": "Credentials are missing or invalid.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "Http403": {
+        "description": "Access denied.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "Http404": {
+        "description": "The requested resource is unavailable.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "Http409": {
+        "description": "A lead with matching contact information already exists.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "Http422": {
+        "description": "Request validation failed.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "Http429": {
+        "description": "Too many requests.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "Http500": {
+        "description": "The server could not complete the request.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "Http503": {
+        "description": "The service is unavailable or in maintenance mode.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      }
+    }
+  }
+}
