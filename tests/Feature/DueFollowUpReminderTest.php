@@ -14,35 +14,62 @@ class DueFollowUpReminderTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_evening_digest_sends_once_per_recipient_and_lists_the_five_earliest_due_leads(): void
+    public function test_reminder_is_sent_once_per_assignee_and_scheduled_time(): void
     {
         $this->travelTo(now()->setDate(2026, 11, 24)->setTime(18, 11));
         $salesperson = User::factory()->create();
-        $other = User::factory()->create();
-        $earliest = $this->lead($salesperson, 0);
-        foreach ([6, 5, 4, 3, 2] as $hours) {
-            $this->lead($salesperson, $hours);
-        }
-        $this->lead($other, 12);
-        $this->lead($other, -1);
-        $this->lead($other, 2, 'follow_up_complete');
+        $lead = $this->lead($salesperson, 0, 'follow_up');
+        $lead->update(['follow_up_date' => now()->addMinutes(30)]);
+        $this->lead($salesperson, 1);
+        $this->lead($salesperson, 0);
+        $this->lead($salesperson, 0, 'follow_up_complete')->update(['follow_up_date' => now()->addMinutes(20)]);
+        $disabled = User::factory()->create(['enable' => false]);
+        $this->lead($disabled, 0)->update(['follow_up_date' => now()->addMinutes(20)]);
 
         $this->mock(FirebaseNotificationService::class)
             ->shouldReceive('sendToUser')
-            ->once()
+            ->twice()
             ->withArgs(fn ($user, $title, $message, $data) => $user->is($salesperson)
                 && $data['type'] === Notification::DUE_FOLLOWUP_LEADS
-                && count(json_decode($data['leads'], true)) === 5);
+                && $data['leadId'] === (string) $lead->id
+                && count(json_decode($data['leads'], true)) === 1);
 
         $this->artisan('crm:due-followup-reminder')->assertSuccessful();
+        $notification = Notification::sole();
+        $this->assertSame(now()->addMinutes(30)->toIso8601String(), $notification->data['follow_up_date']);
+        $notification->delete();
+        $this->travel(1)->minute();
         $this->artisan('crm:due-followup-reminder')->assertSuccessful();
 
         $this->assertDatabaseCount('notifications', 1);
-        $notification = Notification::sole();
-        $this->assertSame(Notification::DUE_FOLLOWUP_LEADS, $notification->type);
-        $this->assertCount(5, $notification->data['leads']);
-        $this->assertSame((string) $earliest->id, $notification->data['leads'][0]['id']);
-        $this->assertSame(now()->addHours(5)->toIso8601String(), $notification->data['leads'][4]['follow_up_date']);
+        $lead->update(['follow_up_date' => now()->addMinutes(30)]);
+        $this->artisan('crm:due-followup-reminder')->assertSuccessful();
+        $this->assertDatabaseCount('notifications', 2);
+    }
+
+    public function test_command_expires_only_past_pending_follow_ups_and_records_the_original_due_time(): void
+    {
+        $this->travelTo(now()->setDate(2026, 11, 24)->setTime(18, 11));
+        $user = User::factory()->create();
+        $past = $this->lead($user, -1, 'follow_up');
+        $now = $this->lead($user, 0, 'follow_up');
+        $future = $this->lead($user, 1, 'follow_up');
+        $complete = $this->lead($user, -1, 'follow_up_complete');
+
+        $this->artisan('crm:due-followup-reminder')->assertSuccessful();
+        $this->artisan('crm:due-followup-reminder')->assertSuccessful();
+
+        $this->assertSame('follow_up_expired', $past->fresh()->status);
+        $this->assertSame('follow_up', $now->fresh()->status);
+        $this->assertSame('follow_up', $future->fresh()->status);
+        $this->assertSame('follow_up_complete', $complete->fresh()->status);
+        $this->assertDatabaseCount('lead_timeline_events', 1);
+        $this->assertDatabaseHas('lead_timeline_events', [
+            'lead_id' => $past->id,
+            'event_type' => 'FOLLOW_UP_EXPIRED',
+            'follow_up_date' => $past->follow_up_date->toDateTimeString(),
+        ]);
+        $this->assertDatabaseCount('notifications', 0);
     }
 
     public function test_api_returns_all_of_the_callers_due_leads_in_a_rolling_window(): void

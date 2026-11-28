@@ -177,10 +177,22 @@ class Lead extends Model
 
     public function scopeDueForFollowUp(Builder $query, CarbonInterface $from, CarbonInterface $until): Builder
     {
-        return $query->whereNotNull('assigned_to')
-            ->whereNotIn('status', ['booked', 'deactive', 'follow_up_complete'])
+        return $this->pendingAssignedFollowUps($query)
             ->where('follow_up_date', '>=', $from)
             ->where('follow_up_date', '<', $until);
+    }
+
+    public function scopeDueForFollowUpReminder(Builder $query, CarbonInterface $now): Builder
+    {
+        return $this->pendingAssignedFollowUps($query)
+            ->where('follow_up_date', '>', $now)
+            ->where('follow_up_date', '<=', $now->copy()->addMinutes(30));
+    }
+
+    private function pendingAssignedFollowUps(Builder $query): Builder
+    {
+        return $query->whereNotNull('assigned_to')
+            ->whereNotIn('status', ['booked', 'deactive', 'follow_up_complete', 'follow_up_expired']);
     }
 
     public function assignedTo()

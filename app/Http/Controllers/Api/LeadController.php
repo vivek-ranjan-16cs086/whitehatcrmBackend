@@ -348,25 +348,6 @@ class LeadController extends BaseController
 					], 404);
 				}
                 
-				if (
-					$lead->status === 'follow_up' &&
-					$lead->follow_up_date &&
-					now()->gt($lead->follow_up_date)
-				) {
-
-					$lead->status = 'follow_up_expired';
-					$lead->save();
-
-					LeadTimelineEvent::create([
-						'lead_id' => $lead->id,
-						'user_id' => $user->id,
-						'user_name' => $user->name,
-						'user_role' => $user->getRoleNames()->first(),
-						'event_type' => 'FOLLOW_UP_EXPIRED',
-						'follow_up_date' => $request->follow_up_date,
-						'message' => "Follow up expired", 
-					]);
-				}
 				//if status is booked then user can not change status 
 				if (
 					$lead->status === 'booked' &&

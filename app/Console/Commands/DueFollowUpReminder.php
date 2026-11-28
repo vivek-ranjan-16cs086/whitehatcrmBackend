@@ -3,43 +3,43 @@
 namespace App\Console\Commands;
 
 use App\Models\Lead;
-use App\Models\User;
+use App\Models\LeadTimelineEvent;
 use App\Services\NotificationService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 class DueFollowUpReminder extends Command
 {
     protected $signature = 'crm:due-followup-reminder';
 
-    protected $description = 'Send salespeople a digest of the next 12 hours of lead follow-ups';
+    protected $description = 'Remind assignees 30 minutes before follow-ups and expire past follow-ups';
 
     public function handle(NotificationService $notifications): int
     {
-        $now = now('Asia/Kolkata')->toImmutable();
-        $morning = $now->setTime(6, 0);
-        $evening = $now->setTime(18, 11);
-        $from = match (true) {
-            $now >= $evening => $evening,
-            $now >= $morning => $morning,
-            default => $evening->subDay(),
-        };
-        $until = $from->addHours(12);
-        $dueLeads = Lead::dueForFollowUp($from, $until);
+        $now = now()->toImmutable();
+        $expired = Lead::where('status', 'follow_up')->where('follow_up_date', '<', $now);
 
-        User::query()
-            ->where('enable', true)
-            ->whereIn('id', (clone $dueLeads)->select('assigned_to'))
-            ->eachById(function (User $user) use ($dueLeads, $notifications, $from, $until) {
-                $leads = (clone $dueLeads)->where('assigned_to', $user->id)
-                    ->orderBy('follow_up_date')
-                    ->orderBy('id')
-                    ->limit(5)
-                    ->get();
-
-                if ($leads->isNotEmpty()) {
-                    $notifications->sendDueFollowUpNotification($user, $leads, $from, $until);
+        (clone $expired)->select('id')->eachById(function (Lead $candidate) use ($expired) {
+            DB::transaction(function () use ($expired, $candidate) {
+                $lead = (clone $expired)->whereKey($candidate->id)->lockForUpdate()->first();
+                if (!$lead) {
+                    return;
                 }
+
+                $lead->update(['status' => 'follow_up_expired']);
+                LeadTimelineEvent::create([
+                    'lead_id' => $lead->id,
+                    'user_id' => $lead->assigned_to,
+                    'user_name' => 'System',
+                    'event_type' => 'FOLLOW_UP_EXPIRED',
+                    'follow_up_date' => $lead->follow_up_date,
+                    'message' => 'Follow-up expired automatically.',
+                ]);
             });
+        });
+
+        Lead::dueForFollowUpReminder($now)
+            ->select('id')->eachById(fn (Lead $lead) => $notifications->sendDueFollowUpNotification($lead->id, $now));
 
         return self::SUCCESS;
     }

@@ -6,7 +6,6 @@ use App\Models\Lead;
 use App\Models\Notification;
 use App\Models\User;
 use Carbon\CarbonInterface;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -87,57 +86,54 @@ class NotificationService
     }
 
     public function sendDueFollowUpNotification(
-        User $user,
-        Collection $leads,
-        CarbonInterface $from,
-        CarbonInterface $until
+        int $leadId,
+        CarbonInterface $now
     ): void {
-        $title = 'Upcoming Lead Follow-ups';
-        $message = $leads->map(fn (Lead $lead) => sprintf(
-            '%s (%s)',
-            Str::limit($lead->name, 50),
-            $lead->follow_up_date->format('g:i A')
-        ))->join(', ');
-        $data = [
-            'type' => Notification::DUE_FOLLOWUP_LEADS,
-            'leads' => $leads->map(fn (Lead $lead) => [
-                'id' => (string) $lead->id,
-                'name' => $lead->name,
-                'follow_up_date' => $lead->follow_up_date->toIso8601String(),
-            ])->all(),
-        ];
+        $delivery = DB::transaction(function () use ($leadId, $now) {
+            $lead = Lead::dueForFollowUpReminder($now)
+                ->whereKey($leadId)->lockForUpdate()->first();
+            $recipient = $lead ? User::whereKey($lead->assigned_to)->where('enable', true)->first() : null;
+            if (!$recipient) {
+                return null;
+            }
 
-        $notification = DB::transaction(function () use ($user, $from, $until, $title, $message, $data) {
-            $recipient = User::whereKey($user->id)->where('enable', true)->lockForUpdate()->first();
-            if (! $recipient || Notification::withTrashed()
-                ->where('user_id', $user->id)
+            $scheduledAt = $lead->follow_up_date->toIso8601String();
+            if (Notification::withTrashed()
+                ->where('user_id', $recipient->id)
                 ->where('type', Notification::DUE_FOLLOWUP_LEADS)
-                ->where('created_at', '>=', $from)
-                ->where('created_at', '<', $until)
+                ->where('data->leadId', (string) $lead->id)
+                ->where('data->follow_up_date', $scheduledAt)
                 ->exists()) {
                 return null;
             }
 
-            return Notification::create([
-                'user_id' => $user->id,
-                'title' => $title,
-                'message' => $message,
+            $data = [
+                'type' => Notification::DUE_FOLLOWUP_LEADS,
+                'leadId' => (string) $lead->id,
+                'follow_up_date' => $scheduledAt,
+                'leads' => [[
+                    'id' => (string) $lead->id,
+                    'name' => $lead->name,
+                    'follow_up_date' => $scheduledAt,
+                ]],
+            ];
+
+            $notification = Notification::create([
+                'user_id' => $recipient->id,
+                'title' => 'Upcoming Lead Follow-up',
+                'message' => sprintf('Follow up with %s at %s.', Str::limit($lead->name, 50), $lead->follow_up_date->format('g:i A')),
                 'type' => Notification::DUE_FOLLOWUP_LEADS,
                 'data' => $data,
             ]);
+
+            return [$recipient, $notification];
         });
 
-        if ($notification) {
-            $this->firebase->sendToUser($user, $title, $message, [
-                'type' => Notification::DUE_FOLLOWUP_LEADS,
-                'leads' => json_encode(
-                    $leads->map(fn (Lead $lead) => [
-                        'id' => (string) $lead->id,
-                        'follow_up_date' => $lead->follow_up_date->toIso8601String(),
-                    ])->all(),
-                    JSON_THROW_ON_ERROR
-                ),
-            ]);
+        if ($delivery) {
+            [$recipient, $notification] = $delivery;
+            $payload = $notification->data;
+            $payload['leads'] = json_encode($payload['leads'], JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE);
+            $this->firebase->sendToUser($recipient, $notification->title, $notification->message, $payload);
         }
     }
 
