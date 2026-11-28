@@ -565,25 +565,33 @@ document.addEventListener('click', function (event) {
         );
     }
 
-    // Update sidebar highlighting
-    document
-        .querySelectorAll('a[data-lead-view]')
-        .forEach(function (item) {
-            const selected = item.dataset.leadView === view;
-
-            item.classList.toggle('active', selected);
-
-            if (selected) {
-                item.setAttribute('aria-current', 'page');
-            } else {
-                item.removeAttribute('aria-current');
-            }
-        });
-
     // Change lead table without refreshing the page
     if (typeof window.setLeadView === 'function') {
         window.setLeadView(view);
     }
+});
+
+document.addEventListener('lead:view-changed', function (event) {
+    const attention = event.detail.attention;
+
+    document.querySelectorAll('#sidebar a[data-lead-view], #sidebar a[data-attention]').forEach(function (link) {
+        const selected = link.dataset.attention
+            ? link.dataset.attention === attention
+            : !attention || attention === 'unassigned';
+
+        link.classList.toggle('active', selected);
+        if (selected) {
+            link.setAttribute('aria-current', 'page');
+        } else {
+            link.removeAttribute('aria-current');
+        }
+
+        if (link.dataset.attention) {
+            const submenu = link.closest('.collapse');
+            const parent = submenu?.previousElementSibling;
+            parent?.classList.toggle('active', Boolean(submenu.querySelector('a[data-attention].active')));
+        }
+    });
 });
 //...
         // Sidebar toggle for mobile

@@ -772,6 +772,7 @@ window.setLeadView = function (view, attention = null) {
     history.replaceState(history.state, '', destination.pathname + destination.search + destination.hash);
 
     updateLeadFilterButtons(view);
+    document.dispatchEvent(new CustomEvent('lead:view-changed', {detail: {attention: pendingAttention}}));
 
     if ($.fn.DataTable.isDataTable('#leads-table')) {
         $('#leads-table')

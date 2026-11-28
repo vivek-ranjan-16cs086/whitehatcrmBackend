@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Lead;
 use App\Models\User;
+use App\Services\PipelineHealthService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -122,5 +123,38 @@ class ActionRequiredDashboardTest extends TestCase
                 'length' => 20,
             ]))
             ->assertUnprocessable();
+    }
+
+    public function test_monitor_lists_match_dashboard_counts_at_time_boundaries(): void
+    {
+        $this->travelTo(now()->setTime(14, 0));
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::create(['name' => 'super-admin', 'guard_name' => 'web']));
+
+        $past = Lead::create(['name' => 'Past today', 'status' => 'follow_up', 'follow_up_date' => now()->subHour()]);
+        $expired = Lead::create(['name' => 'Expired follow-up', 'status' => 'follow_up_expired', 'follow_up_date' => now()->subDay()]);
+        $stale = Lead::create(['name' => 'Exactly seven days old', 'status' => 'active']);
+        $stale->forceFill(['created_at' => now()->subDays(7)])->save();
+        $recent = Lead::create(['name' => 'Just under seven days old', 'status' => 'active']);
+        $recent->forceFill(['created_at' => now()->subDays(7)->addSecond()])->save();
+        Lead::create(['name' => 'Later today', 'status' => 'follow_up', 'follow_up_date' => now()->addHour()]);
+        Lead::create(['name' => 'Booked', 'status' => 'booked', 'follow_up_date' => now()->subDay()]);
+        Lead::create(['name' => 'Closed without follow-up', 'status' => 'deactive']);
+
+        $metrics = app(PipelineHealthService::class)->getMetrics($admin)['breakdown'];
+        $this->actingAs($admin);
+        foreach ([
+            'overdue' => ['overdue_followups', [$past->id, $expired->id]],
+            'no-follow-up' => ['no_followup', [$stale->id, $recent->id]],
+            'stale' => ['stale_leads', [$stale->id]],
+        ] as $filter => [$metric, $expectedIds]) {
+            $response = $this->getJson(route('lead-management.ajax-list', [
+                'attention' => $filter,
+                'start' => 0,
+                'length' => 20,
+            ]))->assertOk()->assertJsonPath('recordsFiltered', $metrics[$metric]);
+
+            $this->assertEqualsCanonicalizing($expectedIds, array_column($response->json('data'), 'lead_id'));
+        }
     }
 }

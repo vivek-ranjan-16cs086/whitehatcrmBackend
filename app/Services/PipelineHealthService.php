@@ -2,7 +2,6 @@
 namespace App\Services;
 use App\Models\Lead;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
 class PipelineHealthService
@@ -45,17 +44,16 @@ class PipelineHealthService
             ->where('created_at', '>=', $now->copy()->subDays(3))
             ->count();
 
-        $overdue = (clone $activeQuery)
-            ->whereNotNull('follow_up_date')
-            ->whereDate('follow_up_date', '<', $now->toDateString())
+        $overdue = (clone $query)
+            ->forFollowUpMonitor('overdue', $now)
             ->count();
 
-        $noFollowUp = (clone $activeQuery)
-            ->whereNull('follow_up_date')
+        $noFollowUp = (clone $query)
+            ->forFollowUpMonitor('no-follow-up', $now)
             ->count();
 
-        $stale = (clone $activeQuery)
-            ->where('created_at', '<', $now->copy()->subDays(7))
+        $stale = (clone $query)
+            ->forFollowUpMonitor('stale', $now)
             ->count();
 
         $conversion = $totalLeads > 0

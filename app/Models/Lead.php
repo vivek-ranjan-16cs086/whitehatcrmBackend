@@ -159,6 +159,22 @@ class Lead extends Model
     ];
 
 
+    public function scopeForFollowUpMonitor(Builder $query, string $filter, CarbonInterface $now): Builder
+    {
+        $statuses = ['new', 'active', 'follow_up'];
+        if ($filter === 'overdue') {
+            $statuses[] = 'follow_up_expired';
+        }
+
+        $query->whereIn('leads.status', $statuses);
+
+        return match ($filter) {
+            'overdue' => $query->where('leads.follow_up_date', '<', $now),
+            'no-follow-up' => $query->whereNull('leads.follow_up_date'),
+            'stale' => $query->where('leads.created_at', '<=', $now->copy()->subDays(7)),
+        };
+    }
+
     public function scopeDueForFollowUp(Builder $query, CarbonInterface $from, CarbonInterface $until): Builder
     {
         return $query->whereNotNull('assigned_to')

@@ -359,7 +359,6 @@ public function index(Request $request, LeadEnumOptions $enums)
 		}
 
 		$openLeadId = $request->input('open_lead_id');
-		$activeStatuses = ['new', 'active', 'follow_up'];
 
 		// View filters
 		$viewFilters = [
@@ -380,16 +379,10 @@ public function index(Request $request, LeadEnumOptions $enums)
 
 		if ($openLeadId !== null) {
 			$query->where('leads.id', $openLeadId);
+		} elseif ($attention === 'unassigned') {
+			$query->whereNull('leads.assigned_to');
 		} elseif ($attention !== null) {
-            if ($attention !== 'unassigned') $query->whereIn('leads.status', $activeStatuses);
-
-			match ($attention) {
-				'unassigned' => $query->whereNull('leads.assigned_to'),
-				'overdue' => $query->whereNotNull('leads.follow_up_date')
-					->whereDate('leads.follow_up_date', '<', now()->toDateString()),
-				'no-follow-up' => $query->whereNull('leads.follow_up_date'),
-				'stale' => $query->where('leads.created_at', '<', now()->subDays(7)),
-			};
+			$query->forFollowUpMonitor($attention, now());
 		} elseif ($viewFilters[$view] !== null) {
 			$query->where('leads.status', $viewFilters[$view]);
 		}
